@@ -132,3 +132,8 @@ function lancer_tests(string $filtre): int
     echo "\n$reussis réussi(s), $echecs échec(s)\n";
     return $echecs > 0 ? 1 : 0;
 }
+
+function fixer_heure(string $utc): void
+{
+    $GLOBALS['JR_MAINTENANT'] = new DateTimeImmutable($utc, new DateTimeZone('UTC'));
+}
