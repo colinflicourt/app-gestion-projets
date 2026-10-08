@@ -14,11 +14,13 @@ Remplace l'ancienne idée d'« application personnelle de gestion de projets » 
 - Étape 7 (visuels) terminée le 2026-10-08, sous réserve de la validation de la maquette par Colin : icône, écran de lancement, badges, boss détourés (`site/img/boss/`), 4 fonds et 70 cartes générés par Colin et encodés (`site/img/fonds/`, `site/img/cartes/`, `site/data/cartes.json`), maquette mise à jour (version 28 : vrais boss, « J'ai fini la tâche », album, carte rare au contour brillant)
 - 2026-10-08 : récompenses conçues avec Colin (superpowers:brainstorming) : cartes à collectionner et album, bouton « J'ai fini la tâche », fonds des combats. Règles dans `CONTENU.md` § 6 et § 8 bis, visuels dans `VISUELS.md` § 4 bis et § 7, banque des 70 cartes dans `CARTES.md`
 - 2026-10-08 : maquette v28 validée par Colin, hébergement prêt (voir plus bas), **test serveur réussi** (voir « Constats du test serveur »)
+- 2026-10-08 : **étape 8a faite** : spec technique `SPEC.md` validée par Colin (socle commun et lot 1 en détail), puis plan 1 du lot 1 (`plans/2026-10-08-lot1-1-socle-serveur.md`). Le lot 1 est découpé en 3 plans successifs : socle serveur, données, app iPhone
 
 ## Prochaine session
 
-1. **Étape 8a, spec technique** : `SPEC.md` avec superpowers:brainstorming, à partir de l'architecture de `PLAN.md` et des constats du test serveur, puis un plan d'implémentation par lot (superpowers:writing-plans).
-2. Préparatifs de Colin restants (carte Trello) : compte cron-job.org avant le lot 2, redirection UTC et mots de passe d'application avant le lot 3.
+1. **Exécuter le plan 1 du lot 1** (socle serveur) : `plans/2026-10-08-lot1-1-socle-serveur.md`, avec `SPEC.md` à côté. Choix de Colin le 2026-10-08 : **mode natif** (superpowers:executing-plans, Claude fait les tâches lui-même dans la session), **un commit à la fin de chaque tâche autorisé** (dépôt local de Jarvis Jr., rien vers GitHub). L'installation de MySQL 8.4 en local (tâche 3) est acceptée sur le principe : le rappeler à Colin en une ligne avant de lancer. Colin lancera lui-même `definir-mot-de-passe.sh` et `deploy-ovh.sh` à la tâche 10.
+2. Ensuite, écrire puis exécuter le plan 2 (données : Trello, Google, créneaux, rafraîchissement, routes) et le plan 3 (l'app iPhone).
+3. Préparatifs de Colin restants (carte Trello) : compte cron-job.org avant le lot 2, redirection UTC et mots de passe d'application avant le lot 3.
 
 ## Décisions
 
@@ -58,6 +60,8 @@ Diagnostic `outils/test-serveur/` (`diagnostic.php`, envoyé et retiré par Coli
 ## Fichiers
 
 - `PLAN.md` : plan complet (écrans, architecture, outils, étapes, vigilance, vérification)
+- `SPEC.md` : spec technique (étape 8a), validée le 2026-10-08
+- `plans/` : plans d'implémentation, un fichier par plan
 - `INVENTAIRE.md` : tes données (Trello, agendas, mails) et ce qu'on réutilise (code, visuels, ton)
 - `CONTENU.md` : contenu validé (voix de Junior, libellés, notifications, XP et grades, badges, Wrapped)
 - `PRODUCT.md` : fiche produit pour le design (moments d'usage, contraintes, principes)

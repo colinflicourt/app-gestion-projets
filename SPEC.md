@@ -1,6 +1,6 @@
 # Jarvis Jr. : spec technique (étape 8a)
 
-> Rédigée le 2026-10-08 avec superpowers:brainstorming, à partir de `PLAN.md`, `CONTENU.md`, `PRODUCT.md`, de la maquette v28 et des constats du test serveur (`README.md`). Les 6 sections de design ont été validées une à une par Colin le même jour. **Statut : à relire par Colin.**
+> Rédigée le 2026-10-08 avec superpowers:brainstorming, à partir de `PLAN.md`, `CONTENU.md`, `PRODUCT.md`, de la maquette v28 et des constats du test serveur (`README.md`). Les 6 sections de design ont été validées une à une par Colin le même jour. **Statut : validée par Colin le 2026-10-08**, textes nouveaux du § 13 compris.
 >
 > Portée (choix A de Colin) : **le socle commun et le lot 1 en détail.** Les lots 2, 3 et 4 auront chacun leur section détaillée, écrite juste avant leur plan d'implémentation. Ce document ne redécide ni les écrans, ni les textes, ni le barème (`CONTENU.md` et la maquette font foi) : il décide le *comment*.
 
@@ -77,7 +77,7 @@ outils/     apercu.php (routeur de php -S), generer-config.php, definir-mot-de-p
 | `essais_connexion` | `id`, `ip`, `quand` ; index (`ip`, `quand`) | Échecs de mot de passe. Purge au-delà d'un jour |
 | `jetons` | `service` (clé : `google`, `google_acces`, `google_oauth_attente` ; plus tard `siri`), `contenu` chiffré (nonce + texte chiffré), `expire_le`, `maj_le` | Secrets chiffrés avec libsodium |
 | `copies` | `source` (clé : `trello`, `agenda`, `agenda:2026-W43`…), `contenu` JSON, `recupere_le`, `empreinte` | Dernière copie de chaque source et son heure |
-| `actions` | `id`, `type`, `domaine`, `carte_id`, `element_id` (nul si sans objet), `quand`, `source` (`app` ou `trello`), `precision` (`exacte` ou `approx`), `annulee` (0 ou 1), `donnees` JSON (`urgent`, `echeance`) ; index (`type`, `carte_id`, `element_id`, `quand`) | **Le journal d'actions** (décision 3) |
+| `actions` | `id`, `type`, `domaine`, `carte_id`, `element_id` (nul si sans objet), `quand`, `source` (`app` ou `trello`), `precision_heure` (`exacte` ou `approx` ; `PRECISION` est un mot réservé de MySQL), `annulee` (0 ou 1), `donnees` JSON (`urgent`, `echeance`) ; index (`type`, `carte_id`, `element_id`, `quand`) | **Le journal d'actions** (décision 3) |
 | `ecritures` | `id_client` CHAR(36) (clé, UUID créé sur l'iPhone), `route`, `recu_le`, `resultat` JSON | Écritures déjà traitées : un renvoi rend le même résultat sans rien refaire. Purge au-delà de 30 jours |
 
 **Types d'actions du lot 1** : `etape_cochee`, `etape_decochee`, `carte_terminee`, `carte_rouverte`, `carte_ajoutee`, `tirage_parti`.
@@ -113,14 +113,15 @@ Créées par de nouvelles migrations, sans toucher aux tables existantes :
 
 ### 5.2 Session
 
-- Jeton aléatoire de 32 octets dans le cookie `__Host-jr` : `Secure`, `HttpOnly`, `SameSite=Strict`, `Path=/`, `Max-Age` de 90 jours. La base n'en garde que l'empreinte SHA-256.
+- Jeton aléatoire de 32 octets dans le cookie `__Host-jr` : `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, `Max-Age` de 90 jours. La base n'en garde que l'empreinte SHA-256.
+- **`Lax` et non `Strict`** (corrigé le 2026-10-08 en écrivant le plan) : au retour de la connexion Google, le navigateur arrive depuis accounts.google.com. Avec `Strict`, le cookie ne serait pas envoyé et la route `google-callback.php`, qui exige la session, refuserait. `Lax` n'envoie le cookie depuis un autre site que pour une navigation GET, et toutes les routes GET sont en lecture seule.
 - Expiration glissante : si `vu_le` a plus de 24 h, `vu_le` et `expire_le` (+90 jours) sont mis à jour et le cookie est renvoyé.
 - « Se déconnecter » efface la ligne de l'appareil ; « Déconnecter tous les appareils » efface toutes les lignes.
 - En dev sur `http://localhost:8787`, Chromium accepte ce cookie (localhost compte comme sûr). Les essais locaux se font donc avec Chromium et Playwright, pas Safari.
 
 ### 5.3 Requêtes forgées depuis un autre site
 
-Toute écriture est un `POST` en `application/json` dont l'en-tête `Origin` doit être exactement l'origine configurée (`https://jr.qyris.fr`, ou `http://localhost:8787` en dev). Sans `Origin`, la requête est refusée. Avec `SameSite=Strict`, aucun jeton CSRF n'est nécessaire.
+Toute écriture est un `POST` en `application/json` dont l'en-tête `Origin` doit être exactement l'origine configurée (`https://jr.qyris.fr`, ou `http://localhost:8787` en dev). Sans `Origin`, la requête est refusée. Avec `SameSite=Lax`, un POST venu d'un autre site part sans le cookie : aucun jeton CSRF n'est nécessaire.
 
 ### 5.4 Routes du lot 1
 
@@ -210,14 +211,14 @@ Toutes sous `/api/`. Connexion exigée sauf mention contraire. Chaque écriture 
 | Déplacer | `PUT /cards/{carte}` avec `idList` |
 | Ajouter | `POST /cards` dans « À faire », `pos=top`, étiquette Urgent si demandée, `due` si échéance |
 
-Après chaque écriture réussie, la copie du serveur est corrigée aussitôt, et l'action est notée (`source = app`, `precision = exacte`).
+Après chaque écriture réussie, la copie du serveur est corrigée aussitôt, et l'action est notée (`source = app`, `precision_heure = exacte`).
 
 ### 6.4 Détection des actions faites ailleurs
 
 Fonction pure : deux copies en entrée, une liste d'actions en sortie.
 
 - Carte entrée dans Fait : `carte_terminee`. Carte sortie de Fait : `carte_rouverte`. Élément passé à coché : `etape_cochee` ; à décoché : `etape_decochee`.
-- Heure : la `dateLastActivity` de la carte, `precision = approx`, `source = trello`.
+- Heure : la `dateLastActivity` de la carte, `precision_heure = approx`, `source = trello`.
 - **Pas de doublon** : une action détectée est ignorée si la même action (`type`, `carte_id`, `element_id`) a été notée par l'app depuis la copie précédente.
 - **Point de départ** : la toute première copie ne produit aucune action. Ce qui est dans Fait avant le lot 1 ne compte pas.
 
