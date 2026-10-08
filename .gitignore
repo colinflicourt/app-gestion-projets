@@ -2,3 +2,6 @@
 .env
 node_modules/
 outils/test-serveur/.jeton
+serveur/config.php
+serveur/trello-ids.json
+serveur/data/
