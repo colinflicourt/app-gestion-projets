@@ -1,0 +1,455 @@
+{
+  "title": "Choisis l'univers de Jarvis Jr.",
+  "question": "Le tirage propose la console de régie. Garde-la, prends une de tes trois pistes, ou relance.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "La console de régie",
+      "kicker": "LE TIRAGE",
+      "lineage": "La régie son et lumière du Cabaret UTC",
+      "thesis": "Ta journée se pilote comme la régie du Cabaret : quatre tranches, un écran de conduite et un gros bouton GO.",
+      "palette": [
+        "#121417",
+        "#1E2228",
+        "#FFB020",
+        "#EDE6D6",
+        "#E5484D"
+      ],
+      "materials": [
+        "console graphite mate et capuchons de faders",
+        "afficheurs ambre et bande de scotch écrite au marqueur"
+      ],
+      "viewport": "En haut l'écran de conduite : EN SCÈNE le cours en cours, STANDBY le suivant avec sa salle et son compte à rebours en chiffres ambre géants ; au milieu les tranches QYRIS, Asso, Études, Perso ; en bas le bouton GO, « Je fais quoi maintenant ? ».",
+      "risk": "Une console intimide : il faut un seul GO et des tranches sobres, sinon le coup d'œil se perd dans les boutons.",
+      "raised": [
+        {
+          "from": "challenger-metro",
+          "raise": "L'heure et la salle du prochain cours en très gros corps, lisibles bras tendu en marchant."
+        },
+        {
+          "from": "challenger-ticket",
+          "raise": "Rien ne disparaît, tout s'estampille : une tâche finie prend le tampon FAIT, un rappel passé le tampon JOUÉ."
+        },
+        {
+          "from": "challenger-transit",
+          "raise": "Chaque domaine possède sa couleur de tranche, engagée à fond, du fader jusqu'aux notifications."
+        },
+        {
+          "from": "challenger-factory",
+          "raise": "Un seul élément allumé à la fois : la tranche active s'éclaire, le reste reste dans le noir."
+        },
+        {
+          "from": "challenger-ikeda",
+          "raise": "Tous les chiffres en colonnes tabulaires, alignés au pixel, comme sur un afficheur."
+        },
+        {
+          "from": "challenger-crouwel",
+          "raise": "La grille des tranches reste visible et structure chaque écran, Agenda et Mails compris."
+        }
+      ],
+      "wireframe": {
+        "cols": 12,
+        "rows": 20,
+        "regions": [
+          {
+            "label": "écran de conduite : EN SCÈNE / STANDBY",
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 7,
+            "accent": true
+          },
+          {
+            "label": "talkback de Junior",
+            "x": 0,
+            "y": 7,
+            "w": 12,
+            "h": 2
+          },
+          {
+            "label": "4 tranches : QYRIS · Asso · Études · Perso",
+            "x": 0,
+            "y": 9,
+            "w": 12,
+            "h": 7
+          },
+          {
+            "label": "GO",
+            "x": 3,
+            "y": 16,
+            "w": 6,
+            "h": 3,
+            "accent": true
+          },
+          {
+            "label": "onglets",
+            "x": 0,
+            "y": 19,
+            "w": 12,
+            "h": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "pick-lineup",
+      "label": "La lineup",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "La conduite et la lineup du Cabaret La La Land",
+      "thesis": "Ta journée est une lineup de spectacle : chaque créneau un numéro, sa hauteur égale à sa durée, et le régisseur annonce le suivant.",
+      "palette": [
+        "#1E2047",
+        "#2E3266",
+        "#F2C14E",
+        "#C2457A",
+        "#3B6FB6"
+      ],
+      "materials": [
+        "nuit de music-hall et ampoules de loge",
+        "conduite de régisseur avec ses tops numérotés"
+      ],
+      "viewport": "La lineup du jour en blocs dont la hauteur suit la durée, une ligne dorée TOP qui descend avec l'heure, et le prochain numéro qui s'allume en coulisses avec sa salle.",
+      "risk": "La plus proche de ton propre script de lineup, donc la plus familière ; la métaphore du spectacle peut lasser sur les écrans pratiques comme Mails.",
+      "wireframe": {
+        "cols": 12,
+        "rows": 20,
+        "regions": [
+          {
+            "label": "ampoules + date",
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 2
+          },
+          {
+            "label": "phrase de Junior",
+            "x": 0,
+            "y": 2,
+            "w": 12,
+            "h": 2
+          },
+          {
+            "label": "lineup du jour (hauteur = durée)",
+            "x": 0,
+            "y": 4,
+            "w": 9,
+            "h": 14,
+            "accent": true
+          },
+          {
+            "label": "ligne TOP = maintenant",
+            "x": 9,
+            "y": 4,
+            "w": 3,
+            "h": 14
+          },
+          {
+            "label": "envoyer le numéro",
+            "x": 0,
+            "y": 18,
+            "w": 12,
+            "h": 1,
+            "accent": true
+          },
+          {
+            "label": "onglets",
+            "x": 0,
+            "y": 19,
+            "w": 12,
+            "h": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "piste-head",
+      "label": "HEAD",
+      "kicker": "TA PISTE",
+      "lineage": "Le graphe git de ton CV, dessiné en plan de métro",
+      "thesis": "Ta journée comme un historique git : quatre branches, HEAD qui avance avec l'heure, chaque tâche finie est un commit.",
+      "palette": [
+        "#0F1114",
+        "#E9ECEF",
+        "#4F7BFF",
+        "#F0653D",
+        "#A66BFF"
+      ],
+      "materials": [
+        "lignes de métro à 45 et 90 degrés",
+        "identifiants de commit en police mono"
+      ],
+      "viewport": "Un graphe vertical où le prochain cours est la station suivante de la branche Études, HEAD posé sur maintenant, et chaque carte Trello en commit avec son vrai identifiant court.",
+      "risk": "Prolonge ton CV, donc cohérent mais déjà vu chez toi ; le graphe ne doit jamais passer devant l'heure et la salle.",
+      "wireframe": {
+        "cols": 12,
+        "rows": 20,
+        "regions": [
+          {
+            "label": "HEAD = maintenant · prochain cours",
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 4,
+            "accent": true
+          },
+          {
+            "label": "graphe : 4 branches",
+            "x": 0,
+            "y": 4,
+            "w": 4,
+            "h": 14
+          },
+          {
+            "label": "commits : cours et cartes",
+            "x": 4,
+            "y": 4,
+            "w": 8,
+            "h": 14
+          },
+          {
+            "label": "git commit (+)",
+            "x": 0,
+            "y": 18,
+            "w": 12,
+            "h": 1,
+            "accent": true
+          },
+          {
+            "label": "onglets",
+            "x": 0,
+            "y": 19,
+            "w": 12,
+            "h": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "piste-player1",
+      "label": "Player 1",
+      "kicker": "TA PISTE",
+      "lineage": "Les menus de RPG et tes jeux Phaser (Utopia, Candid Colin)",
+      "thesis": "Ta journée est la partie en cours : une quête principale, des quêtes secondaires, et Junior en compagnon qui monte de niveau.",
+      "palette": [
+        "#121018",
+        "#F4EBD0",
+        "#2B2440",
+        "#FFC93C",
+        "#E2574C"
+      ],
+      "materials": [
+        "boîtes de dialogue à bordure pixel",
+        "sprites de Candid Colin"
+      ],
+      "viewport": "Un HUD compact (Junior, grade, barre d'XP), puis la quête principale en grand : le prochain cours avec sa salle et son compte à rebours ; les tâches en quêtes secondaires, les mails en butin.",
+      "risk": "Le jeu tire vers le centre de l'écran alors que tu le veux présent mais second ; mal dosé, ça devient kitsch.",
+      "wireframe": {
+        "cols": 12,
+        "rows": 20,
+        "regions": [
+          {
+            "label": "HUD : Junior · grade · XP",
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 2
+          },
+          {
+            "label": "quête principale : prochain cours",
+            "x": 0,
+            "y": 2,
+            "w": 12,
+            "h": 6,
+            "accent": true
+          },
+          {
+            "label": "quêtes secondaires : tâches",
+            "x": 0,
+            "y": 8,
+            "w": 12,
+            "h": 7
+          },
+          {
+            "label": "butin : mails",
+            "x": 0,
+            "y": 15,
+            "w": 12,
+            "h": 2
+          },
+          {
+            "label": "lancer la quête",
+            "x": 0,
+            "y": 17,
+            "w": 12,
+            "h": 2,
+            "accent": true
+          },
+          {
+            "label": "onglets",
+            "x": 0,
+            "y": 19,
+            "w": 12,
+            "h": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "challenger-transit",
+      "label": "Le plan de métro émaillé",
+      "verdict": "declined",
+      "lineage": "Plans de transport sur émail bleu nuit",
+      "thesis": "Quatre lignes de couleur, des correspondances, une ville entière rendue lisible.",
+      "palette": [
+        "#0F1E3D",
+        "#F4F4F0",
+        "#D7263D",
+        "#2E5EAA",
+        "#F2A541"
+      ],
+      "materials": [
+        "émail bleu nuit",
+        "repères de station en porcelaine"
+      ],
+      "viewport": "Le prochain cours comme la prochaine station de ta ligne.",
+      "risk": "Fait doublon avec HEAD, qui reprend déjà le plan de métro de ton CV.",
+      "case": "Se fond dans HEAD plutôt que de s'en distinguer, et sort de tes trois univers.",
+      "kept": "Une couleur par domaine, engagée à fond.",
+      "hero": "https://impeccable.style/worlds/cards/wayfinding-cartography-signage-midnight-transit-diagram-hero.webp"
+    },
+    {
+      "id": "challenger-metro",
+      "label": "Les tuiles Metro",
+      "verdict": "declined",
+      "lineage": "Le langage Metro de Windows Phone",
+      "thesis": "La typo géante est l'interface, sans aucun décor.",
+      "palette": [
+        "#000000",
+        "#1BA1E2",
+        "#FFFFFF"
+      ],
+      "materials": [
+        "tuiles à plat",
+        "minuscules géantes coupées au bord"
+      ],
+      "viewport": "« tn01 » en minuscules géantes coupées au bord de l'écran.",
+      "risk": "Un style daté de 2010 qui ne te ressemble pas.",
+      "case": "Très lisible en marchant, mais hors de tes univers et sans rien de toi.",
+      "kept": "L'heure et la salle en très gros corps.",
+      "hero": "https://impeccable.style/worlds/cards/digital-design-canon-metro-typographic-tiles-hero.webp"
+    },
+    {
+      "id": "challenger-ticket",
+      "label": "La pochette de billets d'avion",
+      "verdict": "declined",
+      "lineage": "Billets carbone des années 1960",
+      "thesis": "Chaque étape est un coupon qu'on tamponne.",
+      "palette": [
+        "#1B2A52",
+        "#C8102E",
+        "#F7F5EE",
+        "#5B3F8C"
+      ],
+      "materials": [
+        "papier carbone",
+        "tampons VOID"
+      ],
+      "viewport": "La journée en coupons détachables.",
+      "risk": "Sans lien avec tes univers.",
+      "case": "Les états tamponnés sont forts, l'univers ne te parle pas.",
+      "kept": "Les états qui s'estampillent au lieu de disparaître.",
+      "hero": "https://impeccable.style/worlds/cards/vernacular-ephemera-jet-age-ticket-wallet-hero.webp"
+    },
+    {
+      "id": "challenger-crouwel",
+      "label": "La grille de Crouwel",
+      "verdict": "declined",
+      "lineage": "Les spécimens typographiques de Wim Crouwel",
+      "thesis": "La grille de construction visible fait partie du dessin.",
+      "palette": [
+        "#F4F4F0",
+        "#B8C9E8",
+        "#E5322D"
+      ],
+      "materials": [
+        "papier millimétré",
+        "lettres construites case par case"
+      ],
+      "viewport": "Le prochain cours en lettres construites sur la grille.",
+      "risk": "Un fond clair, à l'opposé de ton iPhone toujours en mode sombre.",
+      "case": "Belle discipline, mais claire et loin de tes univers.",
+      "kept": "Une grille visible qui structure chaque écran.",
+      "hero": "https://impeccable.style/worlds/cards/crouwel-grid-specimen-hero.webp"
+    },
+    {
+      "id": "challenger-factory",
+      "label": "La pochette Factory",
+      "verdict": "declined",
+      "lineage": "Les pochettes de disques de Peter Saville",
+      "thesis": "Du noir mat, un seul élément vivant, des codes couleur à la place des mots.",
+      "palette": [
+        "#0B0B0B",
+        "#F2F2F2",
+        "#E94F37",
+        "#3C91E6"
+      ],
+      "materials": [
+        "noir mat",
+        "tracé blanc au trait fin"
+      ],
+      "viewport": "Un seul tracé blanc sur noir pour toute la journée.",
+      "risk": "Trop codé pour un coup d'œil en marchant.",
+      "case": "Le code couleur remplace les mots, l'inverse de ce qu'il te faut.",
+      "kept": "Un seul élément allumé à la fois.",
+      "hero": "https://impeccable.style/worlds/cards/brand-identity-canon-saville-catalog-sleeve-hero.webp"
+    },
+    {
+      "id": "challenger-ikeda",
+      "label": "Le champ de données d'Ikeda",
+      "verdict": "declined",
+      "lineage": "Les installations datamatics de Ryoji Ikeda",
+      "thesis": "Codes-barres et chiffres mono en noir et blanc pur.",
+      "palette": [
+        "#000000",
+        "#FFFFFF"
+      ],
+      "materials": [
+        "barres au pixel",
+        "chiffres monospace"
+      ],
+      "viewport": "Ta journée en colonnes de chiffres.",
+      "risk": "Glisse vers le cliché hacker que tu veux éviter.",
+      "case": "Trop proche du cliché IA, aucune chaleur.",
+      "kept": "Les chiffres alignés en colonnes tabulaires.",
+      "hero": "https://impeccable.style/worlds/cards/ikeda-datamatics-hero.webp"
+    }
+  ],
+  "reroll": {
+    "registers": [
+      "safer",
+      "bolder"
+    ]
+  },
+  "buildPath": {
+    "value": "code",
+    "toggle": false
+  },
+  "canon": true,
+  "canonCard": {
+    "label": "Le standard des apps d'organisation",
+    "thesis": "Comme Calendrier et Rappels d'Apple : listes groupées, police système, bleu système, exécutées parfaitement.",
+    "palette": [
+      "#000000",
+      "#1C1C1E",
+      "#0A84FF",
+      "#FF453A"
+    ],
+    "materials": [
+      "listes groupées iOS",
+      "symboles système"
+    ],
+    "viewport": "Une liste « Aujourd'hui » à la manière des apps Apple.",
+    "risk": "Indiscernable d'une app de productivité, exactement ce que tu as dit vouloir éviter."
+  },
+  "steer": true
+}
