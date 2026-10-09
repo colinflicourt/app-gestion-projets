@@ -15,12 +15,22 @@ Remplace l'ancienne idée d'« application personnelle de gestion de projets » 
 - 2026-10-08 : récompenses conçues avec Colin (superpowers:brainstorming) : cartes à collectionner et album, bouton « J'ai fini la tâche », fonds des combats. Règles dans `CONTENU.md` § 6 et § 8 bis, visuels dans `VISUELS.md` § 4 bis et § 7, banque des 70 cartes dans `CARTES.md`
 - 2026-10-08 : maquette v28 validée par Colin, hébergement prêt (voir plus bas), **test serveur réussi** (voir « Constats du test serveur »)
 - 2026-10-08 : **étape 8a faite** : spec technique `SPEC.md` validée par Colin (socle commun et lot 1 en détail), puis plan 1 du lot 1 (`plans/2026-10-08-lot1-1-socle-serveur.md`). Le lot 1 est découpé en 3 plans successifs : socle serveur, données, app iPhone
+- 2026-10-09 : **lot 1, plan 1 (socle serveur) fait et en ligne** : base migrée, connexion, sessions, `/api/sante` (`{"ok":true,"version_app":"0.1.0","version_base":1,"base_ok":true}`). 62 tests au vert. Revue de code avant la mise en ligne : 3 constats corrigés (essais de connexion comptés avant la vérification, migration rejouable, dépréciations PHP tolérées). Vérifié en ligne : HTTPS forcé, en-têtes de sécurité, `serveur/` hors du web, API qui refuse sans session ou depuis une autre origine. Mot de passe choisi par Colin. Plan : `plans/2026-10-08-lot1-1-socle-serveur.md`
 
 ## Prochaine session
 
-1. **Exécuter le plan 1 du lot 1** (socle serveur) : `plans/2026-10-08-lot1-1-socle-serveur.md`, avec `SPEC.md` à côté. Choix de Colin le 2026-10-08 : **mode natif** (superpowers:executing-plans, Claude fait les tâches lui-même dans la session), **un commit à la fin de chaque tâche autorisé** (dépôt local de Jarvis Jr., rien vers GitHub). L'installation de MySQL 8.4 en local (tâche 3) est acceptée sur le principe : le rappeler à Colin en une ligne avant de lancer. Colin lancera lui-même `definir-mot-de-passe.sh` et `deploy-ovh.sh` à la tâche 10.
-2. Ensuite, écrire puis exécuter le plan 2 (données : Trello, Google, créneaux, rafraîchissement, routes) et le plan 3 (l'app iPhone).
+1. Écrire et exécuter le plan 2 du lot 1 (données : Trello, Google, créneaux, rafraîchissement, routes `donnees`, `agenda`, `taches/*`).
+2. Puis le plan 3 (l'app iPhone).
 3. Préparatifs de Colin restants (carte Trello) : compte cron-job.org avant le lot 2, redirection UTC et mots de passe d'application avant le lot 3.
+
+**À reprendre dans le plan 2** (constats mineurs de la revue du 2026-10-09, reportés) :
+- `ecriture_unique()` ne vérifie pas que la route gardée est celle de la requête ;
+- `routeur.php` : le cookie de prolongation de session est perdu si l'action lève ; `journal_erreur()` n'est pas protégé dans le `catch` ;
+- `deploy-ovh.sh` : envoie `www/` avant `serveur/` et `config.php`, et ne s'arrête pas en erreur si `/api/sante` répond mal ;
+- `outils/lib-env.php` : `env_definir()` réécrit le `.env` sur place au lieu d'écrire à côté puis renommer ;
+- `site/.htaccess` : les fichiers en point (`www/.ovhconfig`) sont lisibles, et l'API annonce `X-Powered-By: PHP/8.4`.
+
+**À savoir pour les tests** : une colonne JSON de MySQL range les clés d'un objet à sa façon. Tout ce qui est relu de `copies.contenu` ou `ecritures.resultat` se compare sans l'ordre des clés.
 
 ## Décisions
 
@@ -67,6 +77,12 @@ Diagnostic `outils/test-serveur/` (`diagnostic.php`, envoyé et retiré par Coli
 - `PRODUCT.md` : fiche produit pour le design (moments d'usage, contraintes, principes)
 - `VISUELS.md` : inventaire et origine de chaque image (icône, écran de lancement, badges, boss, fonds des combats, cartes)
 - `CARTES.md` : banque des 70 cartes à collectionner (titres, répliques de Junior, prompts, lots)
+- `serveur/` : l'API PHP (`lib/`, `routes/`, `migrations/`), hors du web, envoyée dans `jr.qyris.fr/serveur/`
+- `site/` : la partie publique (`api/index.php`, `.htaccess`, `robots.txt`, images), envoyée dans `jr.qyris.fr/www/`
+- `tests/` : `php tests/run.php`, toujours à travers le filtre des secrets (MySQL local lancé : `brew services run mysql@8.4`)
+- `outils/deploy-ovh.sh` et `outils/definir-mot-de-passe.sh` : mise en ligne et choix du mot de passe, lancés par Colin dans son terminal
+- `outils/apercu.php` : aperçu local, `php -S localhost:8787 -t site outils/apercu.php`
+- `outils/installer-mysql-local.sh` : MySQL 8.4 local et ses deux bases (déjà fait le 2026-10-08)
 - `outils/ovh-sftp.sh` : commandes lftp en SFTP sur l'OVH perso (à lancer à travers le filtre des secrets)
 - `outils/test-serveur/` : diagnostic de l'hébergement, `envoyer.sh` et `nettoyer.sh` (lancés par Colin)
 - `outils/visuels/` : source de l'icône, `rendre.py` (icône et écran de lancement), `detourer_boss.py` (les 8 boss en WebP transparent) et `encoder_cartes.py` (cartes, fonds et `site/data/cartes.json`), avec Pillow (numpy en plus pour le détourage)
