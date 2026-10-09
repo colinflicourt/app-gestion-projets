@@ -54,17 +54,21 @@ function dossier_data(): string
 
 // Une ligne par erreur : heure, route, type, message technique. Jamais de contenu personnel :
 // un message PDO peut citer des valeurs, on n'en garde que le code SQLSTATE.
+// Le journal ne lève jamais : un dossier plein ou sans droits ne doit pas empêcher la réponse.
 function journal_erreur(string $route, Throwable $e): void
 {
-    $fichier = dossier_data() . '/erreurs.log';
-    if (is_file($fichier) && filesize($fichier) > JR_JOURNAL_MAX) {
-        rename($fichier, $fichier . '.1');
+    try {
+        $fichier = dossier_data() . '/erreurs.log';
+        if (is_file($fichier) && filesize($fichier) > JR_JOURNAL_MAX) {
+            rename($fichier, $fichier . '.1');
+        }
+        $route = preg_replace('/[^a-z0-9\/._-]/i', '?', substr($route, 0, 60));
+        $message = $e instanceof PDOException ? 'SQLSTATE ' . $e->getCode() : $e->getMessage();
+        $message = str_replace(["\r", "\n"], ' ', mb_substr($message, 0, 300));
+        $ligne = sprintf("%s | %s | %s | %s | %s:%d\n", utc(maintenant()), $route, get_class($e), $message, basename($e->getFile()), $e->getLine());
+        file_put_contents($fichier, $ligne, FILE_APPEND | LOCK_EX);
+    } catch (Throwable) {
     }
-    $route = preg_replace('/[^a-z0-9\/._-]/i', '?', substr($route, 0, 60));
-    $message = $e instanceof PDOException ? 'SQLSTATE ' . $e->getCode() : $e->getMessage();
-    $message = str_replace(["\r", "\n"], ' ', mb_substr($message, 0, 300));
-    $ligne = sprintf("%s | %s | %s | %s | %s:%d\n", utc(maintenant()), $route, get_class($e), $message, basename($e->getFile()), $e->getLine());
-    file_put_contents($fichier, $ligne, FILE_APPEND | LOCK_EX);
 }
 
 // Gestionnaire d'erreurs PHP de l'API : un avertissement devient une exception (réponse 500 et journal).

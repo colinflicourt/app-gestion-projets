@@ -84,3 +84,31 @@ test('routeur : avec une session valide, la route protégée répond, et la sess
     egal(JR_COOKIE_SESSION, $r['cookies'][0]['nom']);
     egal($cookie['valeur'], $r['cookies'][0]['valeur']);
 });
+
+test("routeur : si l'action échoue, la session prolongée garde son cookie", function () {
+    base_de_test();
+    fixer_heure('2026-10-08 10:00:00');
+    $cookie = session_creer('Tests');
+    fixer_heure('2026-10-09 11:00:00');
+    $GLOBALS['JR_ROUTES_SUPPLEMENTAIRES'] = ['GET essai-panne-protegee' => ['publique' => false, 'action' => function (array $r, ?array $s): array {
+        throw new RuntimeException('panne simulée');
+    }]];
+    $r = traiter(requete(['chemin' => 'essai-panne-protegee', 'cookies' => [JR_COOKIE_SESSION => $cookie['valeur']]]));
+    egal(500, $r['statut']);
+    egal(JR_COOKIE_SESSION, $r['cookies'][0]['nom'] ?? null);
+    egal($cookie['valeur'], $r['cookies'][0]['valeur'] ?? null);
+});
+
+test("routeur : un journal impossible à écrire n'empêche pas la réponse 500 en JSON", function () {
+    base_de_test();
+    routes_d_essai();
+    $GLOBALS['JR_DOSSIER_DATA'] = fichier_temporaire('un fichier, pas un dossier');
+    set_error_handler('erreur_php');
+    try {
+        $r = traiter(requete(['chemin' => 'essai-panne']));
+    } finally {
+        restore_error_handler();
+    }
+    egal(500, $r['statut']);
+    egal('erreur_serveur', corps($r)['erreur']['code']);
+});

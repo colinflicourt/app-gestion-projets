@@ -25,23 +25,32 @@ php "$ICI/generer-config.php" --mode=production --dossier="$TMP" 2>&1 | "$FILTRE
 
 EXCLUS_SITE="--exclude-glob .ovhconfig --exclude-glob .DS_Store"
 EXCLUS_SERVEUR="--exclude-glob config.php --exclude-glob trello-ids.json --exclude-glob data/ --exclude-glob .DS_Store"
-miroirs() {  # $1 : --dry-run, ou rien
-    echo "mirror --reverse --delete --verbose $1 $EXCLUS_SITE '$PROJET/site/' 'jr.qyris.fr/www/';
-mirror --reverse --delete --verbose $1 $EXCLUS_SERVEUR '$PROJET/serveur/' 'jr.qyris.fr/serveur/';"
+miroir_serveur() {  # $1 : --dry-run, ou rien
+    echo "mirror --reverse --delete --verbose $1 $EXCLUS_SERVEUR '$PROJET/serveur/' 'jr.qyris.fr/serveur/';"
+}
+miroir_site() {  # $1 : --dry-run, ou rien
+    echo "mirror --reverse --delete --verbose $1 $EXCLUS_SITE '$PROJET/site/' 'jr.qyris.fr/www/';"
 }
 
 echo "3/6 Simulation (rien n'est modifié)"
-"$SFTP" "$(miroirs --dry-run)" 2>&1 | "$FILTRE"
+"$SFTP" "$(miroir_serveur --dry-run)
+$(miroir_site --dry-run)" 2>&1 | "$FILTRE"
 echo
 read -r -p "4/6 Envoyer ? (o/N) " REPONSE
 [ "$REPONSE" = "o" ] || { echo "Rien n'a été envoyé."; exit 0; }
 
-echo "5/6 Envoi"
-"$SFTP" "$(miroirs '')
+echo "5/6 Envoi (le serveur et sa configuration d'abord, le site ensuite)"
+"$SFTP" "$(miroir_serveur '')
 put '$TMP/config.php' -o 'jr.qyris.fr/serveur/config.php';
 chmod 600 jr.qyris.fr/serveur/config.php;
-put '$TMP/trello-ids.json' -o 'jr.qyris.fr/serveur/trello-ids.json';" 2>&1 | "$FILTRE"
+put '$TMP/trello-ids.json' -o 'jr.qyris.fr/serveur/trello-ids.json';
+$(miroir_site '')" 2>&1 | "$FILTRE"
 
 echo "6/6 Vérification"
-curl -sS --max-time 20 https://jr.qyris.fr/api/sante | "$FILTRE"
-echo
+SANTE="$(curl -sS --max-time 20 https://jr.qyris.fr/api/sante 2>&1 | "$FILTRE" || true)"
+echo "$SANTE"
+if ! printf '%s' "$SANTE" | grep -q '"base_ok":true'; then
+    echo "Échec : /api/sante ne répond pas « base_ok »: true. Le site est peut-être cassé, préviens Claude."
+    exit 1
+fi
+echo "En ligne."

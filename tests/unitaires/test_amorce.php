@@ -56,3 +56,14 @@ test('erreurs PHP : un avertissement devient une exception, mais pas une dépré
         restore_error_handler();
     }
 });
+
+test("amorce : un journal impossible à écrire ne lève rien, même quand les avertissements deviennent des exceptions", function () {
+    $GLOBALS['JR_DOSSIER_DATA'] = fichier_temporaire('un fichier, pas un dossier');
+    set_error_handler('erreur_php');
+    try {
+        journal_erreur('essai', new RuntimeException('panne'));
+    } finally {
+        restore_error_handler();
+    }
+    vrai(true, 'aucune exception attendue');
+});

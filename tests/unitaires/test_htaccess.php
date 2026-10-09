@@ -33,3 +33,10 @@ test('htaccess : manifeste typé, HTTPS forcé, API réécrite, pas de liste de 
         vrai(str_contains($htaccess, $attendu), "manque dans .htaccess : $attendu");
     }
 });
+
+test('htaccess : les fichiers en point (.ovhconfig…) sont refusés et X-Powered-By est retiré', function () {
+    $htaccess = lire_htaccess();
+    vrai(str_contains($htaccess, 'RewriteRule (^|/)\.(?!well-known/) - [R=404,L]'), 'règle des fichiers en point attendue');
+    vrai(str_contains($htaccess, 'Header always unset X-Powered-By'), 'retrait de X-Powered-By attendu');
+    vrai(strpos($htaccess, 'RewriteRule (^|/)\.') < strpos($htaccess, 'RewriteRule ^api/'), 'la règle des fichiers en point passe avant l\'API');
+});

@@ -69,3 +69,14 @@ test('config : ecrire_config produit un fichier PHP relisible, en droits 600', f
     egal($config, require $f);
     egal('0600', substr(sprintf('%o', fileperms($f)), -4));
 });
+
+test('env : env_definir écrit à côté puis renomme, sans laisser de fichier temporaire, en 600', function () {
+    $fichier = fichier_temporaire("A='1'\n");
+    $inode = fileinode($fichier);
+    env_definir($fichier, 'B', '2');
+    clearstatcache();
+    vrai(fileinode($fichier) !== $inode, 'le fichier doit être remplacé par renommage');
+    egal(['A' => '1', 'B' => '2'], lire_env($fichier));
+    egal('0600', substr(sprintf('%o', fileperms($fichier)), -4));
+    egal([], glob($fichier . '.tmp-*'));
+});

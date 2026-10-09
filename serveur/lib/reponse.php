@@ -53,6 +53,7 @@ function reponse_redirection(string $url, array $cookies = []): array
 
 function emettre(array $reponse): void
 {
+    header_remove('X-Powered-By');
     http_response_code($reponse['statut']);
     foreach ($reponse['entetes'] as $nom => $valeur) {
         header("$nom: $valeur");

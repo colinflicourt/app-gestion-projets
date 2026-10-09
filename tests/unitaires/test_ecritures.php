@@ -51,3 +51,16 @@ test('écritures : au-delà de 30 jours, les anciennes écritures sont effacées
     ecriture_unique(UUID_TEST_2, 'taches/cocher', fn(): array => []);
     egal(null, ecriture_trouver(UUID_TEST));
 });
+
+test("écritures : un identifiant déjà utilisé par une autre route est refusé (409), sans exécuter l'action", function () {
+    base_de_test();
+    ecriture_unique(UUID_TEST, 'taches/cocher', fn(): array => ['ok' => 1]);
+    $appels = 0;
+    $e = leve(ErreurApi::class, fn() => ecriture_unique(UUID_TEST, 'taches/terminer', function () use (&$appels): array {
+        $appels++;
+        return [];
+    }));
+    egal(409, $e->statut);
+    egal('id_client_reutilise', $e->codeErreur);
+    egal(0, $appels);
+});

@@ -25,6 +25,10 @@ function ecriture_unique(string $id_client, string $route, callable $action): ar
     try {
         $deja = ecriture_trouver($id_client);
         if ($deja !== null) {
+            // Un identifiant ne sert qu'à une écriture : le même pour une autre route est une erreur de l'app
+            if ($deja['route'] !== $route) {
+                throw new ErreurApi('id_client_reutilise', 409, 'Requête refusée.');
+            }
             return $deja['resultat'];
         }
         $resultat = $action();

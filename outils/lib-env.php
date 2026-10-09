@@ -51,13 +51,15 @@ function env_definir(string $fichier, string $cle, string $valeur): void
     if (!$remplacee) {
         $lignes[] = $nouvelle;
     }
+    // Écrit à côté puis renomme : un fichier de secrets n'est jamais à moitié écrit
+    $temporaire = $fichier . '.tmp-' . getmypid();
     $ancien_umask = umask(077);
-    $ok = file_put_contents($fichier, implode("\n", $lignes) . "\n", LOCK_EX);
+    $ok = file_put_contents($temporaire, implode("\n", $lignes) . "\n", LOCK_EX);
     umask($ancien_umask);
-    if ($ok === false) {
+    if ($ok === false || !chmod($temporaire, 0600) || !rename($temporaire, $fichier)) {
+        @unlink($temporaire);
         throw new RuntimeException('Écriture impossible : ' . basename($fichier));
     }
-    chmod($fichier, 0600);
 }
 
 // $app : secrets/jarvis-jr.env ; $trello : secrets/trello.env ; $local : secrets/jarvis-jr-local.env (dev).

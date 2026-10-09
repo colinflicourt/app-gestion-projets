@@ -23,6 +23,7 @@ function routes(): array
 
 function traiter(array $requete): array
 {
+    $prolongation = null;
     try {
         $route = routes()[$requete['methode'] . ' ' . $requete['chemin']] ?? null;
         if ($route === null) {
@@ -37,16 +38,17 @@ function traiter(array $requete): array
         // Prolongée avant l'action : une déconnexion pose son cookie effacé en dernier
         $prolongation = $session !== null ? session_prolonger_si_besoin($session) : null;
         $reponse = ($route['action'])($requete, $session);
-        if ($prolongation !== null) {
-            array_unshift($reponse['cookies'], $prolongation);
-        }
-        return $reponse;
     } catch (ErreurApi $e) {
-        return reponse_erreur($e->codeErreur, $e->getMessage(), $e->statut);
+        $reponse = reponse_erreur($e->codeErreur, $e->getMessage(), $e->statut);
     } catch (Throwable $e) {
-        journal_erreur($requete['chemin'], $e);
-        return reponse_erreur('erreur_serveur', 'Erreur du serveur. Réessaie dans un instant.', 500);
+        journal_erreur((string) $requete['chemin'], $e);
+        $reponse = reponse_erreur('erreur_serveur', 'Erreur du serveur. Réessaie dans un instant.', 500);
     }
+    // Une session prolongée le reste, même si l'action a échoué
+    if ($prolongation !== null) {
+        array_unshift($reponse['cookies'], $prolongation);
+    }
+    return $reponse;
 }
 
 // Écritures : POST en JSON, depuis l'origine de l'app, corps objet de 64 Ko au plus (vide accepté).
