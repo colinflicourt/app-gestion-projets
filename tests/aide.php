@@ -195,3 +195,40 @@ function routes_d_essai(): void
         }],
     ];
 }
+
+function requete_http(string $methode, string $url, array $entetes = [], ?string $corps = null): array
+{
+    $recus = [];
+    $c = curl_init($url);
+    curl_setopt_array($c, [
+        CURLOPT_CUSTOMREQUEST => $methode,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => $entetes,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_HEADERFUNCTION => function ($c, string $ligne) use (&$recus): int {
+            if (str_contains($ligne, ':')) {
+                [$nom, $valeur] = explode(':', $ligne, 2);
+                $recus[strtolower(trim($nom))][] = trim($valeur);
+            }
+            return strlen($ligne);
+        },
+    ]);
+    if ($corps !== null) {
+        curl_setopt($c, CURLOPT_POSTFIELDS, $corps);
+    }
+    $reponse = curl_exec($c);
+    return ['statut' => (int) curl_getinfo($c, CURLINFO_RESPONSE_CODE), 'entetes' => $recus, 'corps' => is_string($reponse) ? $reponse : ''];
+}
+
+function attendre_port(int $port): void
+{
+    for ($i = 0; $i < 100; $i++) {
+        $prise = @fsockopen('127.0.0.1', $port, $code, $message, 0.1);
+        if ($prise !== false) {
+            fclose($prise);
+            return;
+        }
+        usleep(50000);
+    }
+    throw new EchecTest("Le serveur d'aperçu ne répond pas sur le port $port");
+}
