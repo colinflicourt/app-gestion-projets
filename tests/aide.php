@@ -165,3 +165,33 @@ function nouvelle_connexion_test(): PDO
     $b = config('base');
     return new PDO("mysql:host={$b['hote']};dbname={$b['nom']};charset=utf8mb4", $b['utilisateur'], $b['mot_de_passe'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 }
+
+function requete(array $surcharges = []): array
+{
+    return array_replace([
+        'methode' => 'GET',
+        'chemin' => 'sante',
+        'requete' => [],
+        'corps_brut' => '',
+        'entetes' => ['origin' => 'http://localhost:8787', 'content-type' => 'application/json'],
+        'cookies' => [],
+        'ip' => '203.0.113.7',
+        'appareil' => 'Tests',
+    ], $surcharges);
+}
+
+function corps(array $reponse): array
+{
+    return json_decode($reponse['corps'], true, 512, JSON_THROW_ON_ERROR);
+}
+
+function routes_d_essai(): void
+{
+    $GLOBALS['JR_ROUTES_SUPPLEMENTAIRES'] = [
+        'GET essai-protegee' => ['publique' => false, 'action' => fn(array $r, ?array $s): array => reponse_json(['session' => $s['id']])],
+        'POST essai-echo' => ['publique' => true, 'action' => fn(array $r, ?array $s): array => reponse_json(['corps' => $r['corps']])],
+        'GET essai-panne' => ['publique' => true, 'action' => function (array $r, ?array $s): array {
+            throw new RuntimeException('panne simulée');
+        }],
+    ];
+}
