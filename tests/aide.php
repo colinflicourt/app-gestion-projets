@@ -137,3 +137,31 @@ function fixer_heure(string $utc): void
 {
     $GLOBALS['JR_MAINTENANT'] = new DateTimeImmutable($utc, new DateTimeZone('UTC'));
 }
+
+// Repart d'une base de test vide et migrée. Refuse toute base dont le nom ne finit pas par _test.
+function base_de_test(): PDO
+{
+    if (env_local() === null) {
+        throw new EchecTest('Base locale absente : lance outils/installer-mysql-local.sh');
+    }
+    if (!str_ends_with((string) config('base')['nom'], '_test')) {
+        throw new EchecTest('Refus : la base de test doit finir par _test');
+    }
+    db_oublier();
+    try {
+        $pdo = db();
+    } catch (PDOException $e) {
+        throw new EchecTest('MySQL local injoignable : brew services run mysql@8.4');
+    }
+    foreach ($pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN) as $table) {
+        $pdo->exec("DROP TABLE `$table`");
+    }
+    migrer($pdo);
+    return $pdo;
+}
+
+function nouvelle_connexion_test(): PDO
+{
+    $b = config('base');
+    return new PDO("mysql:host={$b['hote']};dbname={$b['nom']};charset=utf8mb4", $b['utilisateur'], $b['mot_de_passe'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+}
