@@ -26,6 +26,19 @@ test('base : une base vide est en version 0', function () {
     egal(0, version_base($pdo));
 });
 
+test('base : une migration interrompue (tables en partie créées, version non notée) se relance', function () {
+    $pdo = base_de_test();
+    foreach (['actions', 'copies', 'ecritures', 'jetons'] as $table) {
+        $pdo->exec("DROP TABLE `$table`");
+    }
+    $pdo->exec("DELETE FROM reglages WHERE cle = 'version_base'");
+    egal(0, version_base($pdo));
+    egal(1, migrer($pdo));
+    $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
+    sort($tables);
+    egal(JR_TABLES_LOT1, $tables);
+});
+
 test('base : la session MySQL est en UTC et en mode strict', function () {
     $pdo = base_de_test();
     egal('+00:00', $pdo->query('SELECT @@session.time_zone')->fetchColumn());

@@ -44,3 +44,15 @@ test('journal : au-delà de 1 Mo, le journal passe en .1 et repart de zéro', fu
     vrai(is_file($fichier . '.1'), 'erreurs.log.1 attendu');
     vrai(filesize($fichier) < 1000, 'nouveau journal attendu');
 });
+
+test('erreurs PHP : un avertissement devient une exception, mais pas une dépréciation ni une erreur masquée par @', function () {
+    leve(ErrorException::class, fn() => erreur_php(E_WARNING, 'avertissement', __FILE__, __LINE__));
+    egal(false, erreur_php(E_DEPRECATED, 'dépréciation', __FILE__, __LINE__));
+    egal(false, erreur_php(E_USER_DEPRECATED, 'dépréciation', __FILE__, __LINE__));
+    set_error_handler('erreur_php');
+    try {
+        egal(false, @file_get_contents(dossier_data() . '/absent.txt'));
+    } finally {
+        restore_error_handler();
+    }
+});

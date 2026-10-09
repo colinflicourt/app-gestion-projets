@@ -16,11 +16,21 @@ function connexion_echecs_recents(string $ip): int
     return (int) $requete->fetchColumn();
 }
 
-function connexion_noter_echec(string $ip): void
+// L'essai est noté avant la vérification du mot de passe : des requêtes envoyées en même temps se
+// comptent les unes les autres, et pas plus de 10 mots de passe ne sont testés. Renvoie son id.
+function connexion_noter_essai(string $ip): int
 {
     $maintenant = maintenant();
     db()->prepare('INSERT INTO essais_connexion (ip, quand) VALUES (?, ?)')->execute([mb_substr($ip, 0, 45), utc($maintenant)]);
+    $id = (int) db()->lastInsertId();
     db()->prepare('DELETE FROM essais_connexion WHERE quand < ?')->execute([utc($maintenant->modify('-1 day'))]);
+    return $id;
+}
+
+// Un essai réussi, ou refusé sans vérification, ne compte pas comme un échec.
+function connexion_oublier_essai(int $id): void
+{
+    db()->prepare('DELETE FROM essais_connexion WHERE id = ?')->execute([$id]);
 }
 
 function connexion_mot_de_passe_valide(string $mot_de_passe): bool

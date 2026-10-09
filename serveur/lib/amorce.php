@@ -66,3 +66,14 @@ function journal_erreur(string $route, Throwable $e): void
     $ligne = sprintf("%s | %s | %s | %s | %s:%d\n", utc(maintenant()), $route, get_class($e), $message, basename($e->getFile()), $e->getLine());
     file_put_contents($fichier, $ligne, FILE_APPEND | LOCK_EX);
 }
+
+// Gestionnaire d'erreurs PHP de l'API : un avertissement devient une exception (réponse 500 et journal).
+// Une dépréciation, ou une erreur masquée par @, laisse la requête aboutir : une mise à jour de PHP
+// chez OVH ne doit pas casser l'app.
+function erreur_php(int $niveau, string $message, string $fichier, int $ligne): bool
+{
+    if (!(error_reporting() & $niveau) || ($niveau & (E_DEPRECATED | E_USER_DEPRECATED))) {
+        return false;
+    }
+    throw new ErrorException($message, 0, $niveau, $fichier, $ligne);
+}

@@ -6,9 +6,7 @@ declare(strict_types=1);
 ini_set('display_errors', '0');
 require __DIR__ . '/../../serveur/lib/routeur.php';
 
-set_error_handler(function (int $niveau, string $message, string $fichier, int $ligne): bool {
-    throw new ErrorException($message, 0, $niveau, $fichier, $ligne);
-});
+set_error_handler('erreur_php');
 
 $chemin = (string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 emettre(traiter([

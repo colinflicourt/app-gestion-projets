@@ -3,22 +3,8 @@ declare(strict_types=1);
 
 test("HTTP : l'aperçu local sert l'API et les fichiers avec les bons en-têtes, connexion et déconnexion comprises", function () {
     base_de_test();
-    $port = 18000 + random_int(0, 999);
-    $origine = "http://127.0.0.1:$port";
-    $config = fichier_temporaire('<?php return ' . var_export(config_de_test(['origine' => $origine]), true) . ';');
-    chmod($config, 0600);
-    $racine = dirname(__DIR__, 2);
-    $env = getenv();
-    $env['JR_CONFIG_FICHIER'] = $config;
-    $serveur = proc_open(
-        [PHP_BINARY, '-S', "127.0.0.1:$port", '-t', "$racine/site", "$racine/outils/apercu.php"],
-        [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']],
-        $tubes,
-        $racine,
-        $env
-    );
+    [$origine, $serveur] = lancer_apercu();
     try {
-        attendre_port($port);
         $json = ['Origin: ' . $origine, 'Content-Type: application/json'];
 
         $sante = requete_http('GET', "$origine/api/sante");
@@ -46,7 +32,42 @@ test("HTTP : l'aperçu local sert l'API et les fichiers avec les bons en-têtes,
         $jeton = explode(';', substr($cookie, strlen('__Host-jr=')))[0];
         egal(200, requete_http('POST', "$origine/api/deconnexion", array_merge($json, ['Cookie: __Host-jr=' . $jeton]), '')['statut']);
     } finally {
-        proc_terminate($serveur);
-        proc_close($serveur);
+        arreter_apercu($serveur);
+    }
+});
+
+test('HTTP : 15 essais de connexion envoyés en même temps ne testent pas plus de 10 mots de passe', function () {
+    $pdo = base_de_test();
+    // Coût bcrypt réaliste : chaque vérification dure assez longtemps pour que les requêtes se chevauchent
+    $empreinte = password_hash(MOT_DE_PASSE_TEST, PASSWORD_DEFAULT, ['cost' => 11]);
+    [$origine, $serveur] = lancer_apercu(['mot_de_passe_empreinte' => $empreinte], 8);
+    try {
+        $multi = curl_multi_init();
+        $poignees = [];
+        for ($i = 0; $i < 15; $i++) {
+            $c = curl_init("$origine/api/connexion");
+            curl_setopt_array($c, [
+                CURLOPT_POST => true,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_HTTPHEADER => ['Origin: ' . $origine, 'Content-Type: application/json'],
+                CURLOPT_POSTFIELDS => '{"mot_de_passe":"mauvais"}',
+            ]);
+            curl_multi_add_handle($multi, $c);
+            $poignees[] = $c;
+        }
+        do {
+            curl_multi_exec($multi, $en_cours);
+            curl_multi_select($multi);
+        } while ($en_cours > 0);
+        $statuts = array_count_values(array_map(fn($c): int => (int) curl_getinfo($c, CURLINFO_RESPONSE_CODE), $poignees));
+        egal(15, ($statuts[401] ?? 0) + ($statuts[429] ?? 0), 'réponses 401 ou 429 attendues : ' . json_encode($statuts));
+        // Le 10e mot de passe faux répond déjà 429 : au plus 9 « Mot de passe incorrect »
+        vrai(($statuts[401] ?? 0) <= 9, 'trop de « Mot de passe incorrect » : ' . json_encode($statuts));
+        // Chaque mot de passe testé et faux laisse une ligne dans essais_connexion
+        $testes = (int) $pdo->query('SELECT COUNT(*) FROM essais_connexion')->fetchColumn();
+        vrai($testes <= 10, "$testes mots de passe testés, 10 au plus attendus");
+    } finally {
+        arreter_apercu($serveur);
     }
 });

@@ -232,3 +232,34 @@ function attendre_port(int $port): void
     }
     throw new EchecTest("Le serveur d'aperçu ne répond pas sur le port $port");
 }
+
+// Lance l'aperçu local (php -S) avec une config de test. Plusieurs processus PHP traitent alors
+// des requêtes en même temps, comme chez OVH. Renvoie [origine, processus].
+function lancer_apercu(array $surcharges = [], int $processus_php = 1): array
+{
+    $port = 18000 + random_int(0, 999);
+    $origine = "http://127.0.0.1:$port";
+    $config = fichier_temporaire('<?php return ' . var_export(config_de_test(['origine' => $origine] + $surcharges), true) . ';');
+    chmod($config, 0600);
+    $racine = dirname(__DIR__);
+    $env = getenv();
+    $env['JR_CONFIG_FICHIER'] = $config;
+    $env['PHP_CLI_SERVER_WORKERS'] = (string) $processus_php;
+    $serveur = proc_open(
+        [PHP_BINARY, '-S', "127.0.0.1:$port", '-t', "$racine/site", "$racine/outils/apercu.php"],
+        [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']],
+        $tubes,
+        $racine,
+        $env
+    );
+    attendre_port($port);
+    return [$origine, $serveur];
+}
+
+// Arrête aussi les processus fils de php -S, qui sinon resteraient en écoute sur le port.
+function arreter_apercu($serveur): void
+{
+    exec('pkill -TERM -P ' . (int) proc_get_status($serveur)['pid']);
+    proc_terminate($serveur);
+    proc_close($serveur);
+}
