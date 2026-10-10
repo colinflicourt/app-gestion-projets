@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Tests d'écran de Jarvis Jr. : node tests/e2e/lancer.mjs (Chromium déjà en cache pour Playwright 1.63)",
+  "devDependencies": {
+    "playwright-core": "1.63.0"
+  }
+}
