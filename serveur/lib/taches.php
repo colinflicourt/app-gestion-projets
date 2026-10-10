@@ -246,7 +246,48 @@ function echeance_lire(mixed $texte): ?DateTimeImmutable
     return strlen($texte) === 10 ? $moment->setTime(18, 0) : $moment;
 }
 
-function tache_ajouter(mixed $domaine, mixed $titre, mixed $urgent, mixed $echeance): array
+const JR_TENTATIVES_JOURS = 1;
+
+// Une capture dont l'envoi à Trello a commencé (revue du plan 2) : si sa réponse se perd, le renvoi
+// cherche la carte avant d'en créer une seconde. ecriture_unique() tient déjà le verrou de l'id_client.
+function tentative_debut(string $id_client): ?DateTimeImmutable
+{
+    $requete = db()->prepare('SELECT debut FROM tentatives WHERE id_client = ?');
+    $requete->execute([$id_client]);
+    $debut = $requete->fetchColumn();
+    return $debut === false ? null : depuis_utc((string) $debut);
+}
+
+function tentative_noter(string $id_client): void
+{
+    $maintenant = maintenant();
+    db()->prepare('INSERT INTO tentatives (id_client, debut) VALUES (?, ?)')->execute([$id_client, utc($maintenant)]);
+    db()->prepare('DELETE FROM tentatives WHERE debut < ? LIMIT 50')
+        ->execute([utc($maintenant->modify('-' . JR_TENTATIVES_JOURS . ' days'))]);
+}
+
+function tentative_oublier(string $id_client): void
+{
+    db()->prepare('DELETE FROM tentatives WHERE id_client = ?')->execute([$id_client]);
+}
+
+// La carte de ce titre créée depuis $debut (une minute de marge) dans « À faire », ou null.
+// Les 8 premiers caractères d'un identifiant Trello donnent l'heure de création, en secondes.
+function trello_carte_deja_creee(string $domaine, string $titre, DateTimeImmutable $debut): ?array
+{
+    $cartes = trello_appel('GET', '/lists/' . trello_id_colonne($domaine, 'a_faire') . '/cards', [
+        'fields' => 'name,desc,idBoard,idList,idLabels,labels,pos,due,dueComplete,closed,shortUrl,dateLastActivity',
+    ]);
+    foreach (is_array($cartes) ? $cartes : [] as $carte) {
+        if (is_array($carte) && ($carte['name'] ?? null) === $titre && preg_match(JR_REGEX_ID_TRELLO, (string) ($carte['id'] ?? ''))
+            && hexdec(substr($carte['id'], 0, 8)) >= $debut->getTimestamp() - 60) {
+            return $carte;
+        }
+    }
+    return null;
+}
+
+function tache_ajouter(mixed $domaine, mixed $titre, mixed $urgent, mixed $echeance, ?string $id_client = null): array
 {
     if (!in_array($domaine, JR_DOMAINES, true) || !is_string($titre) || ($urgent !== null && !is_bool($urgent))) {
         throw new ErreurApi('requete_invalide', 400, 'Requête illisible.');
@@ -264,8 +305,16 @@ function tache_ajouter(mixed $domaine, mixed $titre, mixed $urgent, mixed $echea
     if ($quand !== null) {
         $corps['due'] = $quand->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i:s.v\Z');
     }
-    $carte = sous_verrou_trello(function () use ($domaine, $titre, $urgent, $quand, $corps): array {
-        $cree = trello_ecrire('POST', '/cards', $corps);
+    $carte = sous_verrou_trello(function () use ($domaine, $titre, $urgent, $quand, $corps, $id_client): array {
+        $suivie = $id_client !== null && config('trello')['ecritures'] === 'reelles';
+        $debut = $suivie ? tentative_debut($id_client) : null;
+        $cree = $debut !== null ? trello_carte_deja_creee($domaine, $titre, $debut) : null;
+        if ($cree === null) {
+            if ($suivie && $debut === null) {
+                tentative_noter($id_client);
+            }
+            $cree = trello_ecrire('POST', '/cards', $corps);
+        }
         if (is_array($cree)) {
             $carte = trello_normaliser_carte($domaine, 'a_faire', $cree, []);
         } else {
@@ -288,6 +337,9 @@ function tache_ajouter(mixed $domaine, mixed $titre, mixed $urgent, mixed $echea
         }
         copie_modifier('trello', fn(array $contenu): array => ['cartes' => trier_cartes([...$contenu['cartes'], $carte])] + $contenu);
         action_noter('carte_ajoutee', $domaine, $carte['id'], null, maintenant(), 'app', 'exacte', ['urgent' => $urgent, 'echeance' => $carte['echeance']]);
+        if ($suivie) {
+            tentative_oublier($id_client);
+        }
         return $carte;
     });
     return ['carte' => $carte];

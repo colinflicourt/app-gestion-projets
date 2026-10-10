@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 const POST_CARTE = 'POST https://api.trello.com/1/cards';
+const LISTE_A_FAIRE = 'GET https://api.trello.com/1/lists/';
 
 function ajouter(int $id_client, array $champs): array
 {
@@ -101,4 +102,49 @@ test('ajouter : en écritures simulées, la carte n\'existe que dans la copie, a
     vrai((bool) preg_match(JR_REGEX_ID_TRELLO, $carte['id']), 'identifiant au format Trello attendu');
     egal([2000.0, true, 'a_faire'], [(float) $carte['position'], $carte['urgent'], $carte['colonne']]);
     egal([$carte['id'], id_test('carte', 1)], array_column(copie_lire('trello')['contenu']['cartes'], 'id'));
+});
+
+test("ajouter : réponse de Trello perdue (délai dépassé), le renvoi retrouve la carte créée au lieu d'en créer une seconde", function () {
+    base_de_test();
+    fixer_heure('2026-10-10 08:00:00');
+    copie_trello([]);
+    faux_http([POST_CARTE => new ErreurReseau('délai dépassé')]);
+    egal(502, ajouter(1, ['domaine' => 'etudes', 'titre' => 'Réviser le chapitre 3'])['statut']);
+    fixer_heure('2026-10-10 08:00:30');
+    faux_http([LISTE_A_FAIRE => ['json' => [carte_trello('etudes', 'À faire', 5, ['name' => 'Réviser le chapitre 3'])]]]);
+    $r = ajouter(1, ['domaine' => 'etudes', 'titre' => 'Réviser le chapitre 3']);
+    egal(200, $r['statut']);
+    vrai(str_starts_with(appels_http()[0], LISTE_A_FAIRE . fabrique_trello_ids()['tableaux']['etudes']['colonnes']['À faire'] . '/cards'), 'la liste « À faire » des Études est lue');
+    egal([], array_values(array_filter(appels_http(), fn(string $a): bool => str_starts_with($a, 'POST '))));
+    egal(id_test('carte', 5), corps($r)['carte']['id']);
+    egal([id_test('carte', 5)], array_column(copie_lire('trello')['contenu']['cartes'], 'id'));
+    egal(['carte_ajoutee'], db()->query('SELECT type FROM actions')->fetchAll(PDO::FETCH_COLUMN));
+    egal(0, (int) db()->query('SELECT COUNT(*) FROM tentatives')->fetchColumn());
+});
+
+test("ajouter : au renvoi, sans carte de ce titre créée depuis la tentative (même titre mais ancienne, ou autre titre), la carte est créée", function () {
+    base_de_test();
+    fixer_heure('2026-10-10 08:00:00');
+    copie_trello([]);
+    faux_http([POST_CARTE => new ErreurReseau('délai dépassé')]);
+    ajouter(1, ['domaine' => 'perso', 'titre' => 'Dentiste']);
+    // Les 8 premiers caractères de l'identifiant : créée en 2020, ce n'est pas celle de la tentative
+    $ancienne = carte_trello('perso', 'À faire', 6, ['id' => '5f0000000000000000000006', 'name' => 'Dentiste']);
+    faux_http([
+        LISTE_A_FAIRE => ['json' => [$ancienne, carte_trello('perso', 'À faire', 7, ['name' => 'Autre chose'])]],
+        POST_CARTE => ['json' => carte_trello('perso', 'À faire', 8, ['name' => 'Dentiste'])],
+    ]);
+    $r = ajouter(1, ['domaine' => 'perso', 'titre' => 'Dentiste']);
+    egal(200, $r['statut']);
+    egal(id_test('carte', 8), corps($r)['carte']['id']);
+    egal(1, count(array_filter(appels_http(), fn(string $a): bool => str_starts_with($a, 'POST '))));
+});
+
+test('ajouter : en écritures simulées (dev), ni tentative ni lecture de la liste', function () {
+    base_de_test();
+    $GLOBALS['JR_CONFIG'] = config_de_test(['trello' => ['ecritures' => 'simulees']]);
+    copie_trello([]);
+    faux_http([]);
+    egal(200, ajouter(1, ['domaine' => 'asso', 'titre' => 'Essai'])['statut']);
+    egal(0, (int) db()->query('SELECT COUNT(*) FROM tentatives')->fetchColumn());
 });
