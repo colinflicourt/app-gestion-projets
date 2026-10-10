@@ -16,19 +16,25 @@ Remplace l'ancienne idée d'« application personnelle de gestion de projets » 
 - 2026-10-08 : maquette v28 validée par Colin, hébergement prêt (voir plus bas), **test serveur réussi** (voir « Constats du test serveur »)
 - 2026-10-08 : **étape 8a faite** : spec technique `SPEC.md` validée par Colin (socle commun et lot 1 en détail), puis plan 1 du lot 1 (`plans/2026-10-08-lot1-1-socle-serveur.md`). Le lot 1 est découpé en 3 plans successifs : socle serveur, données, app iPhone
 - 2026-10-09 : **lot 1, plan 1 (socle serveur) fait et en ligne** : base migrée, connexion, sessions, `/api/sante` (`{"ok":true,"version_app":"0.1.0","version_base":1,"base_ok":true}`). 62 tests au vert. Revue de code avant la mise en ligne : 3 constats corrigés (essais de connexion comptés avant la vérification, migration rejouable, dépréciations PHP tolérées). Vérifié en ligne : HTTPS forcé, en-têtes de sécurité, `serveur/` hors du web, API qui refuse sans session ou depuis une autre origine. Mot de passe choisi par Colin. Plan : `plans/2026-10-08-lot1-1-socle-serveur.md`
+- 2026-10-10 : **lot 1, plan 2 (données) fait** : lecture des 4 tableaux Trello en un appel, Google Agenda (connexion PKCE, jetons chiffrés, 2 agendas), créneaux et bandeaux, copies rafraîchies sous verrou, actions faites ailleurs notées, écritures de la to-do (cocher, terminer, annuler, déplacer, ajouter, tirage) avec liste blanche. 148 tests au vert. Vérifié en local sur les vraies données (Google connecté en dev, 15 jours identiques à l'agenda « UTC · Emploi du temps A26 »). Revue de code : 3 constats corrigés (verrou de la copie tenu pendant toute une écriture, pour ne pas noter deux fois une action ; carte supprimée dans Trello renvoyée en 404 et retirée de la copie ; verrou occupé qui rend la dernière copie au lieu d'une 500). Rien de mis en ligne : ce sera fait avec l'app, à la fin du plan 3. Plan : `plans/2026-10-09-lot1-2-donnees.md`
 
 ## Prochaine session
 
-1. Écrire et exécuter le plan 2 du lot 1 (données : Trello, Google, créneaux, rafraîchissement, routes `donnees`, `agenda`, `taches/*`).
-2. Puis le plan 3 (l'app iPhone).
+1. Écrire et exécuter le plan 3 du lot 1 (l'app iPhone : écrans, tirage, phrase du jour, hors ligne, service worker, page de confidentialité, Playwright), puis mise en ligne par Colin et recette du lot 1 (SPEC § 12.5). Google sera à reconnecter en production depuis Moi (la connexion faite en dev est dans la base locale).
+2. À trancher par Colin avant le plan 3 : le message « Google m'a déconnecté… Reconnecte-le dans Réglages » (CONTENU § 11) alors que la connexion Google est dans Moi (SPEC § 8.1).
 3. Préparatifs de Colin restants (carte Trello) : compte cron-job.org avant le lot 2, redirection UTC et mots de passe d'application avant le lot 3.
 
-**À reprendre dans le plan 2** (constats mineurs de la revue du 2026-10-09, reportés) :
-- `ecriture_unique()` ne vérifie pas que la route gardée est celle de la requête ;
-- `routeur.php` : le cookie de prolongation de session est perdu si l'action lève ; `journal_erreur()` n'est pas protégé dans le `catch` ;
-- `deploy-ovh.sh` : envoie `www/` avant `serveur/` et `config.php`, et ne s'arrête pas en erreur si `/api/sante` répond mal ;
-- `outils/lib-env.php` : `env_definir()` réécrit le `.env` sur place au lieu d'écrire à côté puis renommer ;
-- `site/.htaccess` : les fichiers en point (`www/.ovhconfig`) sont lisibles, et l'API annonce `X-Powered-By: PHP/8.4`.
+**À reprendre au plan 3** (revue du plan 2, 2026-10-10) :
+- **Seconde carte possible au renvoi d'une capture** : si Trello crée la carte mais que sa réponse dépasse 8 s, l'iPhone reçoit une 502 et le renvoi refait un `POST /cards`. Cas rare, carte en double visible. À traiter avec la file hors ligne (marque « en cours » par `id_client`, puis carte retrouvée par son titre et sa date de création au renvoi). Même cause pour Annuler : « Trop tard » alors que Trello a remis la carte
+- **Agenda UTC introuvable sans signal** : si `calendarList` échoue à la connexion, ou si l'agenda ne s'appelle plus « UTC · Emploi du temps A26 » (semestre P27), 15 jours sans cours et `erreur: null`. Il faut un code d'erreur (texte à valider par Colin) et une nouvelle recherche des agendas. **À faire avant P27**
+- Un jeton Google indéchiffrable (clé changée) fait répondre 500 à tout `GET donnees` : isoler chaque source dans `donnees_reponse()` et traiter un jeton illisible comme absent
+- Sortir une carte de Fait garde `dueComplete` : une carte rouverte en retard n'apparaît pas « En retard »
+- `tirage/parti` ne vérifie pas que l'étape appartient à la carte
+- Un événement avec heure sur plusieurs jours n'apparaît que le premier jour (aucun test)
+- Les tests n'installent pas `set_error_handler('erreur_php')` comme la production
+- Détection des actions et écriture de la copie hors transaction (actions notées deux fois si `copie_ecrire` échoue)
+- Les copies `agenda:AAAA-Www` ne sont jamais purgées
+- Écarts au SPEC § 5.5 à ajouter à la liste : champ `median` des événements, champ `semaine` de `GET agenda`
 
 **À savoir pour les tests** : une colonne JSON de MySQL range les clés d'un objet à sa façon. Tout ce qui est relu de `copies.contenu` ou `ecritures.resultat` se compare sans l'ordre des clés.
 
