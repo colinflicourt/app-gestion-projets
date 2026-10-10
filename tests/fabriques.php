@@ -129,3 +129,11 @@ function batch_trello(array $cartes_par_domaine = [], array $checklists_par_doma
     }
     return $reponse;
 }
+
+// Google connecté : jetons chiffrés en base (accès valable 1 h) et identifiants des 2 agendas
+function google_connecte_pour_test(): void
+{
+    jeton_ecrire('google', 'jeton-longue-duree-de-test', null);
+    jeton_ecrire('google_acces', 'jeton-acces-de-test', maintenant()->modify('+1 hour'));
+    reglage_ecrire('agenda_calendriers', ['perso' => 'colin@exemple.fr', 'utc' => 'utc-a26@group.calendar.google.com']);
+}

@@ -298,3 +298,21 @@ function appels_http(): array
 {
     return array_map(fn(array $a): string => $a['methode'] . ' ' . $a['url'], $GLOBALS['JR_APPELS_HTTP']);
 }
+
+// Cookies d'une session valide, pour appeler une route protégée
+function cookies_session(): array
+{
+    return [JR_COOKIE_SESSION => session_creer('Tests')['valeur']];
+}
+
+// Appelle une route avec une session valide : corps JSON pour un POST, paramètres d'adresse pour un GET
+function appeler(string $methode, string $chemin, array $corps = [], array $parametres = []): array
+{
+    return traiter(requete([
+        'methode' => $methode,
+        'chemin' => $chemin,
+        'requete' => $parametres,
+        'corps_brut' => $methode === 'GET' ? '' : json_encode($corps, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+        'cookies' => cookies_session(),
+    ]));
+}
