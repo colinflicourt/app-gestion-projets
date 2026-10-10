@@ -9,12 +9,14 @@ import { integrer, retirerEcriture, vue } from './etat.js';
 import { rendreMessage, rendreStatut, tirerPourActualiser } from './ecrans/commun.js';
 import * as connexion from './ecrans/connexion.js';
 import * as attente from './ecrans/attente.js';
+import * as taches from './ecrans/taches.js';
+import * as carte from './ecrans/carte.js';
 
 const ECRANS = {
   aujourdhui: attente,
   agenda: attente,
-  taches: attente,
-  carte: attente,
+  taches,
+  carte,
   moi: attente,
 };
 const FEUILLES = {
