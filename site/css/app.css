@@ -303,3 +303,20 @@ ul { padding: 0; list-style: none; }
 .evenement.passe .evenement-heure { color: var(--texte-3); }
 .evenement.passe .scotch-uv { opacity: 0.75; }
 .vide-court { font-size: calc(14 * var(--px)); color: var(--texte-2); }
+
+/* Moi */
+.reglage-ligne { display: flex; align-items: center; gap: 10px; min-height: 48px; border-bottom: 1px solid var(--panneau); font-size: calc(15 * var(--px)); font-weight: 600; text-decoration: none; }
+.temoin { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--contour); box-shadow: 0 0 0 3px var(--console); }
+.temoin.allume { background: var(--scotch); }
+.moi .bouton-large + .bouton-large { margin-top: 8px; }
+.lien { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Page publique (confidentialité) */
+.page-publique { max-width: 640px; margin: 0 auto; padding: max(env(safe-area-inset-top), 24px) 20px 40px; font-size: calc(16 * var(--px)); line-height: 1.55; }
+.page-publique h1 { margin-top: 18px; font-size: calc(28 * var(--px)); font-weight: 750; font-stretch: 80%; line-height: 1.2; }
+.page-publique h2 { margin-top: 24px; font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--texte-2); }
+.page-publique p, .page-publique ul { margin-top: 10px; }
+.page-publique ul { padding-left: 20px; list-style: disc; }
+.page-publique a { color: var(--scotch); }
+.page-publique-retour { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; }
+.page-publique-date { color: var(--texte-2); font-size: calc(14 * var(--px)); }

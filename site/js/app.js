@@ -8,19 +8,19 @@ import * as file from './file.js';
 import { integrer, retirerEcriture, vue } from './etat.js';
 import { rendreMessage, rendreStatut, tirerPourActualiser } from './ecrans/commun.js';
 import * as connexion from './ecrans/connexion.js';
-import * as attente from './ecrans/attente.js';
 import * as taches from './ecrans/taches.js';
 import * as carte from './ecrans/carte.js';
 import * as aujourdhui from './ecrans/aujourdhui.js';
 import * as capture from './ecrans/capture.js';
 import * as agenda from './ecrans/agenda.js';
+import * as moi from './ecrans/moi.js';
 
 const ECRANS = {
   aujourdhui,
   agenda,
   taches,
   carte,
-  moi: attente,
+  moi,
 };
 const FEUILLES = {
   capture,
