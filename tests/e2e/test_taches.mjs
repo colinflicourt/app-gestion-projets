@@ -16,6 +16,8 @@ test('tâches : 9 cartes ouvertes, 3 groupes, retard en rouge, filtre Études, c
   await preparer(page, contexte, serveur);
   await ouvrir(page, '/#/taches');
   await page.getByText('9 CARTES').waitFor();
+  // Tout et les 4 domaines tiennent sur une ligne à la taille de texte standard
+  assert.equal(new Set(await page.locator('.filtre').evaluateAll((l) => l.map((e) => e.offsetTop))).size, 1);
   assert.deepEqual(await page.locator('.groupe-titre span:first-child').allTextContents(), ['En cours', 'À faire', 'En attente']);
   assert.equal(await texte(page, '.carte-echeance.retard'), 'En retard depuis le 06/10');
   await page.getByRole('button', { name: 'Études', exact: true }).click();

@@ -65,4 +65,5 @@ test('Google déconnecté : le bandeau propose « Reconnecter », vers la connex
   await ouvrir(page, '/');
   await page.getByText("Google m'a déconnecté de ton agenda. Reconnecte-le, ça prend 30 secondes.").waitFor();
   assert.equal(await page.getByRole('link', { name: 'Reconnecter' }).getAttribute('href'), '/api/google/connexion');
+  assert.ok((await page.getByRole('link', { name: 'Reconnecter' }).boundingBox()).height >= 44, 'cible de 44 px au moins');
 });

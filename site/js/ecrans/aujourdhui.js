@@ -27,7 +27,7 @@ export function quitter() {
 }
 
 const ligne = (...enfants) => h('div', { class: 'afficheur-ligne' }, enfants);
-const titre = (texte) => h('span', { class: 'afficheur-titre' }, texte);
+const titre = (texte, court) => h('span', { class: court ? 'afficheur-titre afficheur-titre-court' : 'afficheur-titre' }, texte);
 const cote = (texte) => texte && h('span', { class: 'afficheur-cote' }, texte);
 const trait = () => h('div', { class: 'afficheur-trait' });
 const heureDe = (iso) => heureParis(new Date(iso));
@@ -55,7 +55,7 @@ function afficheurConduite(c, agenda) {
       ligne(voyant(A.enScene, true), titre(nomCreneau(s.cours))),
       chiffres(heureDe(s.cours.fin), [A.finDans, dureeTexte(s.finDans)], s.cours.salle),
       trait(),
-      ligne(voyant(A.standby), titre(suite ? nomCreneau(suite.cours) : A.rienDePrevu), cote(coteSuite)),
+      ligne(voyant(A.standby), titre(suite ? nomCreneau(suite.cours) : A.rienDePrevu, Boolean(suite)), cote(coteSuite)),
     ];
   }
   const enScene = { entracte: [A.entracte, s.libres !== undefined && A.libres(dureeTexte(s.libres))], rien: [A.rien, A.nbCours(s.nbCours)], fini: [A.fini, null] }[s.type];

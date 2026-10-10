@@ -26,6 +26,9 @@ test("aujourd'hui, 15 h 45 entre deux cours : Entracte, 45 min libres, STANDBY T
 test("pendant le TD de 17 h 10 : EN SCÈNE TN01 jusqu'à 19:30, fin dans 2 h 20, GO éteint", async ({ page, contexte, serveur }) => {
   await ouvrirAujourdhui(page, contexte, serveur, '2026-10-14T17:10:00+02:00', 'fin dans');
   await contient(page, ['TN01 · TD', '19:30', '2 h 20', 'FA510', 'MT23 · TD', 'lun. 19/10 16:30']);
+  // Le nom du cours suivant tient sur une ligne : c'est la cote (jour et heure) qui passe à la ligne
+  const lignesTitre = await page.locator('.afficheur-titre', { hasText: 'MT23 · TD' }).evaluate((e) => Math.round(e.offsetHeight / parseFloat(getComputedStyle(e).lineHeight)));
+  assert.equal(lignesTitre, 1);
   const go = page.getByRole('button', { name: 'GO, éteint pendant le cours' });
   assert.equal(await go.getAttribute('aria-disabled'), 'true');
   await go.click({ force: true });
