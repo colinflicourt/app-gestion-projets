@@ -49,3 +49,33 @@ function evenement_google(string $titre, string $debut, string $fin, ?string $li
     }
     return $evenement;
 }
+
+// Une carte au format de l'iPhone (SPEC § 5.5), clés dans l'ordre de trello_normaliser_carte()
+function carte_normalisee(array $surcharges = []): array
+{
+    return array_replace([
+        'id' => id_test('carte', 1),
+        'domaine' => 'etudes',
+        'colonne' => 'a_faire',
+        'position' => 1000.0,
+        'titre' => 'MT23 : préparer le médian',
+        'description' => '',
+        'url' => 'https://trello.com/c/test1',
+        'echeance' => null,
+        'echeance_faite' => false,
+        'urgent' => false,
+        'etiquettes' => ['MT23'],
+        'checklists' => [],
+        'derniere_activite' => '2026-10-08T12:00:00+02:00',
+    ], $surcharges);
+}
+
+// $coches : un booléen par élément ; identifiants id_test('element', $n * 10 + 1), + 2…
+function checklist_normalisee(int $n, array $coches): array
+{
+    $elements = [];
+    foreach (array_values($coches) as $i => $coche) {
+        $elements[] = ['id' => id_test('element', $n * 10 + $i + 1), 'nom' => 'Étape ' . ($i + 1), 'coche' => $coche];
+    }
+    return ['id' => id_test('checklist', $n), 'nom' => 'Étapes', 'elements' => $elements];
+}
