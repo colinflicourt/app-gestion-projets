@@ -127,3 +127,15 @@ ul { padding: 0; list-style: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Connexion */
+.connexion { min-height: 100%; display: flex; flex-direction: column; padding-top: 40px; }
+.connexion-afficheur { padding: 22px 18px 20px; }
+.connexion-titre { margin-top: 16px; font-family: var(--mono); font-size: 36px; font-weight: 600; font-stretch: 87.5%; letter-spacing: 0.02em; line-height: 1; color: var(--ambre); }
+.connexion-sous-titre { margin-top: 10px; font-size: calc(16 * var(--px)); color: var(--ambre-doux); }
+.connexion-formulaire { margin-top: 32px; display: flex; flex-direction: column; }
+.connexion-label { font-size: calc(14 * var(--px)); color: var(--texte-2); }
+.connexion-formulaire .champ { margin-top: 8px; }
+.connexion-formulaire .bouton-allume { width: 100%; }
+.connexion-message { min-height: 1.4em; margin-top: 12px; color: var(--rouge-texte); font-size: calc(14 * var(--px)); }
+.connexion-adresse { margin-top: auto; padding-top: 24px; text-align: center; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; color: var(--texte-2); }
