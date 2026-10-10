@@ -35,3 +35,17 @@ function fabrique_trello_ids(): array
     }
     return ['espace' => id_test('autre', 1), 'tableaux' => $tableaux];
 }
+
+// Un événement tel que Google le renvoie avec timeZone=Europe/Paris
+function evenement_google(string $titre, string $debut, string $fin, ?string $lieu = null): array
+{
+    $journee = strlen($debut) === 10;
+    $moment = fn(string $t): array => $journee
+        ? ['date' => $t]
+        : ['dateTime' => (new DateTimeImmutable($t, new DateTimeZone('Europe/Paris')))->format('Y-m-d\TH:i:sP'), 'timeZone' => 'Europe/Paris'];
+    $evenement = ['id' => md5($titre . $debut), 'status' => 'confirmed', 'summary' => $titre, 'start' => $moment($debut), 'end' => $moment($fin)];
+    if ($lieu !== null) {
+        $evenement['location'] = $lieu;
+    }
+    return $evenement;
+}
