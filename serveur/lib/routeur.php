@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/amorce.php';
 require_once __DIR__ . '/base.php';
+require_once __DIR__ . '/http.php';
 require_once __DIR__ . '/reponse.php';
 require_once __DIR__ . '/session.php';
 
@@ -40,6 +41,10 @@ function traiter(array $requete): array
         $reponse = ($route['action'])($requete, $session);
     } catch (ErreurApi $e) {
         $reponse = reponse_erreur($e->codeErreur, $e->getMessage(), $e->statut);
+    } catch (ErreurSource $e) {
+        // Trello ou Google a manqué une écriture : l'iPhone garde l'écriture en file et réessaiera
+        journal_erreur((string) $requete['chemin'], $e);
+        $reponse = reponse_erreur($e->codeErreur, JR_MESSAGES_SOURCES[$e->codeErreur] ?? 'Service indisponible. Réessaie dans un instant.', 502);
     } catch (Throwable $e) {
         journal_erreur((string) $requete['chemin'], $e);
         $reponse = reponse_erreur('erreur_serveur', 'Erreur du serveur. Réessaie dans un instant.', 500);

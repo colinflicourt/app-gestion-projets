@@ -5,6 +5,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/amorce.php';
 require_once __DIR__ . '/http.php';
+require_once __DIR__ . '/rafraichir.php';
+require_once __DIR__ . '/reponse.php';
 
 const JR_TRELLO_API = 'https://api.trello.com/1';
 const JR_COLONNES = ['À faire' => 'a_faire', 'En cours' => 'en_cours', 'En attente' => 'en_attente', 'Fait' => 'fait'];
@@ -146,4 +148,42 @@ function trier_cartes(array $cartes): array
     $rang = array_flip(JR_DOMAINES);
     usort($cartes, fn(array $a, array $b): int => [$rang[$a['domaine']], (float) $a['position']] <=> [$rang[$b['domaine']], (float) $b['position']]);
     return $cartes;
+}
+
+// Liste blanche (SPEC § 6.1) : la carte doit être dans l'un des 4 tableaux, d'après la copie ou, si elle y
+// manque, d'après Trello. Rend la carte au format de l'iPhone. Rien n'est écrit avant ce contrôle.
+function trello_carte_autorisee(mixed $carte_id): array
+{
+    if (!is_string($carte_id) || !preg_match(JR_REGEX_ID_TRELLO, $carte_id)) {
+        throw new ErreurApi('requete_invalide', 400, 'Requête illisible.');
+    }
+    foreach (copie_lire('trello')['contenu']['cartes'] ?? [] as $carte) {
+        if ($carte['id'] === $carte_id) {
+            return $carte;
+        }
+    }
+    try {
+        $carte = trello_appel('GET', "/cards/$carte_id", ['checklists' => 'all']);
+    } catch (ErreurSource $e) {
+        if (in_array($e->statutHttp, [400, 404], true)) {
+            throw new ErreurApi('carte_introuvable', 404, "Cette carte n'existe plus dans Trello.");
+        }
+        throw $e;
+    }
+    foreach (trello_ids()['tableaux'] as $domaine => $tableau) {
+        $colonnes = trello_colonnes($domaine);
+        if (is_array($carte) && ($carte['idBoard'] ?? null) === $tableau['id'] && isset($colonnes[$carte['idList'] ?? ''])) {
+            return trello_normaliser_carte($domaine, $colonnes[$carte['idList']], $carte, $carte['checklists'] ?? []);
+        }
+    }
+    throw new ErreurApi('carte_refusee', 403, 'Requête refusée.');
+}
+
+// Écriture vers Trello, ou simulée en dev (SPEC § 9) : rien ne part. Rend la réponse, ou null si simulée.
+function trello_ecrire(string $methode, string $chemin, array $corps): mixed
+{
+    if (config('trello')['ecritures'] !== 'reelles') {
+        return null;
+    }
+    return trello_appel($methode, $chemin, [], $corps);
 }

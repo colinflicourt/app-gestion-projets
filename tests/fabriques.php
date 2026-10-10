@@ -137,3 +137,14 @@ function google_connecte_pour_test(): void
     jeton_ecrire('google_acces', 'jeton-acces-de-test', maintenant()->modify('+1 hour'));
     reglage_ecrire('agenda_calendriers', ['perso' => 'colin@exemple.fr', 'utc' => 'utc-a26@group.calendar.google.com']);
 }
+
+function copie_trello(array $cartes): void
+{
+    copie_ecrire('trello', ['cartes' => $cartes], maintenant());
+}
+
+// UUID v4 valide et reconnaissable
+function uuid_test(int $n): string
+{
+    return sprintf('%08x-0000-4000-8000-%012x', $n, $n);
+}
