@@ -5,6 +5,7 @@
 Options -Indexes
 AddDefaultCharset utf-8
 AddType application/manifest+json .webmanifest
+AddType font/woff2 .woff2
 
 RewriteEngine On
 

@@ -276,6 +276,7 @@ async function demarrer() {
   }
   rendre();
   document.documentElement.dataset.pret = '1';
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
   window.addEventListener('hashchange', () => rendre());
   window.addEventListener('online', () => {
     etat.horsLigne = false;

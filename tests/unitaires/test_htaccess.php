@@ -22,6 +22,7 @@ test('htaccess : manifeste typé, HTTPS forcé, API réécrite, pas de liste de 
     $htaccess = lire_htaccess();
     $attendus = [
         'AddType application/manifest+json .webmanifest',
+        'AddType font/woff2 .woff2',
         'RewriteCond %{SERVER_PORT} ^80$',
         'RewriteRule ^api/index\.php$ - [L]',
         'RewriteRule ^api/ api/index.php [L,QSA]',
