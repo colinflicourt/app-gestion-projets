@@ -13,10 +13,11 @@ import * as taches from './ecrans/taches.js';
 import * as carte from './ecrans/carte.js';
 import * as aujourdhui from './ecrans/aujourdhui.js';
 import * as capture from './ecrans/capture.js';
+import * as agenda from './ecrans/agenda.js';
 
 const ECRANS = {
   aujourdhui,
-  agenda: attente,
+  agenda,
   taches,
   carte,
   moi: attente,

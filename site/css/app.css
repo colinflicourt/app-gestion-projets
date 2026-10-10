@@ -280,3 +280,26 @@ ul { padding: 0; list-style: none; }
 .capture-heure { margin-top: 10px; }
 .champ-date { min-height: 48px; padding: 0 12px; background: var(--console); font-family: var(--mono); font-size: 16px; color-scheme: dark; }
 .lien-discret { min-height: 44px; padding: 0 8px; border: 0; background: transparent; color: var(--texte-2); font-family: 'Archivo', sans-serif; font-size: calc(13 * var(--px)); letter-spacing: 0; text-decoration: underline; text-transform: none; }
+
+/* Agenda */
+.entete-centre { align-items: center; }
+.bascule { display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: #0D0F11; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7); }
+.bascule-choix { min-height: 40px; padding: 0 14px; border: 0; border-radius: 8px; background: transparent; color: var(--texte-2); font-size: calc(14 * var(--px)); font-weight: 600; }
+.bascule-choix[aria-pressed='true'] { background: var(--scotch); color: var(--graphite); font-weight: 700; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.15); }
+.agenda-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
+.agenda-plage { display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-align: center; text-transform: uppercase; }
+.agenda-rang { align-items: start; padding: 12px 0; }
+.agenda-jour { justify-self: start; padding: 4px 6px 3px; font-family: var(--mono); font-size: 13px; letter-spacing: 0.08em; }
+.agenda-jour.aujourdhui { border-radius: 3px; background: var(--scotch); color: var(--graphite); font-weight: 600; }
+.agenda-contenu { display: flex; flex-direction: column; gap: 12px; }
+.bandeau-jour { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; background: var(--panneau); font-size: calc(14 * var(--px)); font-weight: 600; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+.evenement { display: flex; align-items: center; gap: 10px; }
+.scotch-uv { flex: none; width: 46px; height: 21px; padding: 0; line-height: 23px; font-size: 12px; }
+.marque-perso { flex: none; width: 46px; padding: 3px 0 2px; border: 1px solid var(--contour); border-radius: 3px; font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-align: center; color: var(--texte-2); }
+.evenement-texte { flex: 1 1 auto; min-width: 0; }
+.evenement-titre { font-size: calc(15 * var(--px)); font-weight: 600; overflow-wrap: anywhere; }
+.evenement-heure { font-family: var(--mono); font-size: 12.5px; color: var(--texte-2); }
+.evenement.passe .evenement-titre { color: var(--texte-2); }
+.evenement.passe .evenement-heure { color: var(--texte-3); }
+.evenement.passe .scotch-uv { opacity: 0.75; }
+.vide-court { font-size: calc(14 * var(--px)); color: var(--texte-2); }
