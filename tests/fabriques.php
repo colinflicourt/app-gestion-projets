@@ -79,3 +79,53 @@ function checklist_normalisee(int $n, array $coches): array
     }
     return ['id' => id_test('checklist', $n), 'nom' => 'Étapes', 'elements' => $elements];
 }
+
+// Une carte telle que Trello la renvoie (champs utiles seulement). $colonne : nom Trello (« À faire »…)
+function carte_trello(string $domaine, string $colonne, int $n, array $surcharges = []): array
+{
+    $tableau = fabrique_trello_ids()['tableaux'][$domaine];
+    return array_replace([
+        'id' => id_test('carte', $n),
+        'name' => "Carte $n",
+        'desc' => '',
+        'idBoard' => $tableau['id'],
+        'idList' => $tableau['colonnes'][$colonne],
+        'idLabels' => [],
+        'labels' => [],
+        'pos' => 1000 * $n,
+        'due' => null,
+        'dueComplete' => false,
+        'closed' => false,
+        'shortUrl' => "https://trello.com/c/test$n",
+        'dateLastActivity' => '2026-10-08T10:00:00.000Z',
+    ], $surcharges);
+}
+
+// $elements : nom => coché. Identifiants des éléments : id_test('element', $n * 10 + 1), + 2…
+function checklist_trello(string $carte_id, int $n, array $elements): array
+{
+    $items = [];
+    $i = 0;
+    foreach ($elements as $nom => $coche) {
+        $i++;
+        $items[] = ['id' => id_test('element', $n * 10 + $i), 'name' => (string) $nom, 'state' => $coche ? 'complete' : 'incomplete', 'pos' => 100 * $i];
+    }
+    return ['id' => id_test('checklist', $n), 'name' => 'Étapes', 'idCard' => $carte_id, 'pos' => 100 * $n, 'checkItems' => $items];
+}
+
+// Réponse de /batch : un élément {"200": tableau} par domaine, dans l'ordre de JR_DOMAINES
+function batch_trello(array $cartes_par_domaine = [], array $checklists_par_domaine = []): array
+{
+    $reponse = [];
+    foreach (JR_DOMAINES as $domaine) {
+        $reponse[] = ['200' => [
+            'id' => fabrique_trello_ids()['tableaux'][$domaine]['id'],
+            'name' => $domaine,
+            'lists' => [],
+            'labels' => [],
+            'cards' => $cartes_par_domaine[$domaine] ?? [],
+            'checklists' => $checklists_par_domaine[$domaine] ?? [],
+        ]];
+    }
+    return $reponse;
+}
