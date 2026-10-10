@@ -33,7 +33,9 @@ export async function appeler(methode, route, { corps = null, parametres = null,
   try {
     json = await reponse.json();
   } catch {
-    // corps illisible : traité comme une erreur du serveur
+    // Corps illisible. Après un 2xx (réponse coupée en route, page HTML d'un portail) : comme une réponse
+    // perdue, l'écriture reste en file et repart avec le même id_client. Sinon : erreur du serveur.
+    if (reponse.ok) throw new ErreurReseau('Réponse illisible');
   }
   if (!reponse.ok || json?.ok !== true) {
     throw new ErreurApi(reponse.status, json?.erreur?.code ?? 'erreur_serveur', json?.erreur?.message ?? 'Erreur du serveur. Réessaie dans un instant.');

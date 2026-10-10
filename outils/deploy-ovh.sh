@@ -3,6 +3,7 @@
 #   cd ~/Desktop/jarvis-starter-kit/projects/jarvis-jr && outils/deploy-ovh.sh
 # 1. tests  2. config de production  3. simulation  4. confirmation  5. envoi  6. vérification
 # Garde en ligne : www/.ovhconfig, serveur/data/ (journal). config.php et trello-ids.json sont posés à part.
+# sw.js part en dernier : un iPhone qui s'ouvre pendant l'envoi ne met jamais en cache un mélange de fichiers.
 
 set -euo pipefail
 
@@ -27,7 +28,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 php "$ICI/generer-config.php" --mode=production --dossier="$TMP" 2>&1 | "$FILTRE"
 
-EXCLUS_SITE="--exclude-glob .ovhconfig --exclude-glob .DS_Store"
+EXCLUS_SITE="--exclude-glob .ovhconfig --exclude-glob .DS_Store --exclude-glob sw.js"
 EXCLUS_SERVEUR="--exclude-glob config.php --exclude-glob trello-ids.json --exclude-glob data/ --exclude-glob .DS_Store"
 miroir_serveur() {  # $1 : --dry-run, ou rien
     echo "mirror --reverse --delete --verbose $1 $EXCLUS_SERVEUR '$PROJET/serveur/' 'jr.qyris.fr/serveur/';"
@@ -43,12 +44,13 @@ echo
 read -r -p "4/6 Envoyer ? (o/N) " REPONSE
 [ "$REPONSE" = "o" ] || { echo "Rien n'a été envoyé."; exit 0; }
 
-echo "5/6 Envoi (le serveur et sa configuration d'abord, le site ensuite)"
+echo "5/6 Envoi (le serveur et sa configuration d'abord, le site ensuite, sw.js en dernier)"
 "$SFTP" "$(miroir_serveur '')
 put '$TMP/config.php' -o 'jr.qyris.fr/serveur/config.php';
 chmod 600 jr.qyris.fr/serveur/config.php;
 put '$TMP/trello-ids.json' -o 'jr.qyris.fr/serveur/trello-ids.json';
-$(miroir_site '')" 2>&1 | "$FILTRE"
+$(miroir_site '')
+put '$PROJET/site/sw.js' -o 'jr.qyris.fr/www/sw.js';" 2>&1 | "$FILTRE"
 
 echo "6/6 Vérification"
 SANTE="$(curl -sS --max-time 20 https://jr.qyris.fr/api/sante 2>&1 | "$FILTRE" || true)"

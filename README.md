@@ -36,6 +36,21 @@ Remplace l'ancienne idée d'« application personnelle de gestion de projets » 
 - Les copies `agenda:AAAA-Www` ne sont jamais purgées
 - Écarts au SPEC § 5.5 à ajouter à la liste : champ `median` des événements, champ `semaine` de `GET agenda`
 
+**Constats mineurs des revues du plan 3** (code et sécurité, 2026-10-10), non corrigés :
+- **Panne sans copie, aucun message** : à la toute première ouverture, Trello en panne donne « Aucune carte ici. » et une to-do vide, Google en panne « Rien de prévu. » (le bandeau ne s'affiche que s'il existe une copie, `ecrans/commun.js`). Côté serveur, Google en panne sans copie répond « Agenda pas encore connecté » (`donnees.php`)
+- **Blocage en tête de file** : une écriture qui reçoit toujours une 5xx (un 400 de Trello devient une 502) repart toutes les 30 s, bloque les suivantes et affiche « attend le réseau » alors que le réseau marche. Prévoir un message après quelques essais (`essais` existe déjà)
+- **Carte ouverte d'une capture en attente** : `#/carte/local-…` devient « Cette carte n'existe plus dans Trello. » dès que la capture part. Remplacer l'adresse par le vrai identifiant dans `succes`
+- **Agenda** : une semaine chargée n'est jamais relue (même en tirant pour actualiser) ; le jour choisi reste sur la veille quand l'app passe minuit ouverte ; une semaine absente n'est redemandée qu'à la navigation suivante, pas au retour du réseau
+- **`tictac` redessine tous les écrans chaque minute** : focus perdu (VoiceOver), défilement par inertie arrêté sur Tâches, toucher perdu s'il tombe à la minute pile. Le limiter à Aujourd'hui et à Agenda
+- **Feuille « Noter » fermée par un 401 venu en arrière-plan** (renvoi de la file) : le texte en cours est perdu
+- **Tests qui prouvent moins que leur nom** : « réponse perdue » et « capture hors ligne » peuvent passer par un renvoi de Chromium plutôt que par la file (la logique de la file est maintenant couverte par `tests/js/file.test.mjs`) ; « Terminer puis Annuler » passe aussi sans aucun envoi ; rien ne combine rechargement et réponse perdue ; aucun titre piégé testé dans l'agenda, la liste ou le tirage (sûrs par construction)
+- **Tailles fixes** : bandeau d'état (12 px), onglets et titres de section ne suivent pas la taille de texte de l'iPhone, contrairement à la règle de `DESIGN.md` § 2
+- `ordre` des écritures part de `Date.now()` au lancement : si l'horloge de l'iPhone recule entre deux ouvertures, l'ordre de la file s'inverse. Partir de `max(ordre) + 1` dans `charger()`
+- `erreurGoogle` (Moi) reste vrai à chaque visite jusqu'à une connexion réussie
+- `file.envoyer()` appelé sur une file vide laisse l'envoi bloqué pour toujours (le `finally` passe avant l'affectation). Inatteignable aujourd'hui (`envoyerFile` vérifie la file avant), à blinder
+- **Sécurité, à trancher par Colin** : un 401 n'efface pas la copie de l'iPhone. Après « Déconnecter tous les appareils », un iPhone perdu ne voit plus le serveur mais garde sa to-do et son agenda lisibles hors ligne. Piste : effacer `donnees` et `agenda` (pas `file`) au premier 401
+- Sécurité, connu : `serveur/config.php` est sous le même utilisateur que les autres sites PHP de l'OVH perso ; une faille dans l'un d'eux permettrait de le lire
+
 **À savoir pour les tests** : une colonne JSON de MySQL range les clés d'un objet à sa façon. Tout ce qui est relu de `copies.contenu` ou `ecritures.resultat` se compare sans l'ordre des clés.
 
 ## Décisions

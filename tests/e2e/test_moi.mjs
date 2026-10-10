@@ -51,6 +51,16 @@ test("Se déconnecter : la copie de l'iPhone est effacée, écran de connexion s
   assert.equal(serveur.appels('deconnexion').length, 1);
 });
 
+test("Se déconnecter avec une session déjà effacée ailleurs : la copie est quand même effacée, écran de connexion", async ({ page, contexte, serveur }) => {
+  await preparer(page, contexte, serveur);
+  await ouvrir(page, '/#/moi');
+  await attendre(async () => (await copieLocale(page)) !== undefined, 'copie gardée');
+  await contexte.clearCookies();
+  await page.getByRole('button', { name: 'Se déconnecter' }).click();
+  await page.getByRole('heading', { name: 'JARVIS JR.' }).waitFor();
+  assert.equal(await copieLocale(page), undefined);
+});
+
 test('Déconnecter tous les appareils : rien sans confirmation, puis la déconnexion partout', async ({ page, contexte, serveur }) => {
   await preparer(page, contexte, serveur);
   await ouvrir(page, '/#/moi');

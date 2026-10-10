@@ -65,15 +65,19 @@ export function envoyer(r) {
             r.session();
             return;
           }
-          let reste = r.lire().filter((x) => x.id_client !== e.id_client);
           await oublier(e.id_client);
-          if (erreur === null && e.route === 'taches/ajouter') {
-            reste = remplacerIdLocal(reste, e.local.id, reponse.carte.id);
-            for (const x of reste) await garder(x);
-          }
-          r.ecrire(reste);
+          // Aucun await entre la lecture et l'écriture de la file : une écriture ajoutée ou annulée
+          // pendant ce temps n'est ni perdue ni ressuscitée
+          const idLocal = erreur === null && e.route === 'taches/ajouter' ? e.local.id : null;
+          const reste = r.lire().filter((x) => x.id_client !== e.id_client);
+          const changees = idLocal === null ? [] : reste.filter((x) => x.corps.carte === idLocal || x.local.carte === idLocal).map((x) => x.id_client);
+          r.ecrire(idLocal === null ? reste : remplacerIdLocal(reste, idLocal, reponse.carte.id));
           if (erreur === null) r.succes(e, reponse);
           else r.refus(e, erreur);
+          for (const id of changees) {
+            const x = r.lire().find((y) => y.id_client === id);
+            if (x) await garder(x);
+          }
         } finally {
           enVol = null;
           terminer();

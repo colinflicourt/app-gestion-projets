@@ -161,7 +161,12 @@ async function connecter(motDePasse) {
 }
 
 async function deconnecter(partout) {
-  await appeler('POST', partout ? 'deconnexion-partout' : 'deconnexion', { corps: {} });
+  try {
+    await appeler('POST', partout ? 'deconnexion-partout' : 'deconnexion', { corps: {} });
+  } catch (e) {
+    // Session déjà expirée ou effacée ailleurs : il ne reste qu'à vider l'iPhone
+    if (!(e instanceof ErreurApi && e.statut === 401)) throw e;
+  }
   try {
     await stockage.vider();
   } catch {
