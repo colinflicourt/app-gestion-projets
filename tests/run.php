@@ -5,6 +5,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/aide.php';
+require __DIR__ . '/fabriques.php';
 foreach (glob(dirname(__DIR__) . '/serveur/lib/*.php') as $fichier) {
     require_once $fichier;
 }

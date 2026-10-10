@@ -77,7 +77,7 @@ function config_de_test(array $surcharges = []): array
             'utilisateur' => $local['DB_USER'] ?? '',
             'mot_de_passe' => $local['DB_PASSWORD'] ?? '',
         ],
-        'trello' => ['cle' => 'cle-de-test', 'jeton' => 'jeton-de-test', 'ecritures' => 'simulees'],
+        'trello' => ['cle' => 'cle-de-test', 'jeton' => 'jeton-de-test', 'ecritures' => 'reelles'],
         'google' => ['client_id' => 'client-de-test', 'client_secret' => 'secret-de-test', 'retour' => 'http://localhost:8787/api/google-callback.php'],
         'mot_de_passe_empreinte' => $empreinte,
         'cle_chiffrement' => base64_encode(str_repeat("\x01", 32)),
@@ -113,6 +113,12 @@ function lancer_tests(string $filtre): int
         $GLOBALS['JR_MAINTENANT'] = null;
         $GLOBALS['JR_ROUTES_SUPPLEMENTAIRES'] = [];
         $GLOBALS['JR_DOSSIER_DATA'] = "$racine_data/$numero";
+        // Jamais de réseau dans les tests : tout appel sortant doit être prévu par faux_http()
+        $GLOBALS['JR_CLIENT_HTTP'] = function (string $methode, string $url): array {
+            throw new EchecTest("Appel HTTP sans faux_http() : $methode $url");
+        };
+        $GLOBALS['JR_APPELS_HTTP'] = [];
+        $GLOBALS['JR_TRELLO_IDS'] = fabrique_trello_ids();
         try {
             $f();
             $reussis++;
@@ -262,4 +268,33 @@ function arreter_apercu($serveur): void
     exec('pkill -TERM -P ' . (int) proc_get_status($serveur)['pid']);
     proc_terminate($serveur);
     proc_close($serveur);
+}
+
+// Remplace le client HTTP. Chaque appel prend la première réponse dont la clé « MÉTHODE début d'adresse »
+// correspond, et il est noté dans $GLOBALS['JR_APPELS_HTTP']. Une réponse : ['statut' => 200, 'json' => …],
+// ['statut' => …, 'corps' => '…'] ou une exception à lever. Une liste de réponses est consommée dans l'ordre,
+// la dernière resservant ensuite.
+function faux_http(array $reponses): void
+{
+    $GLOBALS['JR_APPELS_HTTP'] = [];
+    $GLOBALS['JR_CLIENT_HTTP'] = function (string $methode, string $url, array $entetes, ?string $corps, int $delai) use (&$reponses): array {
+        $GLOBALS['JR_APPELS_HTTP'][] = ['methode' => $methode, 'url' => $url, 'entetes' => $entetes, 'corps' => $corps];
+        foreach ($reponses as $cle => &$reponse) {
+            [$m, $debut] = explode(' ', $cle, 2);
+            if ($m !== $methode || !str_starts_with($url, $debut)) {
+                continue;
+            }
+            $r = is_array($reponse) && array_is_list($reponse) ? (count($reponse) > 1 ? array_shift($reponse) : $reponse[0]) : $reponse;
+            if ($r instanceof Throwable) {
+                throw $r;
+            }
+            return ['statut' => $r['statut'] ?? 200, 'corps' => $r['corps'] ?? json_encode($r['json'] ?? null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
+        }
+        throw new EchecTest("Appel HTTP inattendu : $methode $url");
+    };
+}
+
+function appels_http(): array
+{
+    return array_map(fn(array $a): string => $a['methode'] . ' ' . $a['url'], $GLOBALS['JR_APPELS_HTTP']);
 }

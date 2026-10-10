@@ -67,3 +67,18 @@ test("amorce : un journal impossible à écrire ne lève rien, même quand les a
     }
     vrai(true, 'aucune exception attendue');
 });
+
+test("amorce : iso_paris donne l'heure de Paris avec son décalage, de part et d'autre du 25/10/2026", function () {
+    egal('2026-10-24T10:00:00+02:00', iso_paris(utc_test('2026-10-24 08:00:00')));
+    egal('2026-10-25T10:00:00+01:00', iso_paris(utc_test('2026-10-25 09:00:00')));
+    egal('2026-10-21T19:15:00+02:00', iso_paris(new DateTimeImmutable('2026-10-21T17:15:00.000Z')));
+    fixer_heure('2026-10-24 22:30:00');  // 0 h 30 le 25 à Paris
+    egal('2026-10-25T00:00:00+02:00', iso_paris(aujourdhui_paris()));
+});
+
+test('amorce : normaliser_texte compare sans casse, accents ni espaces en trop', function () {
+    egal('ferie', normaliser_texte('  FÉRIÉ '));
+    egal("jour d'examen", normaliser_texte('Jour d’examen'));
+    egal('utc · emploi du temps a26', normaliser_texte("UTC  ·  Emploi du temps\tA26"));
+    egal('median mt23', normaliser_texte('Médian MT23'));
+});

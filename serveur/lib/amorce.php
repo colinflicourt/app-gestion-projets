@@ -6,6 +6,7 @@ declare(strict_types=1);
 const JR_VERSION = '0.1.0';
 const JR_DOMAINES = ['qyris', 'asso', 'etudes', 'perso'];
 const JR_JOURNAL_MAX = 1048576;
+const JR_FUSEAU = 'Europe/Paris';
 
 date_default_timezone_set('UTC');
 
@@ -41,6 +42,33 @@ function depuis_utc(string $texte): DateTimeImmutable
         throw new InvalidArgumentException('Date UTC illisible');
     }
     return $moment;
+}
+
+function paris(): DateTimeZone
+{
+    return new DateTimeZone(JR_FUSEAU);
+}
+
+// Heure de Paris avec son décalage, pour l'iPhone : 2026-10-14T08:00:00+02:00
+function iso_paris(DateTimeImmutable $moment): string
+{
+    return $moment->setTimezone(paris())->format('Y-m-d\TH:i:sP');
+}
+
+// Minuit du jour courant, heure de Paris
+function aujourdhui_paris(): DateTimeImmutable
+{
+    return maintenant()->setTimezone(paris())->setTime(0, 0);
+}
+
+// Pour comparer des titres sans casse, accents, apostrophe courbe ni espaces en trop
+function normaliser_texte(string $texte): string
+{
+    $texte = strtr(mb_strtolower(trim($texte)), [
+        'à' => 'a', 'â' => 'a', 'ä' => 'a', 'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e', 'î' => 'i', 'ï' => 'i',
+        'ô' => 'o', 'ö' => 'o', 'ù' => 'u', 'û' => 'u', 'ü' => 'u', 'ç' => 'c', 'œ' => 'oe', '’' => "'",
+    ]);
+    return (string) preg_replace('/\s+/u', ' ', $texte);
 }
 
 function dossier_data(): string
