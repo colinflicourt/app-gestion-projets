@@ -17,6 +17,10 @@ if ! php "$PROJET/tests/run.php" 2>&1 | "$FILTRE"; then
     echo "Tests en échec : rien n'est envoyé. (MySQL local lancé ? brew services run mysql@8.4)"
     exit 1
 fi
+if ! (cd "$PROJET" && node --test 'tests/js/*.test.mjs') 2>&1 | "$FILTRE"; then
+    echo "Tests des modules de l'app en échec : rien n'est envoyé."
+    exit 1
+fi
 
 echo "2/6 Configuration de production"
 TMP="$(mktemp -d)"
