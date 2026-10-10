@@ -65,9 +65,28 @@ function cartes_a_montrer(array $cartes): array
     return array_values(array_filter($cartes, fn(array $c): bool => $c['colonne'] !== 'fait' || new DateTimeImmutable($c['derniere_activite']) >= $limite));
 }
 
+// Une source en panne imprévue (autre qu'une erreur de source, déjà rendue avec sa copie) ne fait pas
+// tomber l'autre : sa dernière copie part avec un code d'erreur, et la panne va au journal.
 function donnees_reponse(bool $force): array
 {
-    $trello = donnees_trello($force);
+    try {
+        $trello = donnees_trello($force);
+    } catch (RuntimeException $e) {
+        journal_erreur('donnees/trello', $e);
+        $trello = resultat_copie(copie_lire('trello'), 'trello_indisponible');
+    }
+    try {
+        $agenda = donnees_agenda('agenda', aujourdhui_paris()->format('Y-m-d'), JR_JOURS_DONNEES, $force);
+    } catch (RuntimeException $e) {
+        journal_erreur('donnees/agenda', $e);
+        $copie = copie_lire('agenda');
+        $agenda = [
+            'recupere_le' => iso_ou_null($copie['recupere_le'] ?? null),
+            'erreur' => 'google_indisponible',
+            'google_connecte' => $copie !== null,
+            'jours' => $copie['contenu']['jours'] ?? new stdClass(),
+        ];
+    }
     return [
         'maintenant' => iso_paris(maintenant()),
         'trello' => [
@@ -75,7 +94,7 @@ function donnees_reponse(bool $force): array
             'erreur' => $trello['erreur'],
             'cartes' => cartes_a_montrer($trello['contenu']['cartes'] ?? []),
         ],
-        'agenda' => donnees_agenda('agenda', aujourdhui_paris()->format('Y-m-d'), JR_JOURS_DONNEES, $force),
+        'agenda' => $agenda,
     ];
 }
 

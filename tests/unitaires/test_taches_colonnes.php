@@ -110,3 +110,13 @@ function carte_a_cocher_colonnes(): array
 {
     return carte_normalisee(['id' => id_test('carte', 9), 'colonne' => 'a_faire', 'checklists' => [checklist_normalisee(9, [false])]]);
 }
+
+test("déplacer : une carte sortie de Fait avec une échéance la rouvre (dueComplete false), pour qu'elle puisse être en retard", function () {
+    base_de_test();
+    copie_trello([carte_normalisee(['id' => id_test('carte', 3), 'colonne' => 'fait', 'echeance' => '2026-10-06T08:30:00+02:00', 'echeance_faite' => true])]);
+    faux_http([PUT_CARTE => ['json' => []]]);
+    egal(200, appeler('POST', 'taches/deplacer', ['id_client' => uuid_test(1), 'carte' => id_test('carte', 3), 'colonne' => 'a_faire'])['statut']);
+    egal(['idList' => fabrique_trello_ids()['tableaux']['etudes']['colonnes']['À faire'], 'pos' => 'top', 'dueComplete' => false], json_decode((string) $GLOBALS['JR_APPELS_HTTP'][0]['corps'], true));
+    $carte = carte_de_la_copie(id_test('carte', 3));
+    egal(['a_faire', false], [$carte['colonne'], $carte['echeance_faite']]);
+});

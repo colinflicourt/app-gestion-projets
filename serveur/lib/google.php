@@ -35,7 +35,16 @@ function jeton_lire(string $service): ?string
         return null;
     }
     $chiffre = base64_decode((string) $ligne['contenu'], true);
-    return $chiffre === false ? null : dechiffrer($chiffre);
+    if ($chiffre === false) {
+        return null;
+    }
+    try {
+        return dechiffrer($chiffre);
+    } catch (RuntimeException $e) {
+        // Clé changée ou contenu abîmé : le jeton ne sert plus, la connexion à Google est à refaire
+        journal_erreur('jetons', $e);
+        return null;
+    }
 }
 
 function jeton_effacer(string $service): void

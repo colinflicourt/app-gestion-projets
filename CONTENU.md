@@ -353,7 +353,7 @@ Un écran par idée. Un écran sans donnée réelle est sauté.
 |---|---|
 | Hors ligne | Hors ligne. Je t'affiche les données d'il y a 12 min. |
 | Trello ne répond pas | Trello ne répond pas. Tes tâches s'affichent telles qu'il y a 5 min. |
-| Google déconnecté | Google m'a déconnecté de ton agenda. Reconnecte-le dans Réglages, ça prend 30 secondes. |
+| Google déconnecté | Google m'a déconnecté de ton agenda. Reconnecte-le, ça prend 30 secondes. (avec un bouton « Reconnecter » dans le bandeau, décision de Colin du 2026-10-10) |
 | Notifications coupées | Les notifications sont coupées sur cet iPhone. Va dans Réglages de l'iPhone, Notifications, Jarvis Jr. |
 | Session expirée | Ta session a expiré. Reconnecte-toi. |
 | Capture en attente | 1 note attend le réseau. Elle partira toute seule. |

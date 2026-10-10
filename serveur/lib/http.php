@@ -11,7 +11,7 @@ const JR_HTTP_DELAI = 8;
 const JR_MESSAGES_SOURCES = [
     'trello_indisponible' => 'Trello ne répond pas. Réessaie dans un instant.',
     'google_indisponible' => 'Google ne répond pas. Réessaie dans un instant.',
-    'google_deconnecte' => "Google m'a déconnecté de ton agenda. Reconnecte-le dans Réglages, ça prend 30 secondes.",
+    'google_deconnecte' => "Google m'a déconnecté de ton agenda. Reconnecte-le, ça prend 30 secondes.",
 ];
 
 // Rien n'est revenu du réseau (délai dépassé, DNS, TLS…)

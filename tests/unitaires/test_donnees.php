@@ -162,3 +162,32 @@ test('agenda : une semaine ISO donne ses 7 jours du lundi au dimanche, dans sa p
     egal(400, appeler('GET', 'agenda', [], ['semaine' => ['2026-W43']])['statut']);
     egal(400, appeler('GET', 'agenda')['statut']);
 });
+
+test("données : un jeton Google illisible (clé changée) est vu comme absent : 200, agenda en google_deconnecte, une ligne de journal", function () {
+    base_de_test();
+    fixer_heure('2026-10-10 10:00:00');
+    google_connecte_pour_test();
+    $GLOBALS['JR_CONFIG'] = config_de_test(['cle_chiffrement' => base64_encode(str_repeat("\x02", 32))]);
+    egal(null, jeton_lire('google'));
+    egal(false, google_connecte());
+    faux_http([BATCH => ['json' => batch_trello()]]);
+    $r = appeler('GET', 'donnees');
+    egal(200, $r['statut']);
+    egal('google_deconnecte', corps($r)['agenda']['erreur']);
+    vrai(str_contains((string) file_get_contents(dossier_data() . '/erreurs.log'), 'Déchiffrement impossible'), 'ligne de journal attendue');
+});
+
+test("données : une panne imprévue de Trello ne fait pas tomber la réponse : dernière copie, trello_indisponible, agenda intact", function () {
+    base_de_test();
+    fixer_heure('2026-10-10 10:00:00');
+    faux_http([BATCH => ['json' => batch_trello(['perso' => [carte_trello('perso', 'À faire', 1)]])]]);
+    appeler('GET', 'donnees');
+    fixer_heure('2026-10-10 10:05:00');
+    faux_http([BATCH => new RuntimeException('panne imprévue')]);
+    $r = appeler('GET', 'donnees');
+    egal(200, $r['statut']);
+    $d = corps($r);
+    egal(['trello_indisponible', '2026-10-10T12:00:00+02:00'], [$d['trello']['erreur'], $d['trello']['recupere_le']]);
+    egal([id_test('carte', 1)], array_column($d['trello']['cartes'], 'id'));
+    egal(['recupere_le' => null, 'erreur' => null, 'google_connecte' => false, 'jours' => []], $d['agenda']);
+});

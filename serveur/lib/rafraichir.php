@@ -8,6 +8,7 @@ require_once __DIR__ . '/base.php';
 require_once __DIR__ . '/http.php';
 
 const JR_VERROU_SOURCE_ATTENTE = 10;
+const JR_SEMAINES_JOURS = 30;
 
 // Le verrou d'une source n'a pas été obtenu à temps (lectures lentes de Trello ou de Google en file)
 final class VerrouIndisponible extends RuntimeException {}
@@ -39,6 +40,11 @@ function copie_ecrire(string $source, array $contenu, DateTimeImmutable $recuper
     db()->prepare('INSERT INTO copies (source, contenu, recupere_le, empreinte) VALUES (?, ?, ?, ?) AS n
         ON DUPLICATE KEY UPDATE contenu = n.contenu, recupere_le = n.recupere_le, empreinte = n.empreinte')
         ->execute([$source, $json, utc($recupere_le), hash('sha256', $json)]);
+    // Les semaines d'agenda chargées à la demande ne servent plus au-delà de 30 jours
+    if (str_starts_with($source, 'agenda:')) {
+        db()->prepare("DELETE FROM copies WHERE source LIKE 'agenda:%' AND source <> ? AND recupere_le < ? LIMIT 20")
+            ->execute([$source, utc($recupere_le->modify('-' . JR_SEMAINES_JOURS . ' days'))]);
+    }
 }
 
 // Réentrant (GET_LOCK de MySQL 8) : une écriture qui tient le verrou peut corriger la copie. Les tests

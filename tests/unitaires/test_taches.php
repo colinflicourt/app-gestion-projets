@@ -146,3 +146,12 @@ test("tirage : « C'est parti » note tirage_parti avec l'étape, ou sans étape
     egal([['tirage_parti', id_test('element', 11)], ['tirage_parti', null]], array_map(fn(array $l): array => [$l['type'], $l['element_id']], db()->query('SELECT type, element_id FROM actions ORDER BY id')->fetchAll()));
     egal([], appels_http());
 });
+
+test("tirage : une étape qui n'appartient pas à la carte donne 404 element_introuvable, sans action", function () {
+    base_de_test();
+    copie_trello([carte_a_cocher()]);
+    faux_http([]);
+    $r = appeler('POST', 'tirage/parti', ['id_client' => uuid_test(1), 'carte' => id_test('carte', 1), 'element' => id_test('element', 99)]);
+    egal([404, 'element_introuvable'], [$r['statut'], corps($r)['erreur']['code']]);
+    egal(0, nombre_actions());
+});

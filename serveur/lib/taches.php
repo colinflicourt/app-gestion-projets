@@ -102,6 +102,10 @@ function tache_tirage_parti(mixed $carte_id, mixed $element_id): array
         throw new ErreurApi('requete_invalide', 400, 'Requête illisible.');
     }
     $carte = trello_carte_autorisee($carte_id);
+    $etapes = array_merge(...array_map(fn(array $l): array => array_column($l['elements'], 'id'), $carte['checklists']));
+    if ($element_id !== null && !in_array($element_id, $etapes, true)) {
+        throw new ErreurApi('element_introuvable', 404, JR_MESSAGES_INTROUVABLE['element_introuvable']);
+    }
     action_noter('tirage_parti', $carte['domaine'], $carte['id'], $element_id, maintenant(), 'app', 'exacte');
     return ['carte' => $carte['id'], 'element' => $element_id];
 }
@@ -205,8 +209,15 @@ function tache_deplacer(mixed $carte_id, mixed $colonne): array
         return ['carte' => $carte['id'], 'colonne' => $colonne];
     }
     sous_verrou_trello(function () use ($carte, $colonne): void {
-        trello_ecrire_carte($carte['id'], "/cards/{$carte['id']}", ['idList' => trello_id_colonne($carte['domaine'], $colonne), 'pos' => 'top']);
-        deplacer_dans_la_copie($carte['id'], $colonne, $carte['echeance_faite']);
+        $corps = ['idList' => trello_id_colonne($carte['domaine'], $colonne), 'pos' => 'top'];
+        $echeance_faite = $carte['echeance_faite'];
+        // Une carte rouverte redevient à faire : son échéance n'est plus marquée faite (elle peut être en retard)
+        if ($carte['colonne'] === 'fait' && $carte['echeance'] !== null) {
+            $corps['dueComplete'] = false;
+            $echeance_faite = false;
+        }
+        trello_ecrire_carte($carte['id'], "/cards/{$carte['id']}", $corps);
+        deplacer_dans_la_copie($carte['id'], $colonne, $echeance_faite);
         if ($carte['colonne'] === 'fait') {
             action_noter('carte_rouverte', $carte['domaine'], $carte['id'], null, maintenant(), 'app', 'exacte');
         }

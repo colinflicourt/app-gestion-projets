@@ -105,3 +105,13 @@ test("copies : copie_modifier corrige le contenu sans changer l'heure ; sans cop
     egal('2026-10-09 10:00:00', utc(copie_lire('essai')['recupere_le']));
     vrai(verrou_libre('essai'), 'verrou rendu');
 });
+
+test("copies : écrire une semaine d'agenda efface les semaines lues il y a plus de 30 jours, jamais trello ni agenda", function () {
+    $pdo = base_de_test();
+    copie_ecrire('trello', ['cartes' => []], utc_test('2026-08-01 10:00:00'));
+    copie_ecrire('agenda', ['jours' => []], utc_test('2026-08-01 10:00:00'));
+    copie_ecrire('agenda:2026-W31', ['jours' => []], utc_test('2026-08-01 10:00:00'));
+    copie_ecrire('agenda:2026-W40', ['jours' => []], utc_test('2026-10-01 10:00:00'));
+    copie_ecrire('agenda:2026-W42', ['jours' => []], utc_test('2026-10-10 10:00:00'));
+    egal(['agenda', 'agenda:2026-W40', 'agenda:2026-W42', 'trello'], $pdo->query('SELECT source FROM copies ORDER BY source')->fetchAll(PDO::FETCH_COLUMN));
+});
