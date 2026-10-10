@@ -12,6 +12,7 @@ import * as attente from './ecrans/attente.js';
 import * as taches from './ecrans/taches.js';
 import * as carte from './ecrans/carte.js';
 import * as aujourdhui from './ecrans/aujourdhui.js';
+import * as capture from './ecrans/capture.js';
 
 const ECRANS = {
   aujourdhui,
@@ -21,7 +22,7 @@ const ECRANS = {
   moi: attente,
 };
 const FEUILLES = {
-  capture: null,
+  capture,
 };
 const ONGLETS = ['aujourdhui', 'agenda', 'taches', 'moi'];
 const DOMAINES = ['qyris', 'asso', 'etudes', 'perso'];
