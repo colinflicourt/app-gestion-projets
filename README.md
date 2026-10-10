@@ -17,23 +17,19 @@ Remplace l'ancienne idée d'« application personnelle de gestion de projets » 
 - 2026-10-08 : **étape 8a faite** : spec technique `SPEC.md` validée par Colin (socle commun et lot 1 en détail), puis plan 1 du lot 1 (`plans/2026-10-08-lot1-1-socle-serveur.md`). Le lot 1 est découpé en 3 plans successifs : socle serveur, données, app iPhone
 - 2026-10-09 : **lot 1, plan 1 (socle serveur) fait et en ligne** : base migrée, connexion, sessions, `/api/sante` (`{"ok":true,"version_app":"0.1.0","version_base":1,"base_ok":true}`). 62 tests au vert. Revue de code avant la mise en ligne : 3 constats corrigés (essais de connexion comptés avant la vérification, migration rejouable, dépréciations PHP tolérées). Vérifié en ligne : HTTPS forcé, en-têtes de sécurité, `serveur/` hors du web, API qui refuse sans session ou depuis une autre origine. Mot de passe choisi par Colin. Plan : `plans/2026-10-08-lot1-1-socle-serveur.md`
 - 2026-10-10 : **lot 1, plan 2 (données) fait** : lecture des 4 tableaux Trello en un appel, Google Agenda (connexion PKCE, jetons chiffrés, 2 agendas), créneaux et bandeaux, copies rafraîchies sous verrou, actions faites ailleurs notées, écritures de la to-do (cocher, terminer, annuler, déplacer, ajouter, tirage) avec liste blanche. 148 tests au vert. Vérifié en local sur les vraies données (Google connecté en dev, 15 jours identiques à l'agenda « UTC · Emploi du temps A26 »). Revue de code : 3 constats corrigés (verrou de la copie tenu pendant toute une écriture, pour ne pas noter deux fois une action ; carte supprimée dans Trello renvoyée en 404 et retirée de la copie ; verrou occupé qui rend la dernière copie au lieu d'une 500). Rien de mis en ligne : ce sera fait avec l'app, à la fin du plan 3. Plan : `plans/2026-10-09-lot1-2-donnees.md`
+- 2026-10-10 : **lot 1, plan 3 (l'app iPhone) fait** : Aujourd'hui (écran de conduite, Junior, tranches, sous le pli), tirage GO, Tâches et carte ouverte, capture, Agenda, Moi, connexion, copie IndexedDB, file des écritures hors ligne, service worker, page de confidentialité. Reprises serveur de la revue du plan 2, capture sans seconde carte (migration 002). 159 tests PHP, 30 tests de modules (`node --test`), 45 tests d'écran (Playwright). Revues de finition (verdict « ship », `DESIGN.md`), de code (4 constats corrigés : file des écritures sans écriture perdue ni ressuscitée, réponse illisible gardée en file, déconnexion sur une session déjà effacée, `sw.js` envoyé en dernier) et de sécurité (aucune faille sérieuse). Vérifié par Colin sur ses vraies données en local, dans Chrome. Plan : `plans/2026-10-10-lot1-3-app-iphone.md`
 
 ## Prochaine session
 
-1. Écrire et exécuter le plan 3 du lot 1 (l'app iPhone : écrans, tirage, phrase du jour, hors ligne, service worker, page de confidentialité, Playwright), puis mise en ligne par Colin et recette du lot 1 (SPEC § 12.5). Google sera à reconnecter en production depuis Moi (la connexion faite en dev est dans la base locale).
-2. À trancher par Colin avant le plan 3 : le message « Google m'a déconnecté… Reconnecte-le dans Réglages » (CONTENU § 11) alors que la connexion Google est dans Moi (SPEC § 8.1).
-3. Préparatifs de Colin restants (carte Trello) : compte cron-job.org avant le lot 2, redirection UTC et mots de passe d'application avant le lot 3.
+1. Mise en ligne par Colin (`outils/deploy-ovh.sh`), connexion de Google en production depuis Moi, installation sur l'iPhone, recette du lot 1 (SPEC § 12.5) : tâche 14 du plan 3.
+2. Préparatifs de Colin restants (carte Trello) : compte cron-job.org avant le lot 2, redirection UTC et mots de passe d'application avant le lot 3. Accord pour créer les 3 médians dans l'agenda principal avant le lot 2 (l'indicateur « médian J-7 » d'Aujourd'hui les attend).
+3. À trancher par Colin : les chiffres des codes d'UV au marqueur (`DESIGN.md`, fin), l'effacement de la copie de l'iPhone au premier 401 (constats ci-dessous).
 
-**À reprendre au plan 3** (revue du plan 2, 2026-10-10) :
-- **Seconde carte possible au renvoi d'une capture** : si Trello crée la carte mais que sa réponse dépasse 8 s, l'iPhone reçoit une 502 et le renvoi refait un `POST /cards`. Cas rare, carte en double visible. À traiter avec la file hors ligne (marque « en cours » par `id_client`, puis carte retrouvée par son titre et sa date de création au renvoi). Même cause pour Annuler : « Trop tard » alors que Trello a remis la carte
+**À reprendre** (revue du plan 2, 2026-10-10) :
 - **Agenda UTC introuvable sans signal** : si `calendarList` échoue à la connexion, ou si l'agenda ne s'appelle plus « UTC · Emploi du temps A26 » (semestre P27), 15 jours sans cours et `erreur: null`. Il faut un code d'erreur (texte à valider par Colin) et une nouvelle recherche des agendas. **À faire avant P27**
-- Un jeton Google indéchiffrable (clé changée) fait répondre 500 à tout `GET donnees` : isoler chaque source dans `donnees_reponse()` et traiter un jeton illisible comme absent
-- Sortir une carte de Fait garde `dueComplete` : une carte rouverte en retard n'apparaît pas « En retard »
-- `tirage/parti` ne vérifie pas que l'étape appartient à la carte
 - Un événement avec heure sur plusieurs jours n'apparaît que le premier jour (aucun test)
 - Les tests n'installent pas `set_error_handler('erreur_php')` comme la production
 - Détection des actions et écriture de la copie hors transaction (actions notées deux fois si `copie_ecrire` échoue)
-- Les copies `agenda:AAAA-Www` ne sont jamais purgées
 - Écarts au SPEC § 5.5 à ajouter à la liste : champ `median` des événements, champ `semaine` de `GET agenda`
 
 **Constats mineurs des revues du plan 3** (code et sécurité, 2026-10-10), non corrigés :
@@ -102,7 +98,11 @@ Diagnostic `outils/test-serveur/` (`diagnostic.php`, envoyé et retiré par Coli
 - `site/` : la partie publique (`api/index.php`, `.htaccess`, `robots.txt`, images), envoyée dans `jr.qyris.fr/www/`
 - `tests/` : `php tests/run.php`, toujours à travers le filtre des secrets (MySQL local lancé : `brew services run mysql@8.4`)
 - `outils/deploy-ovh.sh` et `outils/definir-mot-de-passe.sh` : mise en ligne et choix du mot de passe, lancés par Colin dans son terminal
-- `outils/apercu.php` : aperçu local, `php -S localhost:8787 -t site outils/apercu.php`
+- `site/js/` : l'app (modules ES, sans build) ; `site/css/app.css` ; `site/sw.js` (sa `VERSION` est donnée par `php tests/run.php`) ; `site/confidentialite.html`
+- `tests/js/` : `node --test 'tests/js/*.test.mjs'` (modules purs)
+- `tests/e2e/` : `node tests/e2e/lancer.mjs` (Playwright, installer une fois : `npm install --prefix tests/e2e`) ; `node tests/e2e/captures.mjs` (captures de tous les écrans)
+- `DESIGN.md` : le système visuel de l'app
+- `outils/apercu.php` : aperçu local, `php -S localhost:8787 -t site outils/apercu.php`. À ouvrir dans **Chrome** : Safari refuse le cookie de session (Secure) sur `http://localhost`, la connexion n'y tient pas
 - `outils/installer-mysql-local.sh` : MySQL 8.4 local et ses deux bases (déjà fait le 2026-10-08)
 - `outils/ovh-sftp.sh` : commandes lftp en SFTP sur l'OVH perso (à lancer à travers le filtre des secrets)
 - `outils/test-serveur/` : diagnostic de l'hébergement, `envoyer.sh` et `nettoyer.sh` (lancés par Colin)
