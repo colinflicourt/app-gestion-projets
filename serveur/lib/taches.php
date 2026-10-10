@@ -171,3 +171,68 @@ function tache_deplacer(mixed $carte_id, mixed $colonne): array
     }
     return ['carte' => $carte['id'], 'colonne' => $colonne];
 }
+
+const JR_TITRE_MAX = 300;
+
+// Échéance de l'iPhone, heure de Paris : AAAA-MM-JJ (18 h 00, comme trello.py) ou AAAA-MM-JJTHH:MM
+function echeance_lire(mixed $texte): ?DateTimeImmutable
+{
+    if ($texte === null || $texte === '') {
+        return null;
+    }
+    $refus = new ErreurApi('echeance_invalide', 400, 'Date illisible.');
+    if (!is_string($texte) || !preg_match('/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/', $texte)) {
+        throw $refus;
+    }
+    $format = strlen($texte) === 10 ? 'Y-m-d' : 'Y-m-d\TH:i';
+    $moment = DateTimeImmutable::createFromFormat('!' . $format, $texte, paris());
+    // 2026-02-30 ou 25:00 sont « corrigés » par PHP : la relecture ne redonne alors pas le texte
+    if ($moment === false || $moment->format($format) !== $texte) {
+        throw $refus;
+    }
+    return strlen($texte) === 10 ? $moment->setTime(18, 0) : $moment;
+}
+
+function tache_ajouter(mixed $domaine, mixed $titre, mixed $urgent, mixed $echeance): array
+{
+    if (!in_array($domaine, JR_DOMAINES, true) || !is_string($titre) || ($urgent !== null && !is_bool($urgent))) {
+        throw new ErreurApi('requete_invalide', 400, 'Requête illisible.');
+    }
+    $titre = trim((string) preg_replace('/\s+/u', ' ', $titre));
+    if ($titre === '' || mb_strlen($titre) > JR_TITRE_MAX) {
+        throw new ErreurApi('titre_invalide', 400, 'Il me faut un titre (300 caractères au plus).');
+    }
+    $urgent = $urgent === true;
+    $quand = echeance_lire($echeance);
+    $corps = ['idList' => trello_id_colonne($domaine, 'a_faire'), 'name' => $titre, 'pos' => 'top'];
+    if ($urgent) {
+        $corps['idLabels'] = [trello_ids()['tableaux'][$domaine]['etiquettes']['Urgent']];
+    }
+    if ($quand !== null) {
+        $corps['due'] = $quand->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i:s.v\Z');
+    }
+    $cree = trello_ecrire('POST', '/cards', $corps);
+    if (is_array($cree)) {
+        $carte = trello_normaliser_carte($domaine, 'a_faire', $cree, []);
+    } else {
+        // Simulée : la carte n'existe que dans la copie
+        $carte = [
+            'id' => bin2hex(random_bytes(12)),
+            'domaine' => $domaine,
+            'colonne' => 'a_faire',
+            'position' => position_en_haut(copie_lire('trello')['contenu']['cartes'] ?? [], $domaine, 'a_faire'),
+            'titre' => $titre,
+            'description' => '',
+            'url' => '',
+            'echeance' => $quand === null ? null : iso_paris($quand),
+            'echeance_faite' => false,
+            'urgent' => $urgent,
+            'etiquettes' => [],
+            'checklists' => [],
+            'derniere_activite' => iso_paris(maintenant()),
+        ];
+    }
+    copie_modifier('trello', fn(array $contenu): array => ['cartes' => trier_cartes([...$contenu['cartes'], $carte])] + $contenu);
+    action_noter('carte_ajoutee', $domaine, $carte['id'], null, maintenant(), 'app', 'exacte', ['urgent' => $urgent, 'echeance' => $carte['echeance']]);
+    return ['carte' => $carte];
+}
