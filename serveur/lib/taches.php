@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/amorce.php';
 require_once __DIR__ . '/actions.php';
+require_once __DIR__ . '/ecritures.php';
 require_once __DIR__ . '/rafraichir.php';
 require_once __DIR__ . '/reponse.php';
 require_once __DIR__ . '/trello.php';
@@ -67,4 +68,106 @@ function tache_tirage_parti(mixed $carte_id, mixed $element_id): array
     $carte = trello_carte_autorisee($carte_id);
     action_noter('tirage_parti', $carte['domaine'], $carte['id'], $element_id, maintenant(), 'app', 'exacte');
     return ['carte' => $carte['id'], 'element' => $element_id];
+}
+
+const JR_ANNULER_DELAI = 10;  // l'iPhone propose « Annuler » 5 s, le reste couvre la latence
+
+// Position d'une carte posée en haut de $colonne (Trello fait de même avec pos=top)
+function position_en_haut(array $cartes, string $domaine, string $colonne, ?string $sauf = null): float
+{
+    $positions = [];
+    foreach ($cartes as $c) {
+        if ($c['domaine'] === $domaine && $c['colonne'] === $colonne && $c['id'] !== $sauf) {
+            $positions[] = (float) $c['position'];
+        }
+    }
+    if ($positions === []) {
+        return 65536.0;
+    }
+    $min = min($positions);
+    return $min > 0 ? $min / 2 : $min - 1;
+}
+
+// La carte passe dans $colonne, en haut ou à $position (Annuler), dans la copie du serveur
+function deplacer_dans_la_copie(string $carte_id, string $colonne, bool $echeance_faite, ?float $position = null): void
+{
+    copie_modifier('trello', function (array $contenu) use ($carte_id, $colonne, $echeance_faite, $position): array {
+        foreach ($contenu['cartes'] as $i => $c) {
+            if ($c['id'] === $carte_id) {
+                $contenu['cartes'][$i]['position'] = $position ?? position_en_haut($contenu['cartes'], $c['domaine'], $colonne, $carte_id);
+                $contenu['cartes'][$i]['colonne'] = $colonne;
+                $contenu['cartes'][$i]['echeance_faite'] = $echeance_faite;
+                $contenu['cartes'][$i]['derniere_activite'] = iso_paris(maintenant());
+            }
+        }
+        $contenu['cartes'] = trier_cartes($contenu['cartes']);
+        return $contenu;
+    });
+}
+
+// En haut de Fait, échéance marquée faite (comme trello.py terminer). Ce qu'il faut pour annuler est rendu,
+// donc gardé dans ecritures.resultat.
+function tache_terminer(mixed $carte_id): array
+{
+    $carte = trello_carte_autorisee($carte_id);
+    if ($carte['colonne'] === 'fait') {
+        throw new ErreurApi('deja_faite', 409, 'Cette carte est déjà terminée.');
+    }
+    $corps = ['idList' => trello_id_colonne($carte['domaine'], 'fait'), 'pos' => 'top'];
+    if ($carte['echeance'] !== null) {
+        $corps['dueComplete'] = true;
+    }
+    trello_ecrire('PUT', "/cards/{$carte['id']}", $corps);
+    deplacer_dans_la_copie($carte['id'], 'fait', $carte['echeance'] !== null || $carte['echeance_faite']);
+    $action = action_noter('carte_terminee', $carte['domaine'], $carte['id'], null, maintenant(), 'app', 'exacte', ['urgent' => $carte['urgent'], 'echeance' => $carte['echeance']]);
+    return [
+        'carte' => $carte['id'],
+        'colonne' => 'fait',
+        'colonne_avant' => $carte['colonne'],
+        'position_avant' => (float) $carte['position'],
+        'echeance_faite_avant' => $carte['echeance_faite'],
+        'action' => $action,
+    ];
+}
+
+function tache_annuler(mixed $id_client_origine): array
+{
+    if (!is_string($id_client_origine)) {
+        throw new ErreurApi('requete_invalide', 400, 'Requête illisible.');
+    }
+    $origine = ecriture_trouver($id_client_origine);
+    if ($origine === null || $origine['route'] !== 'taches/terminer') {
+        throw new ErreurApi('annulation_impossible', 404, 'Rien à annuler.');
+    }
+    if (maintenant()->getTimestamp() - depuis_utc($origine['recu_le'])->getTimestamp() > JR_ANNULER_DELAI) {
+        throw new ErreurApi('annulation_trop_tard', 409, 'Trop tard pour annuler.');
+    }
+    $r = $origine['resultat'];
+    $carte = trello_carte_autorisee($r['carte']);
+    trello_ecrire('PUT', "/cards/{$carte['id']}", [
+        'idList' => trello_id_colonne($carte['domaine'], $r['colonne_avant']),
+        'pos' => (float) $r['position_avant'],
+        'dueComplete' => (bool) $r['echeance_faite_avant'],
+    ]);
+    deplacer_dans_la_copie($carte['id'], $r['colonne_avant'], (bool) $r['echeance_faite_avant'], (float) $r['position_avant']);
+    action_annuler((int) $r['action']);
+    return ['carte' => $carte['id'], 'colonne' => $r['colonne_avant']];
+}
+
+// Vers Fait, c'est « Terminer ». Sortir de Fait rouvre la carte.
+function tache_deplacer(mixed $carte_id, mixed $colonne): array
+{
+    if (!in_array($colonne, ['a_faire', 'en_cours', 'en_attente'], true)) {
+        throw new ErreurApi('requete_invalide', 400, 'Requête illisible.');
+    }
+    $carte = trello_carte_autorisee($carte_id);
+    if ($carte['colonne'] === $colonne) {
+        return ['carte' => $carte['id'], 'colonne' => $colonne];
+    }
+    trello_ecrire('PUT', "/cards/{$carte['id']}", ['idList' => trello_id_colonne($carte['domaine'], $colonne), 'pos' => 'top']);
+    deplacer_dans_la_copie($carte['id'], $colonne, $carte['echeance_faite']);
+    if ($carte['colonne'] === 'fait') {
+        action_noter('carte_rouverte', $carte['domaine'], $carte['id'], null, maintenant(), 'app', 'exacte');
+    }
+    return ['carte' => $carte['id'], 'colonne' => $colonne];
 }
