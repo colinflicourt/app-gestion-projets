@@ -119,6 +119,7 @@ function lancer_tests(string $filtre): int
         };
         $GLOBALS['JR_APPELS_HTTP'] = [];
         $GLOBALS['JR_TRELLO_IDS'] = fabrique_trello_ids();
+        $GLOBALS['JR_VERROU_ATTENTE'] = null;
         try {
             $f();
             $reussis++;

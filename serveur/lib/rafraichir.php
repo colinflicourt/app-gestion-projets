@@ -9,6 +9,15 @@ require_once __DIR__ . '/http.php';
 
 const JR_VERROU_SOURCE_ATTENTE = 10;
 
+// Le verrou d'une source n'a pas été obtenu à temps (lectures lentes de Trello ou de Google en file)
+final class VerrouIndisponible extends RuntimeException {}
+
+// Code envoyé à l'iPhone quand une source ne peut être ni lue ni écrite
+function code_indisponible(string $source): string
+{
+    return str_starts_with($source, 'agenda') ? 'google_indisponible' : 'trello_indisponible';
+}
+
 function copie_lire(string $source): ?array
 {
     $requete = db()->prepare('SELECT contenu, recupere_le, empreinte FROM copies WHERE source = ?');
@@ -32,12 +41,14 @@ function copie_ecrire(string $source, array $contenu, DateTimeImmutable $recuper
         ->execute([$source, $json, utc($recupere_le), hash('sha256', $json)]);
 }
 
-function verrou_source_prendre(string $source, int $attente = JR_VERROU_SOURCE_ATTENTE): void
+// Réentrant (GET_LOCK de MySQL 8) : une écriture qui tient le verrou peut corriger la copie. Les tests
+// raccourcissent l'attente par $GLOBALS['JR_VERROU_ATTENTE'].
+function verrou_source_prendre(string $source, ?int $attente = null): void
 {
     $prise = db()->prepare('SELECT GET_LOCK(?, ?)');
-    $prise->execute(['jr_source_' . $source, $attente]);
+    $prise->execute(['jr_source_' . $source, $attente ?? $GLOBALS['JR_VERROU_ATTENTE'] ?? JR_VERROU_SOURCE_ATTENTE]);
     if ((int) $prise->fetchColumn() !== 1) {
-        throw new RuntimeException('Verrou de la source indisponible');
+        throw new VerrouIndisponible('Verrou de la source indisponible');
     }
 }
 
@@ -73,7 +84,13 @@ function rafraichir(string $source, int $age_max, callable $recuperer, ?callable
     if ($fraiche($copie)) {
         return resultat_copie($copie, null);
     }
-    verrou_source_prendre($source);
+    try {
+        verrou_source_prendre($source);
+    } catch (VerrouIndisponible $e) {
+        // Lectures lentes en file : la dernière copie plutôt qu'une 500
+        journal_erreur("rafraichir/$source", $e);
+        return resultat_copie($copie, code_indisponible($source));
+    }
     try {
         // Un autre appel a peut-être rafraîchi pendant l'attente du verrou
         $copie = copie_lire($source);

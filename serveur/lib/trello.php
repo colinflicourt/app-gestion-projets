@@ -11,6 +11,10 @@ require_once __DIR__ . '/reponse.php';
 const JR_TRELLO_API = 'https://api.trello.com/1';
 const JR_COLONNES = ['À faire' => 'a_faire', 'En cours' => 'en_cours', 'En attente' => 'en_attente', 'Fait' => 'fait'];
 const JR_REGEX_ID_TRELLO = '/^[0-9a-f]{24}$/';
+const JR_MESSAGES_INTROUVABLE = [
+    'carte_introuvable' => "Cette carte n'existe plus dans Trello.",
+    'element_introuvable' => "Cette étape n'existe plus dans Trello.",
+];
 
 // serveur/trello-ids.json, copié depuis .claude/scripts/ par generer-config.php (une seule source).
 // Les tests posent $GLOBALS['JR_TRELLO_IDS'].
@@ -166,7 +170,7 @@ function trello_carte_autorisee(mixed $carte_id): array
         $carte = trello_appel('GET', "/cards/$carte_id", ['checklists' => 'all']);
     } catch (ErreurSource $e) {
         if (in_array($e->statutHttp, [400, 404], true)) {
-            throw new ErreurApi('carte_introuvable', 404, "Cette carte n'existe plus dans Trello.");
+            throw new ErreurApi('carte_introuvable', 404, JR_MESSAGES_INTROUVABLE['carte_introuvable']);
         }
         throw $e;
     }

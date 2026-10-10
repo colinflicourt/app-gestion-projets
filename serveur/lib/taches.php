@@ -23,6 +23,40 @@ function copie_modifier_carte(string $carte_id, callable $modifier): void
     });
 }
 
+// Une écriture tient le verrou de la copie Trello de l'appel à Trello jusqu'à la notation de l'action :
+// un rafraîchissement ne peut pas lire Trello déjà modifié avant que l'action de l'app soit notée (elle
+// serait notée une seconde fois comme faite ailleurs). Verrou pas obtenu : 502, l'iPhone réessaiera.
+function sous_verrou_trello(callable $ecriture): mixed
+{
+    try {
+        verrou_source_prendre('trello');
+    } catch (VerrouIndisponible) {
+        throw new ErreurSource('trello_indisponible', 'Trello : verrou de la copie indisponible');
+    }
+    try {
+        return $ecriture();
+    } finally {
+        verrou_source_rendre('trello');
+    }
+}
+
+// PUT sur une carte. Supprimée dans Trello depuis la copie (400 ou 404) : 404 pour que l'iPhone retire
+// l'écriture de sa file, et la carte quitte la copie. Une étape disparue garde la carte.
+function trello_ecrire_carte(string $carte_id, string $chemin, array $corps, string $introuvable = 'carte_introuvable'): void
+{
+    try {
+        trello_ecrire('PUT', $chemin, $corps);
+    } catch (ErreurSource $e) {
+        if (!in_array($e->statutHttp, [400, 404], true)) {
+            throw $e;
+        }
+        if ($introuvable === 'carte_introuvable') {
+            copie_modifier('trello', fn(array $c): array => ['cartes' => array_values(array_filter($c['cartes'], fn(array $x): bool => $x['id'] !== $carte_id))] + $c);
+        }
+        throw new ErreurApi($introuvable, 404, JR_MESSAGES_INTROUVABLE[$introuvable]);
+    }
+}
+
 function tache_cocher(mixed $carte_id, mixed $element_id, mixed $coche): array
 {
     if (!is_bool($coche) || !is_string($element_id) || !preg_match(JR_REGEX_ID_TRELLO, $element_id)) {
@@ -38,24 +72,26 @@ function tache_cocher(mixed $carte_id, mixed $element_id, mixed $coche): array
         }
     }
     if ($avant === null) {
-        throw new ErreurApi('element_introuvable', 404, "Cette étape n'existe plus dans Trello.");
+        throw new ErreurApi('element_introuvable', 404, JR_MESSAGES_INTROUVABLE['element_introuvable']);
     }
-    trello_ecrire('PUT', "/cards/{$carte['id']}/checkItem/$element_id", ['state' => $coche ? 'complete' : 'incomplete']);
-    copie_modifier_carte($carte['id'], function (array $c) use ($element_id, $coche): array {
-        foreach ($c['checklists'] as $l => $liste) {
-            foreach ($liste['elements'] as $e => $element) {
-                if ($element['id'] === $element_id) {
-                    $c['checklists'][$l]['elements'][$e]['coche'] = $coche;
+    sous_verrou_trello(function () use ($carte, $element_id, $coche, $avant): void {
+        trello_ecrire_carte($carte['id'], "/cards/{$carte['id']}/checkItem/$element_id", ['state' => $coche ? 'complete' : 'incomplete'], 'element_introuvable');
+        copie_modifier_carte($carte['id'], function (array $c) use ($element_id, $coche): array {
+            foreach ($c['checklists'] as $l => $liste) {
+                foreach ($liste['elements'] as $e => $element) {
+                    if ($element['id'] === $element_id) {
+                        $c['checklists'][$l]['elements'][$e]['coche'] = $coche;
+                    }
                 }
             }
+            $c['derniere_activite'] = iso_paris(maintenant());
+            return $c;
+        });
+        // Pas d'action pour une étape déjà dans cet état : pas d'XP pour rien
+        if ($avant !== $coche) {
+            action_noter($coche ? 'etape_cochee' : 'etape_decochee', $carte['domaine'], $carte['id'], $element_id, maintenant(), 'app', 'exacte');
         }
-        $c['derniere_activite'] = iso_paris(maintenant());
-        return $c;
     });
-    // Pas d'action pour une étape déjà dans cet état : pas d'XP pour rien
-    if ($avant !== $coche) {
-        action_noter($coche ? 'etape_cochee' : 'etape_decochee', $carte['domaine'], $carte['id'], $element_id, maintenant(), 'app', 'exacte');
-    }
     return ['carte' => $carte['id'], 'element' => $element_id, 'coche' => $coche];
 }
 
@@ -117,9 +153,11 @@ function tache_terminer(mixed $carte_id): array
     if ($carte['echeance'] !== null) {
         $corps['dueComplete'] = true;
     }
-    trello_ecrire('PUT', "/cards/{$carte['id']}", $corps);
-    deplacer_dans_la_copie($carte['id'], 'fait', $carte['echeance'] !== null || $carte['echeance_faite']);
-    $action = action_noter('carte_terminee', $carte['domaine'], $carte['id'], null, maintenant(), 'app', 'exacte', ['urgent' => $carte['urgent'], 'echeance' => $carte['echeance']]);
+    $action = sous_verrou_trello(function () use ($carte, $corps): int {
+        trello_ecrire_carte($carte['id'], "/cards/{$carte['id']}", $corps);
+        deplacer_dans_la_copie($carte['id'], 'fait', $carte['echeance'] !== null || $carte['echeance_faite']);
+        return action_noter('carte_terminee', $carte['domaine'], $carte['id'], null, maintenant(), 'app', 'exacte', ['urgent' => $carte['urgent'], 'echeance' => $carte['echeance']]);
+    });
     return [
         'carte' => $carte['id'],
         'colonne' => 'fait',
@@ -144,13 +182,15 @@ function tache_annuler(mixed $id_client_origine): array
     }
     $r = $origine['resultat'];
     $carte = trello_carte_autorisee($r['carte']);
-    trello_ecrire('PUT', "/cards/{$carte['id']}", [
-        'idList' => trello_id_colonne($carte['domaine'], $r['colonne_avant']),
-        'pos' => (float) $r['position_avant'],
-        'dueComplete' => (bool) $r['echeance_faite_avant'],
-    ]);
-    deplacer_dans_la_copie($carte['id'], $r['colonne_avant'], (bool) $r['echeance_faite_avant'], (float) $r['position_avant']);
-    action_annuler((int) $r['action']);
+    sous_verrou_trello(function () use ($carte, $r): void {
+        trello_ecrire_carte($carte['id'], "/cards/{$carte['id']}", [
+            'idList' => trello_id_colonne($carte['domaine'], $r['colonne_avant']),
+            'pos' => (float) $r['position_avant'],
+            'dueComplete' => (bool) $r['echeance_faite_avant'],
+        ]);
+        deplacer_dans_la_copie($carte['id'], $r['colonne_avant'], (bool) $r['echeance_faite_avant'], (float) $r['position_avant']);
+        action_annuler((int) $r['action']);
+    });
     return ['carte' => $carte['id'], 'colonne' => $r['colonne_avant']];
 }
 
@@ -164,11 +204,13 @@ function tache_deplacer(mixed $carte_id, mixed $colonne): array
     if ($carte['colonne'] === $colonne) {
         return ['carte' => $carte['id'], 'colonne' => $colonne];
     }
-    trello_ecrire('PUT', "/cards/{$carte['id']}", ['idList' => trello_id_colonne($carte['domaine'], $colonne), 'pos' => 'top']);
-    deplacer_dans_la_copie($carte['id'], $colonne, $carte['echeance_faite']);
-    if ($carte['colonne'] === 'fait') {
-        action_noter('carte_rouverte', $carte['domaine'], $carte['id'], null, maintenant(), 'app', 'exacte');
-    }
+    sous_verrou_trello(function () use ($carte, $colonne): void {
+        trello_ecrire_carte($carte['id'], "/cards/{$carte['id']}", ['idList' => trello_id_colonne($carte['domaine'], $colonne), 'pos' => 'top']);
+        deplacer_dans_la_copie($carte['id'], $colonne, $carte['echeance_faite']);
+        if ($carte['colonne'] === 'fait') {
+            action_noter('carte_rouverte', $carte['domaine'], $carte['id'], null, maintenant(), 'app', 'exacte');
+        }
+    });
     return ['carte' => $carte['id'], 'colonne' => $colonne];
 }
 
@@ -211,28 +253,31 @@ function tache_ajouter(mixed $domaine, mixed $titre, mixed $urgent, mixed $echea
     if ($quand !== null) {
         $corps['due'] = $quand->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i:s.v\Z');
     }
-    $cree = trello_ecrire('POST', '/cards', $corps);
-    if (is_array($cree)) {
-        $carte = trello_normaliser_carte($domaine, 'a_faire', $cree, []);
-    } else {
-        // Simulée : la carte n'existe que dans la copie
-        $carte = [
-            'id' => bin2hex(random_bytes(12)),
-            'domaine' => $domaine,
-            'colonne' => 'a_faire',
-            'position' => position_en_haut(copie_lire('trello')['contenu']['cartes'] ?? [], $domaine, 'a_faire'),
-            'titre' => $titre,
-            'description' => '',
-            'url' => '',
-            'echeance' => $quand === null ? null : iso_paris($quand),
-            'echeance_faite' => false,
-            'urgent' => $urgent,
-            'etiquettes' => [],
-            'checklists' => [],
-            'derniere_activite' => iso_paris(maintenant()),
-        ];
-    }
-    copie_modifier('trello', fn(array $contenu): array => ['cartes' => trier_cartes([...$contenu['cartes'], $carte])] + $contenu);
-    action_noter('carte_ajoutee', $domaine, $carte['id'], null, maintenant(), 'app', 'exacte', ['urgent' => $urgent, 'echeance' => $carte['echeance']]);
+    $carte = sous_verrou_trello(function () use ($domaine, $titre, $urgent, $quand, $corps): array {
+        $cree = trello_ecrire('POST', '/cards', $corps);
+        if (is_array($cree)) {
+            $carte = trello_normaliser_carte($domaine, 'a_faire', $cree, []);
+        } else {
+            // Simulée : la carte n'existe que dans la copie
+            $carte = [
+                'id' => bin2hex(random_bytes(12)),
+                'domaine' => $domaine,
+                'colonne' => 'a_faire',
+                'position' => position_en_haut(copie_lire('trello')['contenu']['cartes'] ?? [], $domaine, 'a_faire'),
+                'titre' => $titre,
+                'description' => '',
+                'url' => '',
+                'echeance' => $quand === null ? null : iso_paris($quand),
+                'echeance_faite' => false,
+                'urgent' => $urgent,
+                'etiquettes' => [],
+                'checklists' => [],
+                'derniere_activite' => iso_paris(maintenant()),
+            ];
+        }
+        copie_modifier('trello', fn(array $contenu): array => ['cartes' => trier_cartes([...$contenu['cartes'], $carte])] + $contenu);
+        action_noter('carte_ajoutee', $domaine, $carte['id'], null, maintenant(), 'app', 'exacte', ['urgent' => $urgent, 'echeance' => $carte['echeance']]);
+        return $carte;
+    });
     return ['carte' => $carte];
 }
