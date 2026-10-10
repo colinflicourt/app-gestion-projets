@@ -11,9 +11,10 @@ import * as connexion from './ecrans/connexion.js';
 import * as attente from './ecrans/attente.js';
 import * as taches from './ecrans/taches.js';
 import * as carte from './ecrans/carte.js';
+import * as aujourdhui from './ecrans/aujourdhui.js';
 
 const ECRANS = {
-  aujourdhui: attente,
+  aujourdhui,
   agenda: attente,
   taches,
   carte,
