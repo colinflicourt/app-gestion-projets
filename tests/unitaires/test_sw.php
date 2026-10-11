@@ -51,3 +51,18 @@ test("service worker : sa VERSION est l'empreinte des fichiers en cache (changer
     preg_match("/const VERSION = '([^']+)';/", sw_source(), $m);
     egal($attendue, $m[1] ?? null, "dans site/sw.js, mettre const VERSION = '$attendue';");
 });
+
+test('sw : un push affiche toujours une notification, même sans contenu lisible', function () {
+    $src = sw_source();
+    vrai(str_contains($src, "self.addEventListener('push'"), 'écouteur push');
+    vrai(str_contains($src, 'showNotification('), 'showNotification');
+    vrai(str_contains($src, 'Jarvis Jr. a quelque chose pour toi.'), 'texte de repli');
+    vrai(str_contains($src, 'e.waitUntil(afficher'), 'waitUntil sur l\'affichage');
+});
+
+test('sw : un toucher ramène l\'app sur l\'adresse de la notification, dans l\'app seulement', function () {
+    $src = sw_source();
+    vrai(str_contains($src, "self.addEventListener('notificationclick'"), 'écouteur notificationclick');
+    vrai(str_contains($src, 'clients.openWindow('), 'ouverture si aucune fenêtre');
+    vrai(str_contains($src, 'adresse_interne('), 'adresse filtrée');
+});

@@ -23,12 +23,15 @@ const IGNORES = [/^Failed to load resource/];
 export async function lancer(filtre) {
   const serveur = await demarrer();
   const navigateur = await chromium.launch();
+  // Le Chromium complet, lancé seulement si un test le demande : la version allégée refuse toujours les notifications
+  let complet = null;
   let reussis = 0;
   let echecs = 0;
   for (const { nom, f, options } of tests) {
     if (filtre && !nom.includes(filtre)) continue;
     serveur.reinitialiser();
-    const contexte = await navigateur.newContext({ ...IPHONE, baseURL: serveur.origine, serviceWorkers: options.serviceWorkers ?? 'block' });
+    const nav = options.chromiumComplet ? (complet ??= await chromium.launch({ channel: 'chromium' })) : navigateur;
+    const contexte = await nav.newContext({ ...IPHONE, baseURL: serveur.origine, serviceWorkers: options.serviceWorkers ?? 'block' });
     const page = await contexte.newPage();
     const erreurs = [];
     page.on('console', (m) => {
@@ -48,6 +51,7 @@ export async function lancer(filtre) {
     }
   }
   await navigateur.close();
+  await complet?.close();
   await serveur.arreter();
   console.log(`${reussis} réussi(s), ${echecs} échec(s)`);
   return echecs === 0 ? 0 : 1;
