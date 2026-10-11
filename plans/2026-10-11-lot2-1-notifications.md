@@ -436,7 +436,7 @@ function notifier_tous(array $message, string $urgence = 'normal', int $ttl = 43
 - Produces:
   - `POST abonnements` {`abonnement`} → `{ok: true}` (session exigée, met à jour `vu_le` à chaque appel) ;
   - `POST abonnements/supprimer` {`endpoint`} → `{ok: true}` ;
-  - `POST notifications/test` → `{envoyes, supprimes, echecs}`, message `{titre: 'Notification de test', texte: 'Si tu lis ça, tes rappels arriveront bien.', url: '/#/moi', tag: 'test'}` (textes de `CONTENU.md` § 5).
+  - `POST notifications/test` → `{envoyes, supprimes, echecs}`, message `{titre: 'Notification de test', texte: 'Si tu lis ça, tes rappels arriveront bien.', url: '/#/reglages', tag: 'test'}` (textes de `CONTENU.md` § 5 ; adresse Réglages, d'où part le test, décidé à l'exécution).
 
 - [ ] **Step 1 : tests** (suivre `tests/unitaires/test_routeur.php` pour appeler une route avec ou sans session et vérifier le jeton CSRF) : sans session → 401 ; abonnement valide → 200 et une ligne ; renvoyé deux fois → toujours une ligne ; endpoint hors liste → 400 `abonnement_invalide` ; test sans abonnement → `{envoyes: 0, …}` ; test avec un abonnement → un appel HTTP vers l'endpoint.
 - [ ] **Step 2 : implémentation** dans le format de `serveur/routes/systeme.php` (`'POST abonnements' => ['publique' => false, 'action' => function (array $requete, ?array $session): array { … }]`).
@@ -887,6 +887,6 @@ CSS (`site/css/app.css`, à côté de `.reglage-ligne`) : `.reglage-aide { margi
 
 - [ ] **Step 8 : tout au vert** : `php tests/run.php`, `node --test 'tests/js/*.test.mjs'`, `node tests/e2e/lancer.mjs` (les 45 tests d'écran du lot 1 compris).
 
-- [ ] **Step 9 : vraie notification dans Chrome sur le Mac**, avant toute mise en ligne : clés VAPID dans le fichier de secrets (tâche 1), `outils/generer-config.php`, aperçu local `php -S localhost:8787 -t site outils/apercu.php`, puis dans Chrome (Colin) : Moi, Réglages, « Activer les notifications », « Envoyer une notification de test » → la notification « Notification de test » s'affiche ; un clic ramène l'app sur Moi.
+- [ ] **Step 9 : vraie notification dans Chrome sur le Mac**, avant toute mise en ligne : clés VAPID dans le fichier de secrets (tâche 1), `outils/generer-config.php`, aperçu local `php -S localhost:8787 -t site outils/apercu.php`, puis dans Chrome (Colin) : Moi, Réglages, « Activer les notifications », « Envoyer une notification de test » → la notification « Notification de test » s'affiche ; un clic ramène l'app sur Réglages.
 
 - [ ] **Step 10 : commit** `Lot 2 : Réglages, activer les notifications et notification de test`

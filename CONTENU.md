@@ -120,8 +120,12 @@
 
 - **Notifications** :
   - « Activer les notifications » ;
-  - état « Actives sur cet iPhone » ;
+  - état « Actives sur cet iPhone », « Coupées » ou « Pas encore activées » ;
   - « Envoyer une notification de test ».
+  - Ajoutés le 2026-10-11 (plan 1 du lot 2), **à relire par Colin** :
+    - état « Indisponibles ici », avec « Les notifications marchent seulement dans l'app installée sur l'écran d'accueil (iOS 16.4 ou plus). » (Safari hors de l'app installée) ;
+    - après le test : « Notification envoyée. Elle arrive dans quelques secondes. » ;
+    - test sans appareil abonné : « Aucun appareil n'est abonné. Réactive les notifications sur cet iPhone. »
 - **Brief du matin** : heure (7 h 30) et jours.
 - **Rappels** :
   - avant les cours (15 min) ;

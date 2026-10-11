@@ -61,6 +61,7 @@ export function rendre(app) {
     h('button', { type: 'button', class: 'bouton bouton-large', onclick: () => sortir(app, false) }, M.deconnecter),
     h('button', { type: 'button', class: 'bouton bouton-large', onclick: () => sortir(app, true) }, M.deconnecterTout),
     h('h2', { class: 'section-titre' }, M.app), regle(),
+    h('a', { class: 'reglage-ligne lien', href: '#/reglages' }, M.reglages),
     h('p', { class: 'reglage-ligne' }, version ? M.version(version) : T.app),
     h('a', { class: 'reglage-ligne lien', href: '/confidentialite.html' }, M.confidentialite));
 }

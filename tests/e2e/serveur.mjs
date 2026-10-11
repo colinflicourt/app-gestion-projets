@@ -30,7 +30,7 @@ export async function demarrer() {
       for (const cle of Object.keys(etat)) delete etat[cle];
       // horsService : le réseau manque (connexion coupée). perdre : la prochaine écriture de cette route est
       // faite, mais sa réponse se perd. pannes : route → { statut, code, message }.
-      Object.assign(etat, { donnees, appels: [], vus: new Map(), pannes: {}, horsService: false, perdre: null });
+      Object.assign(etat, { donnees, appels: [], vus: new Map(), pannes: {}, horsService: false, perdre: null, testEnvoyes: 1 });
     },
     appels(route) {
       return etat.appels.filter((a) => a.route === route);
@@ -120,6 +120,8 @@ async function api(req, res, url, etat) {
     etat.donnees.agenda.erreur = null;
     return envoyer(res, 302, 'text/plain; charset=utf-8', '', { Location: '/#/moi?google=connecte' });
   }
+  if (req.method === 'POST' && (route === 'abonnements' || route === 'abonnements/supprimer')) return json(res, 200, {});
+  if (req.method === 'POST' && route === 'notifications/test') return json(res, 200, { envoyes: etat.testEnvoyes, supprimes: 0, echecs: 0 });
   if (req.method === 'POST') return ecrire(req, res, route, corps, etat);
   return json(res, 404, { code: 'route_inconnue', message: 'Adresse inconnue.' });
 }

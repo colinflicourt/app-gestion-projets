@@ -120,5 +120,6 @@ export function donneesDeBase() {
     maintenant,
     trello: { recupere_le: maintenant, erreur: null, cartes: cartes() },
     agenda: { recupere_le: maintenant, erreur: null, google_connecte: true, jours: joursDepuis('2026-10-14', 15) },
+    notifications: { cle: 'BP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A8' },
   };
 }

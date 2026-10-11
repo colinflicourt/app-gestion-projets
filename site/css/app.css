@@ -311,6 +311,7 @@ ul { padding: 0; list-style: none; }
 .reglage-ligne { display: flex; align-items: center; gap: 10px; min-height: 48px; border-bottom: 1px solid var(--panneau); font-size: calc(15 * var(--px)); font-weight: 600; text-decoration: none; }
 .temoin { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--contour); box-shadow: 0 0 0 3px var(--console); }
 .temoin.allume { background: var(--scotch); }
+.reglage-aide { margin-top: 10px; color: var(--texte-2); font-size: calc(14 * var(--px)); }
 .moi .bouton-large + .bouton-large { margin-top: 8px; }
 .lien { text-decoration: underline; text-underline-offset: 3px; }
 
