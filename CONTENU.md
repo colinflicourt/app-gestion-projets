@@ -172,6 +172,31 @@
 | Promotion de Junior | Promotion | Junior passe Assistant. Il réclame déjà une augmentation. |
 | Nouvelle carte | Nouvelle carte | Le Poly à la BU, veille de médian. Études · 04 / 13. |
 
+### 5.1 Répliques du brief du matin
+
+Ajoutées le 2026-10-11 (décision de Colin : le brief finit par une réplique). **Proposition de Claude, à relire par Colin.** Une seule par brief, tirée au hasard, jamais deux jours de suite la même.
+
+1. J'ai déjà tout rangé. Toi, tu n'as qu'à exister.
+2. Café d'abord, génie ensuite.
+3. Rien d'impossible aujourd'hui. J'ai vérifié.
+4. Je t'ai préparé la journée. Les applaudissements, c'est plus tard.
+5. Tu peux traîner au lit. Le Bug, lui, est déjà debout.
+6. Une journée de plus à me rendre indispensable.
+7. Si tu suis le plan, je prends le mérite. Sinon, c'est toi.
+8. Petit rappel : Jarvis, c'est moi en plus grand. Et en moins drôle.
+9. J'aurais fait la journée à ta place, mais il me manque des jambes.
+10. Les cartes Trello ne se terminent pas en les regardant. J'ai testé.
+11. Aujourd'hui, on vise la colonne Fait. Elle se sent seule.
+12. Le Poly t'attend. Il n'a rien d'autre à faire, lui.
+13. Debout, Majordome en devenir. Ah non, c'est moi le Majordome.
+14. Journée chargée. Heureusement, tu m'as.
+15. Météo de la journée : 100 % de chances que je te le rappelle.
+16. J'ai relu ton agenda. Courage. Sincèrement.
+17. La Flemme a demandé de tes nouvelles. Je lui ai dit que tu étais occupé.
+18. On fait simple : un GO, une tâche, une victoire.
+19. Tu as dormi. Moi non. Je ne me plains pas, je le signale.
+20. Si quelqu'un demande, c'était mon idée.
+
 ---
 
 ## 6. Les phrases de Junior (échantillon)

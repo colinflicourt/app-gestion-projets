@@ -434,3 +434,101 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 | 4 | XP, niveaux, séries, badges calculés depuis `actions`, cartes et album, journal et Wrapped, combat contre le boss avec « J'ai fini la tâche » (« C'est parti » lance alors le boss) | Oui |
 
 **Préparatifs de Colin restants** : compte cron-job.org (avant le lot 2), redirection UTC dans Tuttifruti et mots de passe d'application Gmail et iCloud (avant le lot 3), accord pour créer les 3 médians dans l'agenda principal (avant le lot 2).
+
+---
+
+## 15. Lot 2 : rappels
+
+> Rédigé en autonomie le 2026-10-11, à partir de `PLAN.md` (§ Notifications, Planificateur), `CONTENU.md` (§ 3 Réglages, § 4 Capture, § 5 Notifications) et du code du lot 1. **Statut : validé par Colin le 2026-10-11**, avec ses réponses aux 3 points ouverts (Siri, répliques du brief, médians créés). Reste ouvert : le cron d'OVH en secours (§ 15.4), à vérifier sur l'offre.
+
+### 15.1 Portée
+
+- **Dans le lot 2** :
+  - notifications web (abonnement, envoi maison VAPID + aes128gcm) ;
+  - planificateur appelé chaque minute par cron-job.org ;
+  - rappels automatiques : avant les cours (15 min), échéances (la veille à 20 h), médians (J-7, J-3, J-1 à 9 h) ;
+  - rappels manuels (choix « Rappel » de la capture) et bloc « Rappels du jour » d'Aujourd'hui ;
+  - brief du matin (7 h 30, jours réglables) ;
+  - raccourci Siri « Note pour Jarvis » ;
+  - écran **Réglages** (ouvert depuis Moi) avec les parties Notifications, Brief, Rappels, Siri, Session.
+- **Hors du lot 2** : mails non lus dans le brief (lot 3, la phrase est omise d'ici là), rappel du journal, Wrapped, fin de session focus, promotion, nouvelle carte (lot 4). Le planificateur est écrit pour les accueillir sans changer de structure.
+
+### 15.2 Données (migration `003_rappels.sql`)
+
+| Table | Colonnes | Rôle |
+|---|---|---|
+| `abonnements` | `id`, `endpoint` TEXT, `empreinte` CHAR(64) unique (SHA-256 de l'endpoint), `p256dh`, `auth` (base64url), `session_id` (nul si session supprimée), `cree_le`, `vu_le`, `echecs` | Un abonnement par appareil. Supprimé sur 404 ou 410 |
+| `rappels` | `id`, `id_client` CHAR(36) unique, `texte`, `quand` (UTC), `cree_le`, `source` (`app` ou `siri`), `annule` (0 ou 1) | Rappels manuels |
+| `envois` | `cle` VARCHAR(191) (clé), `type`, `prevu_pour` (UTC), `titre`, `texte`, `url`, `statut` (`prevu`, `envoye`, `echoue`, `perime`, `retire`), `essais`, `envoye_le` | **Une ligne par notification à envoyer.** La clé unique interdit les doublons |
+
+**Clés d'envoi** (stables d'un passage à l'autre) : `cours:<id événement>:<date>`, `echeance:<id carte>:<échéance>`, `median:<id événement>:J7|J3|J1`, `brief:<date>`, `manuel:<id>`, `test:<id_client>`. Une échéance déplacée change de clé : l'ancienne ligne, encore `prevu`, passe en `retire`.
+
+**Réglages** (table `reglages`, clé `rappels`, JSON) : `brief` {`heure`: "07:30", `jours`: [1..7]}, `cours` {`actif`, `minutes`: 15}, `echeances` {`actif`, `heure`: "20:00"}, `medians` {`actif`, `jours`: [7, 3, 1], `heure`: "09:00"}. Valeurs par défaut : celles de `CONTENU.md`.
+
+**Secrets nouveaux** (fichier de secrets de l'app, repris par `generer-config.php`) : `VAPID_PUBLIQUE`, `VAPID_PRIVEE` (P-256, générées une fois par un outil `outils/generer-vapid.php`), `VAPID_SUJET` (`mailto:contact@qyris.fr`), `CRON_JETON` (32 octets aléatoires). Le jeton Siri est créé depuis Réglages, montré une seule fois, et seule son empreinte SHA-256 est gardée (`jetons`, service `siri`).
+
+### 15.3 Envoi (`serveur/lib/push.php`)
+
+- **Fonctions pures, testées sans réseau** :
+  - `vapid_jwt(audience, sujet, cle_privee, maintenant)` : JWT ES256 (`openssl_sign`, puis signature DER convertie en `r‖s` de 64 octets), valable 12 h ;
+  - `chiffrer_message(texte, p256dh, auth, cle_ephemere, sel)` : RFC 8291 § 3.4 (ECDH `openssl_pkey_derive`, `hash_hkdf` SHA-256, `aes-128-gcm`) et en-tête RFC 8188 (sel, taille d'enregistrement 4096, clé publique éphémère). Clé éphémère et sel injectés pour rejouer **le vecteur de l'annexe A de la RFC 8291 octet pour octet**. **Essai fait le 2026-10-11 sur le Mac (PHP 8.5, script jetable) : le corps chiffré est identique au vecteur de l'annexe A, et la signature ES256 convertie en 64 octets est vérifiée.** Pièges notés : ne pas passer `$key_length` à `openssl_pkey_derive` (obsolète en 8.5) ; `openssl_verify` exige la clé publique (`openssl_pkey_get_details($cle)['key']`) ; les clés P-256 se construisent avec `openssl_pkey_new(['ec' => ['curve_name' => 'prime256v1', 'x', 'y', 'd']])`. À revérifier sur OVH (PHP 8.4) en ajoutant ces deux contrôles au test serveur.
+- **Envoi** par `http.php` : `POST endpoint`, en-têtes `TTL` (15 min pour un cours, 12 h pour le reste), `Urgency` (`high` pour un cours, `normal` sinon), `Content-Encoding: aes128gcm`, `Authorization: vapid t=…, k=…`.
+- **Réponses** : 201 ou 200, envoyé ; 404 ou 410, abonnement supprimé ; 429 et 5xx, nouvel essai au passage suivant (3 essais au plus) ; autre code, `echoue` et journalisé.
+- **Liste blanche des endpoints** (l'endpoint vient de l'iPhone : sans liste, le serveur pourrait être poussé à appeler n'importe quelle adresse) : HTTPS seulement, hôte `web.push.apple.com` ou `*.push.apple.com`, plus `fcm.googleapis.com` et `updates.push.services.mozilla.com` pour les essais sur le Mac. Un abonnement hors liste est refusé à l'enregistrement.
+- **Contenu chiffré** : JSON `{titre, texte, url, tag}` (moins de 3 ko).
+
+### 15.4 Planificateur
+
+- **Route `POST /api/cron`**, publique mais protégée par `Authorization: Bearer <CRON_JETON>` (comparaison `hash_equals`). Mauvais jeton : 404, comme une adresse inconnue.
+- **Appelants** : cron-job.org chaque minute. Secours : le cron d'OVH une fois par heure **[À vérifier sur l'offre : il lance un script PHP, pas une URL ; un petit `serveur/cron-ovh.php` appellerait alors la même fonction]**.
+- **Un passage**, sous `GET_LOCK('jr_cron', 0)` (si le verrou est pris, on sort aussitôt), 20 s au plus :
+  1. rafraîchir les copies trop vieilles (Trello au-delà de 15 min, agenda au-delà d'1 h) avec la fonction de `rafraichir.php` (décision 5 du § 2) ;
+  2. **générer** les notifications des 24 h à venir : `generer_rappels(copies, reglages, rappels, maintenant)`, **fonction pure** de `rappels.php`, qui rend une liste de `{cle, type, prevu_pour, titre, texte, url}` ;
+  3. insérer les nouvelles (`INSERT IGNORE` sur la clé) et passer en `retire` les `prevu` absentes de la liste (cours supprimé, carte terminée, rappel annulé) ;
+  4. **envoyer** les `prevu` dont l'heure est passée, à tous les abonnements ; une notification trop en retard passe en `perime` sans être envoyée (cours : 10 min, médian et échéance : 3 h, brief : 2 h, manuel : 12 h) ;
+  5. purger `envois` au-delà de 30 jours.
+- **Règles de génération** (heure de Paris, tests sur le 25/10/2026) :
+  - cours : les créneaux UTC de la copie agenda, `minutes` avant le début ; rien pour un créneau déjà commencé ;
+  - échéances : cartes ouvertes des 4 tableaux avec échéance, la veille à `heure` ; texte « Échéance à 8 h 30. Il reste 5 étapes sur 5. » (sans la phrase d'étapes s'il n'y a pas de checklist) ;
+  - médians : événements « Médian … » de l'agenda principal (déjà repérés par `creneaux.php`), à J-7, J-3, J-1 à `heure` ;
+  - brief : à `brief.heure` les jours choisis, construit comme au § 15.5 ;
+  - manuels : à leur heure.
+
+### 15.5 Brief du matin
+
+- Titre : « Mercredi 14 octobre · 2 cours » (« Pas de cours » si aucun ; bandeau du jour s'il existe : vacances, férié, examens).
+- Texte, dans cet ordre, chaque morceau omis s'il est vide : premier cours et salle ; nombre de tâches dues aujourd'hui ou en retard ; médian le plus proche s'il est à 14 jours ou moins. Les mails non lus arrivent au lot 3.
+- **Réplique** (décision de Colin du 2026-10-11) : une courte réplique en fin de texte, tirée au hasard dans `CONTENU.md` § 5.1 (proposition de 20 phrases, à relire par Colin), jamais deux jours de suite la même. Tirage pur et testable, graine = la date.
+
+### 15.6 Rappels manuels (capture)
+
+- Choix « Dans 1 h », « Ce soir 20 h » (remplacé par « Demain 20 h » après 19 h 30), « Demain 8 h », « Choisir… » (champ date et heure natif de l'iPhone).
+- `POST /api/rappels` {`id_client`, `texte`, `quand`} et `POST /api/rappels/annuler` {`id`}, idempotents comme les écritures Trello (`ecritures`, § 4.2). Hors ligne : file d'attente du lot 1. Confirmation « Rappel prévu demain à 8 h. ».
+- `GET donnees` ajoute `rappels_du_jour` (manuels et automatiques prévus aujourd'hui, lus dans `envois`) pour le bloc d'Aujourd'hui.
+- Notification : titre = le texte du rappel, corps « Rappel que tu t'es mis hier à 22 h. » (aujourd'hui, hier, ou la date).
+
+### 15.7 Siri
+
+- `POST /api/siri`, publique, jeton dans `Authorization: Bearer`, corps `{texte}` (500 caractères au plus), 30 appels par heure au plus.
+- **Destination** (décision de Colin du 2026-10-11) : une carte dans **Perso · À faire**, sauf si la phrase commence par un nom de domaine (« QYRIS … », « Asso … », « Études … », sans tenir compte des accents ni des majuscules ; le mot est alors retiré du titre) ; réponse lue par Siri : « Ajouté dans Perso. ».
+- Réglages explique la création du raccourci (action « Obtenir le contenu de l'URL », méthode POST, en-tête, champ dicté). Le jeton est montré une fois, avec « Changer le jeton ».
+
+### 15.8 Sur l'iPhone
+
+- **Abonnement** : seulement depuis l'app installée (iOS 16.4 et plus) et sur un geste (« Activer les notifications ») ; `pushManager.subscribe({userVisibleOnly: true, applicationServerKey})` puis `POST /api/abonnements`. iOS ne gère pas `pushsubscriptionchange` : **à chaque ouverture**, l'app relit `getSubscription()` et le renvoie (met à jour `vu_le`, réenregistre s'il a changé). Suppression à la déconnexion.
+- **`sw.js`** : `push` affiche **toujours** une notification (sinon iOS coupe l'abonnement), même si le contenu est illisible (« Jarvis Jr. a quelque chose pour toi. ») ; `notificationclick` ouvre ou ramène l'app sur `url`.
+- **Réglages** : état (« Actives sur cet iPhone », « Coupées », « Pas encore activées »), « Envoyer une notification de test » (`POST /api/notifications/test`, même chemin que le planificateur), heures et interrupteurs des rappels, Siri, Session (« Se déconnecter » y déménage depuis Moi).
+
+### 15.9 Tests et fin du lot 2
+
+- **Tests PHP** : vecteur RFC 8291, JWT VAPID vérifié par `openssl_verify`, liste blanche des endpoints, génération (pas de doublon, retrait, heure de Paris, passage à l'heure d'hiver, péremption), verrou du planificateur, jetons cron et Siri, idempotence des rappels.
+- **Tests JS** : heures de la capture (« Ce soir 20 h » après 19 h 30, minuit, changement d'heure).
+- **Playwright** : Réglages, capture d'un rappel, bloc « Rappels du jour ».
+- **Vraie notification** : d'abord dans Chrome sur le Mac en local, puis sur l'iPhone après la mise en ligne.
+- **Le lot 2 est fini quand** : la notification de test arrive sur l'iPhone ; un rappel manuel « Dans 1 h » arrive à l'heure ; le rappel d'un vrai cours arrive 15 min avant ; le brief du lendemain arrive à 7 h 30 ; une dictée Siri crée une carte une seule fois ; aucun doublon dans `envois` après 24 h de planificateur.
+
+### 15.10 Préparatifs de Colin
+
+- Compte **cron-job.org** (la tâche sera réglée ensemble après la mise en ligne).
+- ~~Accord pour créer les 3 médians~~ **Fait le 2026-10-11** : « Médian MT23 » (21/10, 19 h 15), « Médian NF93 » (2/11, 7 h 45) et « Médian TN01 » (6/11, 16 h 45) créés par Claude dans l'agenda principal.
+- App installée sur l'iPhone (déjà fait au lot 1).

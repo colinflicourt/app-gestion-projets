@@ -6,3 +6,6 @@ serveur/config.php
 serveur/trello-ids.json
 serveur/data/
 tests/e2e/captures/
+
+# Graphify (graphe du projet, régénérable)
+graphify-out/
