@@ -79,3 +79,11 @@ test("routes notifications : GET donnees donne la clé publique VAPID à l'iPhon
     egal(['cle' => RFC_AS_PUB], corps($r)['notifications']);
     vrai(!str_contains($r['corps'], RFC_AS_PRIV), 'clé privée absente de la réponse');
 });
+
+test("routes notifications : « Déconnecter tous les appareils » supprime aussi les abonnements (un iPhone perdu ne reçoit plus rien)", function () {
+    base_de_test();
+    appeler('POST', 'abonnements', ['abonnement' => abonnement_exemple('https://web.push.apple.com/un')]);
+    appeler('POST', 'abonnements', ['abonnement' => abonnement_exemple('https://web.push.apple.com/deux')]);
+    egal(200, appeler('POST', 'deconnexion-partout')['statut']);
+    egal(0, nombre_abonnements());
+});

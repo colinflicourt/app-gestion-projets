@@ -50,6 +50,12 @@ function abonnement_supprimer(string $endpoint): void
     db()->prepare('DELETE FROM abonnements WHERE empreinte = ?')->execute([hash('sha256', $endpoint)]);
 }
 
+// « Déconnecter tous les appareils » : un appareil perdu ne doit plus rien recevoir
+function abonnements_supprimer_tous(): void
+{
+    db()->exec('DELETE FROM abonnements');
+}
+
 function notifier_tous(array $message, string $urgence = 'normal', int $ttl = 43200): array
 {
     $bilan = ['envoyes' => 0, 'supprimes' => 0, 'echecs' => 0];

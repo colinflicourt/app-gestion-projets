@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/connexion.php';
+require_once __DIR__ . '/../lib/abonnements.php';
 
 return [
     'POST connexion' => ['publique' => true, 'action' => function (array $requete, ?array $session): array {
@@ -31,6 +32,7 @@ return [
 
     'POST deconnexion-partout' => ['publique' => false, 'action' => function (array $requete, ?array $session): array {
         session_supprimer_toutes();
+        abonnements_supprimer_tous();
         return reponse_json([], 200, [cookie_session_efface()]);
     }],
 ];
