@@ -71,7 +71,7 @@ function construire_config(string $mode, array $app, array $trello, array $local
     $base = $mode === 'production' ? $app : $local;
     $requis = [
         [$base, ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASSWORD']],
-        [$app, ['TRELLO_TOKEN', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'APP_MOT_DE_PASSE_EMPREINTE', 'APP_CLE_CHIFFREMENT']],
+        [$app, ['TRELLO_TOKEN', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'APP_MOT_DE_PASSE_EMPREINTE', 'APP_CLE_CHIFFREMENT', 'VAPID_PUBLIQUE', 'VAPID_PRIVEE', 'VAPID_SUJET']],
         [$trello, ['TRELLO_KEY']],
     ];
     foreach ($requis as [$source, $cles]) {
@@ -96,6 +96,7 @@ function construire_config(string $mode, array $app, array $trello, array $local
         'google' => ['client_id' => $app['GOOGLE_CLIENT_ID'], 'client_secret' => $app['GOOGLE_CLIENT_SECRET'], 'retour' => $origine . '/api/google-callback.php'],
         'mot_de_passe_empreinte' => $app['APP_MOT_DE_PASSE_EMPREINTE'],
         'cle_chiffrement' => $app['APP_CLE_CHIFFREMENT'],
+        'vapid' => ['publique' => $app['VAPID_PUBLIQUE'], 'privee' => $app['VAPID_PRIVEE'], 'sujet' => $app['VAPID_SUJET']],
     ];
 }
 

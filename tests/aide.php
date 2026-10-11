@@ -81,6 +81,7 @@ function config_de_test(array $surcharges = []): array
         'google' => ['client_id' => 'client-de-test', 'client_secret' => 'secret-de-test', 'retour' => 'http://localhost:8787/api/google-callback.php'],
         'mot_de_passe_empreinte' => $empreinte,
         'cle_chiffrement' => base64_encode(str_repeat("\x01", 32)),
+        'vapid' => ['publique' => RFC_AS_PUB, 'privee' => RFC_AS_PRIV, 'sujet' => 'mailto:contact@qyris.fr'],
     ], $surcharges);
 }
 
