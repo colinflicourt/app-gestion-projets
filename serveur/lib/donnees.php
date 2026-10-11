@@ -95,6 +95,7 @@ function donnees_reponse(bool $force): array
             'cartes' => cartes_a_montrer($trello['contenu']['cartes'] ?? []),
         ],
         'agenda' => $agenda,
+        'notifications' => ['cle' => config('vapid')['publique']],
     ];
 }
 

@@ -23,9 +23,11 @@ function endpoint_accepte(string $url): bool
 
 function abonnement_enregistrer(array $abonnement, ?int $session_id): int
 {
-    $endpoint = (string) ($abonnement['endpoint'] ?? '');
-    $p256dh = (string) ($abonnement['keys']['p256dh'] ?? '');
-    $auth = (string) ($abonnement['keys']['auth'] ?? '');
+    $texte = fn(mixed $v): string => is_string($v) ? $v : '';
+    $cles = is_array($abonnement['keys'] ?? null) ? $abonnement['keys'] : [];
+    $endpoint = $texte($abonnement['endpoint'] ?? null);
+    $p256dh = $texte($cles['p256dh'] ?? null);
+    $auth = $texte($cles['auth'] ?? null);
     try {
         $valide = endpoint_accepte($endpoint) && strlen($endpoint) <= 1000
             && strlen(b64url_decoder($p256dh)) === 65 && strlen(b64url_decoder($auth)) === 16;
