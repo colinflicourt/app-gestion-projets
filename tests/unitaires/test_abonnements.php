@@ -37,7 +37,7 @@ test('abonnements : un 410 supprime cet abonnement sans empêcher l\'envoi aux a
         'POST https://web.push.apple.com/mort' => ['statut' => 410, 'corps' => ''],
         'POST https://web.push.apple.com/vivant' => ['statut' => 201, 'corps' => ''],
     ]);
-    egal(['envoyes' => 1, 'supprimes' => 1, 'echecs' => 0], notifier_tous(['titre' => 'T', 'texte' => 'x', 'url' => '/#/aujourdhui', 'tag' => 'test']));
+    egal(['envoyes' => 1, 'supprimes' => 1, 'echecs' => 0, 'a_reessayer' => 0], notifier_tous(['titre' => 'T', 'texte' => 'x', 'url' => '/#/aujourdhui', 'tag' => 'test']));
     egal(1, (int) db()->query('SELECT COUNT(*) FROM abonnements')->fetchColumn());
 });
 
@@ -51,4 +51,16 @@ test('abonnements : en-têtes d\'envoi', function () {
     vrai(str_contains($entetes, 'TTL: 900'), 'TTL: 900');
     vrai(str_contains($entetes, 'Urgency: high'), 'Urgency: high');
     vrai(str_contains($entetes, 'Authorization: vapid t='), 'Authorization: vapid t=');
+});
+
+test("abonnements : 429, 5xx et panne réseau sont à réessayer, un 403 non", function () {
+    base_de_test();
+    abonnement_enregistrer(abonnement_exemple(), null);
+    $message = ['titre' => 'T', 'texte' => 'x', 'url' => '/#/aujourdhui', 'tag' => 't'];
+    faux_http(['POST https://web.push.apple.com/' => ['statut' => 429, 'corps' => '']]);
+    egal(['envoyes' => 0, 'supprimes' => 0, 'echecs' => 1, 'a_reessayer' => 1], notifier_tous($message));
+    faux_http(['POST https://web.push.apple.com/' => new ErreurReseau('Réseau : délai dépassé')]);
+    egal(1, notifier_tous($message)['a_reessayer']);
+    faux_http(['POST https://web.push.apple.com/' => ['statut' => 403, 'corps' => '']]);
+    egal(['envoyes' => 0, 'supprimes' => 0, 'echecs' => 1, 'a_reessayer' => 0], notifier_tous($message));
 });

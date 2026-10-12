@@ -64,10 +64,10 @@ test("routes notifications : l'oubli supprime cet abonnement seulement ; un endp
 test('routes notifications : test sans abonnement → rien envoyé ; avec un abonnement → un envoi à son endpoint', function () {
     base_de_test();
     faux_http([]);
-    egal(['ok' => true, 'envoyes' => 0, 'supprimes' => 0, 'echecs' => 0], corps(appeler('POST', 'notifications/test')));
+    egal(['ok' => true, 'envoyes' => 0, 'supprimes' => 0, 'echecs' => 0, 'a_reessayer' => 0], corps(appeler('POST', 'notifications/test')));
     appeler('POST', 'abonnements', ['abonnement' => abonnement_exemple()]);
     faux_http(['POST https://web.push.apple.com/QGuQ-abc' => ['statut' => 201, 'corps' => '']]);
-    egal(['ok' => true, 'envoyes' => 1, 'supprimes' => 0, 'echecs' => 0], corps(appeler('POST', 'notifications/test')));
+    egal(['ok' => true, 'envoyes' => 1, 'supprimes' => 0, 'echecs' => 0, 'a_reessayer' => 0], corps(appeler('POST', 'notifications/test')));
     egal(['POST https://web.push.apple.com/QGuQ-abc'], appels_http());
 });
 

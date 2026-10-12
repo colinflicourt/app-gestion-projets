@@ -58,7 +58,7 @@ function abonnements_supprimer_tous(): void
 
 function notifier_tous(array $message, string $urgence = 'normal', int $ttl = 43200): array
 {
-    $bilan = ['envoyes' => 0, 'supprimes' => 0, 'echecs' => 0];
+    $bilan = ['envoyes' => 0, 'supprimes' => 0, 'echecs' => 0, 'a_reessayer' => 0];
     $texte = json_encode($message, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     foreach (db()->query('SELECT id, endpoint, p256dh, auth FROM abonnements')->fetchAll() as $a) {
         try {
@@ -83,6 +83,9 @@ function notifier_tous(array $message, string $urgence = 'normal', int $ttl = 43
             db()->prepare('UPDATE abonnements SET echecs = LEAST(echecs + 1, 255) WHERE id = ?')->execute([$a['id']]);
             journal_erreur('notifications', new RuntimeException("notification refusée : HTTP $statut (abonnement {$a['id']})"));
             $bilan['echecs']++;
+            if ($statut === 0 || $statut === 429 || $statut >= 500) {
+                $bilan['a_reessayer']++;
+            }
         }
     }
     return $bilan;
