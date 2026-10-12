@@ -82,6 +82,7 @@ function config_de_test(array $surcharges = []): array
         'mot_de_passe_empreinte' => $empreinte,
         'cle_chiffrement' => base64_encode(str_repeat("\x01", 32)),
         'vapid' => ['publique' => RFC_AS_PUB, 'privee' => RFC_AS_PRIV, 'sujet' => 'mailto:contact@qyris.fr'],
+        'cron' => ['jeton' => JETON_CRON_TEST],
     ], $surcharges);
 }
 
