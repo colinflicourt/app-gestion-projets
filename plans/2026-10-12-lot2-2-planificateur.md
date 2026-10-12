@@ -1,6 +1,6 @@
 # Jarvis Jr., lot 2, plan 2 sur 3 : le planificateur
 
-> **Plan du 2026-10-12**, écrit d'après le SPEC § 15 (validé par Colin le 2026-10-11) et le code du plan 1 (fusionné dans `main` en local). À relire par Colin avant exécution, en particulier les **textes nouveaux** (section plus bas).
+> **Plan du 2026-10-12, exécuté le même jour** (mode natif choisi par Colin) : 212 tests PHP, 32 de modules, 53 d'écran. Essai réel concluant : le vrai brief de Colin est parti dans Chrome. Les textes nouveaux restent à relire par Colin (ajoutés à `CONTENU.md` § 5).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -79,7 +79,7 @@ Les 20 répliques de `CONTENU.md` § 5.1 (toujours « à relire par Colin ») so
 **Interfaces:**
 - Produces: tables `rappels` (`id`, `id_client`, `texte`, `quand`, `cree_le`, `source`, `annule`) et `envois` (`cle` ASCII binaire, `type`, `prevu_pour`, `titre`, `texte`, `url`, `statut`, `essais`, `envoye_le`) ; `config('cron')` → `['jeton' => string]` ; constante de test `JETON_CRON_TEST`.
 
-- [ ] **Step 1 : les tests d'abord**
+- [x] **Step 1 : les tests d'abord**
 
 Dans `tests/unitaires/test_base.php`, la liste des tables et la version :
 
@@ -102,12 +102,12 @@ test('config : le jeton du planificateur, obligatoire', function () {
 });
 ```
 
-- [ ] **Step 2 : les voir échouer**
+- [x] **Step 2 : les voir échouer**
 
 Run: `{ php tests/run.php base ; php tests/run.php config ; } 2>&1 | ~/.claude/hooks/redact-secrets`
 Expected: ÉCHEC sur les tables (`envois` et `rappels` absentes), la version (3 au lieu de 4) et `$c['cron']` (clé absente).
 
-- [ ] **Step 3 : la migration** `serveur/migrations/004_rappels.sql`
+- [x] **Step 3 : la migration** `serveur/migrations/004_rappels.sql`
 
 ```sql
 -- Lot 2, plan 2 : rappels manuels, et une ligne par notification à envoyer (la clé interdit les doublons).
@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS envois (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 ```
 
-- [ ] **Step 4 : le jeton dans la config**
+- [x] **Step 4 : le jeton dans la config**
 
 Dans `outils/lib-env.php`, `construire_config()` : ajouter `'CRON_JETON'` à la fin de la liste des clés obligatoires de `$app` (après `'VAPID_SUJET'`), et à la fin du tableau rendu :
 
@@ -159,7 +159,7 @@ Dans `tests/aide.php`, `config_de_test()`, après la ligne `'vapid' => …` :
         'cron' => ['jeton' => JETON_CRON_TEST],
 ```
 
-- [ ] **Step 5 : `outils/generer-jeton-cron.php`**
+- [x] **Step 5 : `outils/generer-jeton-cron.php`**
 
 ```php
 <?php
@@ -185,12 +185,12 @@ try {
 echo "Jeton du planificateur ajouté (CRON_JETON). Il sera donné à cron-job.org au plan 3.\n";
 ```
 
-- [ ] **Step 6 : tests au vert**
+- [x] **Step 6 : tests au vert**
 
 Run: `{ php tests/run.php ; } 2>&1 | ~/.claude/hooks/redact-secrets`
 Expected: tout passe (180 tests).
 
-- [ ] **Step 7 : créer le jeton et regénérer la config de dev**
+- [x] **Step 7 : créer le jeton et regénérer la config de dev**
 
 ```bash
 { php outils/generer-jeton-cron.php && php outils/generer-config.php --mode=dev --dossier=serveur && php -r '$c = require "serveur/config.php"; echo strlen($c["cron"]["jeton"] ?? ""), "\n";' ; } 2>&1 | ~/.claude/hooks/redact-secrets
@@ -198,7 +198,7 @@ Expected: tout passe (180 tests).
 
 Expected : « Jeton du planificateur ajouté », « config.php et trello-ids.json écrits », puis `43`. Le jeton lui-même n'apparaît jamais.
 
-- [ ] **Step 8 : commit**
+- [x] **Step 8 : commit**
 
 ```bash
 git add serveur/migrations/004_rappels.sql outils/generer-jeton-cron.php outils/lib-env.php tests/fabriques.php tests/aide.php tests/unitaires/test_base.php tests/unitaires/test_env.php
@@ -226,7 +226,7 @@ git commit -m "Lot 2 : tables rappels et envois, jeton du planificateur" -m "Co-
   - `JR_REPLIQUES` (20 textes), `replique_du_jour(string $date): string` ;
   - `brief_du_matin(string $date, array $cartes, array $jours): array{titre: string, texte: string}` (`$cartes` : cartes de la copie Trello, `$jours` : jours de la copie de l'agenda, AAAA-MM-JJ → `['bandeaux' => […], 'evenements' => […]]`), avec ses deux morceaux `brief_taches(array $cartes, string $date): string` et `brief_median(array $jours, string $date): string` (`''` quand il n'y a rien à dire).
 
-- [ ] **Step 1 : les tests des formats** `tests/unitaires/test_formats.php`
+- [x] **Step 1 : les tests des formats** `tests/unitaires/test_formats.php`
 
 ```php
 <?php
@@ -253,7 +253,7 @@ test("formats : pluriel, coupe, et jours entre deux dates (changement d'heure co
 });
 ```
 
-- [ ] **Step 2 : les tests du brief** `tests/unitaires/test_brief.php`
+- [x] **Step 2 : les tests du brief** `tests/unitaires/test_brief.php`
 
 ```php
 <?php
@@ -333,12 +333,12 @@ test('brief : répliques tirées par la date, jamais deux jours de suite la mêm
 });
 ```
 
-- [ ] **Step 3 : les voir échouer**
+- [x] **Step 3 : les voir échouer**
 
 Run: `{ php tests/run.php formats ; php tests/run.php brief ; } 2>&1 | ~/.claude/hooks/redact-secrets`
 Expected: ÉCHEC, `Call to undefined function heure_lisible()` puis `brief_du_matin()`.
 
-- [ ] **Step 4 : `serveur/lib/formats.php`**
+- [x] **Step 4 : `serveur/lib/formats.php`**
 
 ```php
 <?php
@@ -390,7 +390,7 @@ function jours_entre(string $de, string $a): int
 }
 ```
 
-- [ ] **Step 5 : `serveur/lib/brief.php`**
+- [x] **Step 5 : `serveur/lib/brief.php`**
 
 ```php
 <?php
@@ -530,12 +530,12 @@ function brief_median(array $jours, string $date): string
 }
 ```
 
-- [ ] **Step 6 : tests au vert**
+- [x] **Step 6 : tests au vert**
 
 Run: `{ php tests/run.php ; } 2>&1 | ~/.claude/hooks/redact-secrets`
 Expected: tout passe (186 tests).
 
-- [ ] **Step 7 : commit**
+- [x] **Step 7 : commit**
 
 ```bash
 git add serveur/lib/formats.php serveur/lib/brief.php tests/unitaires/test_formats.php tests/unitaires/test_brief.php
@@ -557,7 +557,7 @@ git commit -m "Lot 2 : brief du matin (premier cours, tâches, médian, répliqu
   - `reglages_rappels_valides(mixed $stockes): array` (pure) et `reglages_rappels(): array` (lit la clé `rappels`) : le plan 3 réutilise `reglages_rappels_valides()` pour écrire les réglages ;
   - `generer_rappels(array $cartes, array $jours, array $reglages, array $rappels, DateTimeImmutable $maintenant): array`, liste de `['cle' => string, 'type' => 'cours'|'echeance'|'median'|'brief'|'manuel', 'prevu_pour' => DateTimeImmutable (UTC), 'titre' => string (120 car. au plus), 'texte' => string (400 au plus), 'url' => string]`, une par clé. `$rappels` : `[['id' => int, 'texte' => string, 'quand' => DateTimeImmutable, 'cree_le' => DateTimeImmutable], …]`.
 
-- [ ] **Step 1 : les tests** `tests/unitaires/test_rappels.php`
+- [x] **Step 1 : les tests** `tests/unitaires/test_rappels.php`
 
 ```php
 <?php
@@ -721,12 +721,12 @@ test('rappels : reglages_rappels() lit la clé « rappels » de la table reglage
 });
 ```
 
-- [ ] **Step 2 : les voir échouer**
+- [x] **Step 2 : les voir échouer**
 
 Run: `{ php tests/run.php rappels ; } 2>&1 | ~/.claude/hooks/redact-secrets`
 Expected: ÉCHEC, `Undefined constant "JR_REGLAGES_RAPPELS"`.
 
-- [ ] **Step 3 : `serveur/lib/rappels.php`**
+- [x] **Step 3 : `serveur/lib/rappels.php`**
 
 ```php
 <?php
@@ -926,12 +926,12 @@ function generer_rappels(array $cartes, array $jours, array $reglages, array $ra
 }
 ```
 
-- [ ] **Step 4 : tests au vert**
+- [x] **Step 4 : tests au vert**
 
 Run: `{ php tests/run.php ; } 2>&1 | ~/.claude/hooks/redact-secrets`
 Expected: tout passe (195 tests).
 
-- [ ] **Step 5 : commit**
+- [x] **Step 5 : commit**
 
 ```bash
 git add serveur/lib/rappels.php tests/unitaires/test_rappels.php
@@ -955,7 +955,7 @@ git commit -m "Lot 2 : génération des rappels (cours, échéances, médians, b
   - `envoyer_dus(DateTimeImmutable $maintenant, float $limite): array` → `['envoyees' => int, 'perimees' => int, 'echouees' => int, 'reportees' => int]` (`$limite` : heure `microtime(true)` au-delà de laquelle plus rien ne part) ;
   - `envois_purger(DateTimeImmutable $maintenant): void`.
 
-- [ ] **Step 1 : `notifier_tous()`, le test d'abord**
+- [x] **Step 1 : `notifier_tous()`, le test d'abord**
 
 Dans `tests/unitaires/test_abonnements.php`, l'attendu du test « un 410 supprime… » devient `['envoyes' => 1, 'supprimes' => 1, 'echecs' => 0, 'a_reessayer' => 0]`. Dans `tests/unitaires/test_routes_notifications.php`, les deux attendus du test « test sans abonnement… » gagnent `'a_reessayer' => 0` à la fin. Puis, dans `test_abonnements.php` :
 
@@ -986,7 +986,7 @@ Dans `serveur/lib/abonnements.php`, `notifier_tous()` : le bilan de départ devi
 
 Run: même commande → tout passe.
 
-- [ ] **Step 2 : les tests de `envois`** `tests/unitaires/test_envois.php`
+- [x] **Step 2 : les tests de `envois`** `tests/unitaires/test_envois.php`
 
 ```php
 <?php
@@ -1104,12 +1104,12 @@ test("envois : rien ne part une fois la limite de temps passée ; la purge effac
 });
 ```
 
-- [ ] **Step 3 : les voir échouer**
+- [x] **Step 3 : les voir échouer**
 
 Run: `{ php tests/run.php envois ; } 2>&1 | ~/.claude/hooks/redact-secrets`
 Expected: ÉCHEC, `Call to undefined function envois_enregistrer()`.
 
-- [ ] **Step 4 : `serveur/lib/envois.php`**
+- [x] **Step 4 : `serveur/lib/envois.php`**
 
 ```php
 <?php
@@ -1188,12 +1188,12 @@ function envois_purger(DateTimeImmutable $maintenant): void
 }
 ```
 
-- [ ] **Step 5 : tests au vert**
+- [x] **Step 5 : tests au vert**
 
 Run: `{ php tests/run.php ; } 2>&1 | ~/.claude/hooks/redact-secrets`
 Expected: tout passe (202 tests).
 
-- [ ] **Step 6 : commit**
+- [x] **Step 6 : commit**
 
 ```bash
 git add serveur/lib/envois.php serveur/lib/abonnements.php tests/unitaires/test_envois.php tests/unitaires/test_abonnements.php tests/unitaires/test_routes_notifications.php
@@ -1215,7 +1215,7 @@ git commit -m "Lot 2 : table envois (sans doublon, retrait, péremption, 3 essai
   - `donnees_trello(bool $force, int $age = JR_AGE_TRELLO)`, `donnees_agenda(string $source, string $premier, int $nombre, bool $force = false, int $age = JR_AGE_AGENDA)` (appels existants inchangés) ;
   - `planificateur_passage(?float $limite = null): array` → `['verrou' => false]` si un autre passage tourne, sinon `['verrou' => true, 'envoyees' => …, 'perimees' => …, 'echouees' => …, 'reportees' => …]` ; écrit le réglage `cron_dernier_passage` (heure de Paris, ISO).
 
-- [ ] **Step 1 : les tests** `tests/unitaires/test_planificateur.php`
+- [x] **Step 1 : les tests** `tests/unitaires/test_planificateur.php`
 
 ```php
 <?php
@@ -1314,12 +1314,12 @@ test('planificateur : un rappel manuel en base part à son heure ; annulé, il n
 });
 ```
 
-- [ ] **Step 2 : les voir échouer**
+- [x] **Step 2 : les voir échouer**
 
 Run: `{ php tests/run.php planificateur ; } 2>&1 | ~/.claude/hooks/redact-secrets`
 Expected: ÉCHEC, `Call to undefined function planificateur_passage()`.
 
-- [ ] **Step 3 : l'âge maximal en paramètre** dans `serveur/lib/donnees.php`
+- [x] **Step 3 : l'âge maximal en paramètre** dans `serveur/lib/donnees.php`
 
 ```php
 function donnees_trello(bool $force, int $age = JR_AGE_TRELLO): array
@@ -1331,7 +1331,7 @@ function donnees_trello(bool $force, int $age = JR_AGE_TRELLO): array
 
 et `donnees_agenda(string $source, string $premier, int $nombre, bool $force = false, int $age = JR_AGE_AGENDA)`, avec `$force ? JR_AGE_FORCE : $age` à la place de `$force ? JR_AGE_FORCE : JR_AGE_AGENDA`.
 
-- [ ] **Step 4 : `serveur/lib/planificateur.php`**
+- [x] **Step 4 : `serveur/lib/planificateur.php`**
 
 ```php
 <?php
@@ -1406,12 +1406,12 @@ function planificateur_passage(?float $limite = null): array
 }
 ```
 
-- [ ] **Step 5 : tests au vert**
+- [x] **Step 5 : tests au vert**
 
 Run: `{ php tests/run.php ; } 2>&1 | ~/.claude/hooks/redact-secrets`
 Expected: tout passe (207 tests), y compris les tests de `donnees` (appels inchangés).
 
-- [ ] **Step 6 : commit**
+- [x] **Step 6 : commit**
 
 ```bash
 git add serveur/lib/planificateur.php serveur/lib/donnees.php tests/unitaires/test_planificateur.php
@@ -1439,7 +1439,7 @@ git commit -m "Lot 2 : passage du planificateur (verrou, copies relues si trop v
   - une réponse peut porter `'apres' => callable` : `site/api/index.php` l'appelle après avoir envoyé la réponse ;
   - `POST /api/cron` : 200 `{"ok":true}` avec le bon jeton, 404 `route_inconnue` sinon.
 
-- [ ] **Step 1 : les tests de la route** `tests/unitaires/test_route_cron.php`
+- [x] **Step 1 : les tests de la route** `tests/unitaires/test_route_cron.php`
 
 ```php
 <?php
@@ -1533,12 +1533,12 @@ test("HTTP : POST /api/cron avec le jeton en Authorization répond 200 et fait l
 });
 ```
 
-- [ ] **Step 2 : les voir échouer**
+- [x] **Step 2 : les voir échouer**
 
 Run: `{ php tests/run.php cron ; php tests/run.php routeur ; php tests/run.php htaccess ; } 2>&1 | ~/.claude/hooks/redact-secrets`
 Expected: ÉCHEC (404 avec le bon jeton : route absente ; `jeton_bearer()` inconnue ; règle absente du `.htaccess`).
 
-- [ ] **Step 3 : le routeur** (`serveur/lib/routeur.php`)
+- [x] **Step 3 : le routeur** (`serveur/lib/routeur.php`)
 
 Le commentaire de `routes()` gagne une ligne :
 
@@ -1577,7 +1577,7 @@ function jeton_bearer(array $requete): string
 
 Le commentaire au-dessus de `lire_corps_json()` devient : « Écritures : POST en JSON, depuis l'origine de l'app (sauf route machine), corps objet de 64 Ko au plus (vide accepté). »
 
-- [ ] **Step 4 : la route** `serveur/routes/cron.php`
+- [x] **Step 4 : la route** `serveur/routes/cron.php`
 
 ```php
 <?php
@@ -1598,7 +1598,7 @@ return [
 ];
 ```
 
-- [ ] **Step 5 : `site/api/index.php`**
+- [x] **Step 5 : `site/api/index.php`**
 
 ```php
 $reponse = traiter([
@@ -1632,7 +1632,7 @@ if (isset($reponse['apres'])) {
 }
 ```
 
-- [ ] **Step 6 : `site/.htaccess`**, juste avant « # API : point d'entrée unique » :
+- [x] **Step 6 : `site/.htaccess`**, juste avant « # API : point d'entrée unique » :
 
 ```apache
 # Jeton du planificateur et de Siri : Apache ne transmet pas toujours Authorization à PHP
@@ -1641,7 +1641,7 @@ RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
 ```
 
-- [ ] **Step 7 : le secours d'OVH** `serveur/cron-ovh.php` (hors du web, comme tout `serveur/`)
+- [x] **Step 7 : le secours d'OVH** `serveur/cron-ovh.php` (hors du web, comme tout `serveur/`)
 
 ```php
 <?php
@@ -1665,7 +1665,7 @@ try {
 }
 ```
 
-- [ ] **Step 8 : l'appel local** `outils/cron-local.sh` (puis `chmod +x outils/cron-local.sh`)
+- [x] **Step 8 : l'appel local** `outils/cron-local.sh` (puis `chmod +x outils/cron-local.sh`)
 
 ```bash
 #!/bin/bash
@@ -1692,12 +1692,12 @@ while [ "${1:-}" = "--boucle" ]; do
 done
 ```
 
-- [ ] **Step 9 : tests au vert, et les deux scripts relus par PHP et bash**
+- [x] **Step 9 : tests au vert, et les deux scripts relus par PHP et bash**
 
 Run: `{ php tests/run.php && php -l serveur/cron-ovh.php && bash -n outils/cron-local.sh ; } 2>&1 | ~/.claude/hooks/redact-secrets`
 Expected: tout passe (212 tests), « No syntax errors detected », rien pour `bash -n`.
 
-- [ ] **Step 10 : commit**
+- [x] **Step 10 : commit**
 
 ```bash
 git add serveur/routes/cron.php serveur/cron-ovh.php outils/cron-local.sh serveur/lib/routeur.php site/api/index.php site/.htaccess tests/unitaires/test_route_cron.php tests/unitaires/test_htaccess.php tests/integration/test_http_cron.php
@@ -1710,7 +1710,7 @@ git commit -m "Lot 2 : route POST /api/cron (jeton, réponse avant le passage), 
 
 Pas de nouveau code. Colin participe au step 3.
 
-- [ ] **Step 1 : toute la suite**
+- [x] **Step 1 : toute la suite**
 
 ```bash
 { php tests/run.php && node --test 'tests/js/*.test.mjs' && node tests/e2e/lancer.mjs ; } 2>&1 | ~/.claude/hooks/redact-secrets
@@ -1718,14 +1718,14 @@ Pas de nouveau code. Colin participe au step 3.
 
 Expected : 212 tests PHP, 32 de modules et 53 d'écran au vert (aucun écran n'a changé : les tests d'écran vérifient qu'on n'a rien cassé).
 
-- [ ] **Step 2 : préparer l'aperçu local**
+- [x] **Step 2 : préparer l'aperçu local**
 
 - Vérifier qu'aucun aperçu ne tourne déjà (`lsof -nP -iTCP:8787 -sTCP:LISTEN`), sinon le lancer en tâche de fond : `php -S localhost:8787 -t site outils/apercu.php` (base de dev, `serveur/config.php` regénéré à la tâche 1).
 - Vérifier, sans rien afficher d'autre que des nombres, que la base de dev a l'abonnement de Chrome de l'essai du plan 1 :
   `{ php -r 'require "serveur/lib/base.php"; assurer_migrations(); echo db()->query("SELECT COUNT(*) FROM abonnements")->fetchColumn(), "\n";' ; } 2>&1 | ~/.claude/hooks/redact-secrets`
   S'il vaut 0 : Colin ouvre http://localhost:8787 dans Chrome, Moi, Réglages, « Activer les notifications ».
 
-- [ ] **Step 3 : le vrai brief, dans 2 minutes** (avec Colin, Chrome ouvert sur le Mac)
+- [x] **Step 3 : le vrai brief, dans 2 minutes** (avec Colin, Chrome ouvert sur le Mac)
 
 ```bash
 { php -r 'require "serveur/lib/rappels.php"; $h = (new DateTimeImmutable("+2 minutes", paris()))->format("H:i"); reglage_ecrire("rappels", ["brief" => ["heure" => $h, "jours" => [1,2,3,4,5,6,7]]]); echo "Brief réglé à $h\n";' && outils/cron-local.sh ; } 2>&1 | ~/.claude/hooks/redact-secrets
@@ -1733,18 +1733,18 @@ Expected : 212 tests PHP, 32 de modules et 53 d'écran au vert (aucun écran n'a
 
 Puis, en tâche de fond, trois passages à une minute d'intervalle : `{ for i in 1 2 3; do sleep 60; outils/cron-local.sh; done ; } 2>&1 | ~/.claude/hooks/redact-secrets`. Attendu : `200` à chaque passage, et **Colin reçoit dans Chrome son vrai brief** (titre « Lundi 12 octobre · … », premier cours, tâches, médian MT23, réplique), une seule fois. Vérifier ensuite la table : `SELECT cle, type, statut, essais FROM envois` (aucun texte affiché), puis remettre le brief à 7 h 30 : `DELETE FROM reglages WHERE cle = 'rappels'`.
 
-- [ ] **Step 4 : le secours d'OVH tourne aussi**
+- [x] **Step 4 : le secours d'OVH tourne aussi**
 
 `{ php serveur/cron-ovh.php && php -r 'require "serveur/lib/reglages.php"; echo reglage_lire("cron_dernier_passage"), "\n";' ; } 2>&1 | ~/.claude/hooks/redact-secrets` → l'heure du passage, à la minute près. Rien de nouveau dans `serveur/data/erreurs.log` (le lire à travers le filtre).
 
-- [ ] **Step 5 : documents**
+- [x] **Step 5 : documents**
 
 - `SPEC.md` § 15 : statut « plan 2 fait le 2026-10-1x » ; § 15.4, ajouter les écarts de la section « Écarts au SPEC » de ce plan ; § 15.2, migration `004_rappels.sql` (au lieu de `003_rappels.sql`, prise par les abonnements).
 - `CONTENU.md` § 5 : les textes nouveaux validés par Colin (tableau en haut de ce plan).
 - `README.md` du projet, « Prochaine session » : plan 3 du lot 2 (rappels manuels, Siri, Réglages, mise en ligne, cron-job.org) ; à vérifier en ligne au plan 3 : qu'Apache d'OVH transmet bien `Authorization` (bon jeton → 200, mauvais → 404), que `fastcgi_finish_request` rend la main tout de suite, et que le cron d'OVH accepte un script PHP. Reprendre les petits défauts du plan 1 toujours ouverts.
 - Ce plan : cases cochées, statut en tête.
 
-- [ ] **Step 6 : revue de toute la branche, puis fusion**
+- [x] **Step 6 : revue de toute la branche, puis fusion**
 
 Revue de la branche `lot2-2-planificateur` contre ce plan et le SPEC § 15 (selon le mode d'exécution choisi), corrections, suite complète au vert, puis :
 
