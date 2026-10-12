@@ -19,10 +19,10 @@ const JR_FAITES_JOURS = 14;
 
 // Trello rafraîchi si besoin, actions faites ailleurs notées au passage. Pas de détection quand les
 // écritures sont simulées (dev) : la copie diffère alors de Trello exprès.
-function donnees_trello(bool $force): array
+function donnees_trello(bool $force, int $age = JR_AGE_TRELLO): array
 {
     $detecter = config('trello')['ecritures'] === 'reelles' ? 'noter_actions_detectees' : null;
-    return rafraichir('trello', $force ? JR_AGE_FORCE : JR_AGE_TRELLO, 'trello_lire', $detecter);
+    return rafraichir('trello', $force ? JR_AGE_FORCE : $age, 'trello_lire', $detecter);
 }
 
 // Une action déjà notée par l'app depuis la copie précédente n'est pas notée une seconde fois
@@ -38,14 +38,14 @@ function noter_actions_detectees(?array $avant, array $apres, ?DateTimeImmutable
 
 // Jamais connecté : agenda vide, sans erreur (Moi propose « Connecter Google Agenda »). Une copie qui ne
 // commence pas à $premier (copie de la veille) est relue même si elle a moins de 10 min.
-function donnees_agenda(string $source, string $premier, int $nombre, bool $force = false): array
+function donnees_agenda(string $source, string $premier, int $nombre, bool $force = false, int $age = JR_AGE_AGENDA): array
 {
     if (!google_connecte() && reglage_lire('agenda_calendriers') === null) {
         return ['recupere_le' => null, 'erreur' => null, 'google_connecte' => false, 'jours' => new stdClass()];
     }
     $r = rafraichir(
         $source,
-        $force ? JR_AGE_FORCE : JR_AGE_AGENDA,
+        $force ? JR_AGE_FORCE : $age,
         fn(): array => google_lire_jours($premier, $nombre),
         null,
         fn(array $contenu): bool => ($contenu['premier'] ?? null) === $premier
