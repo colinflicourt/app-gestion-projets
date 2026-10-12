@@ -13,6 +13,8 @@ require_once __DIR__ . '/session.php';
 const JR_CORPS_MAX = 65536;
 
 // Chaque fichier de serveur/routes/ renvoie ['MÉTHODE chemin' => ['publique' => bool, 'action' => callable]].
+// Une route 'machine' (cron-job.org, Siri : pas de navigateur) n'exige ni l'origine de l'app ni de corps,
+// et vérifie elle-même son jeton.
 function routes(): array
 {
     $routes = [];
@@ -30,7 +32,7 @@ function traiter(array $requete): array
         if ($route === null) {
             throw new ErreurApi('route_inconnue', 404, 'Adresse inconnue.');
         }
-        $requete['corps'] = $requete['methode'] === 'GET' ? [] : lire_corps_json($requete);
+        $requete['corps'] = $requete['methode'] === 'GET' ? [] : lire_corps_json($requete, $route['machine'] ?? false);
         assurer_migrations();
         $session = session_trouver($requete['cookies'][JR_COOKIE_SESSION] ?? null);
         if (!$route['publique'] && $session === null) {
@@ -56,10 +58,13 @@ function traiter(array $requete): array
     return $reponse;
 }
 
-// Écritures : POST en JSON, depuis l'origine de l'app, corps objet de 64 Ko au plus (vide accepté).
-function lire_corps_json(array $requete): array
+// Écritures : POST en JSON, depuis l'origine de l'app (sauf route machine), corps objet de 64 Ko au plus (vide accepté).
+function lire_corps_json(array $requete, bool $machine = false): array
 {
-    if (($requete['entetes']['origin'] ?? null) !== config('origine')) {
+    if ($machine && $requete['corps_brut'] === '') {
+        return [];
+    }
+    if (!$machine && ($requete['entetes']['origin'] ?? null) !== config('origine')) {
         throw new ErreurApi('origine_refusee', 403, 'Requête refusée.');
     }
     if (!str_starts_with(strtolower((string) ($requete['entetes']['content-type'] ?? '')), 'application/json')) {
@@ -76,4 +81,10 @@ function lire_corps_json(array $requete): array
         throw new ErreurApi('json_invalide', 400, 'Requête illisible.');
     }
     return $corps;
+}
+
+// Jeton d'un appel machine : « Authorization: Bearer … », ou '' s'il manque
+function jeton_bearer(array $requete): string
+{
+    return preg_match('/^Bearer\s+(\S+)$/i', (string) ($requete['entetes']['authorization'] ?? ''), $m) ? $m[1] : '';
 }

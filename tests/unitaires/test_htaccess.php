@@ -41,3 +41,11 @@ test('htaccess : les fichiers en point (.ovhconfig…) sont refusés et X-Powere
     vrai(str_contains($htaccess, 'Header always unset X-Powered-By'), 'retrait de X-Powered-By attendu');
     vrai(strpos($htaccess, 'RewriteRule (^|/)\.') < strpos($htaccess, 'RewriteRule ^api/'), 'la règle des fichiers en point passe avant l\'API');
 });
+
+test("htaccess : l'en-tête Authorization (jeton du planificateur) est recopié pour PHP, avant la réécriture de l'API", function () {
+    $htaccess = lire_htaccess();
+    $regle = 'RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]';
+    vrai(str_contains($htaccess, 'RewriteCond %{HTTP:Authorization} .'), 'condition attendue');
+    vrai(str_contains($htaccess, $regle), 'règle attendue');
+    vrai(strpos($htaccess, $regle) < strpos($htaccess, 'RewriteRule ^api/ api/index.php'), "avant la réécriture de l'API");
+});

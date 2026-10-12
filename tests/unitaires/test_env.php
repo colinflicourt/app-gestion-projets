@@ -8,6 +8,7 @@ function env_exemple_app(): array
         'TRELLO_TOKEN' => 't', 'GOOGLE_CLIENT_ID' => 'g', 'GOOGLE_CLIENT_SECRET' => 's',
         'APP_MOT_DE_PASSE_EMPREINTE' => '$2y$04$abc', 'APP_CLE_CHIFFREMENT' => 'Y2xl',
         'VAPID_PUBLIQUE' => 'BPub', 'VAPID_PRIVEE' => 'priv', 'VAPID_SUJET' => 'mailto:contact@qyris.fr',
+        'CRON_JETON' => 'jeton-cron',
     ];
 }
 
@@ -62,6 +63,15 @@ test('config : les clés VAPID des notifications, obligatoires', function () {
     unset($app['VAPID_PRIVEE']);
     $e = leve(RuntimeException::class, fn() => construire_config('production', $app, ['TRELLO_KEY' => 'k']));
     egal('Clé manquante ou vide : VAPID_PRIVEE', $e->getMessage());
+});
+
+test('config : le jeton du planificateur, obligatoire', function () {
+    $c = construire_config('production', env_exemple_app(), ['TRELLO_KEY' => 'k']);
+    egal(['jeton' => 'jeton-cron'], $c['cron']);
+    $app = env_exemple_app();
+    unset($app['CRON_JETON']);
+    $e = leve(RuntimeException::class, fn() => construire_config('production', $app, ['TRELLO_KEY' => 'k']));
+    egal('Clé manquante ou vide : CRON_JETON', $e->getMessage());
 });
 
 test('config : une clé manquante est nommée, sans aucune valeur dans le message ; un mode inconnu est refusé', function () {

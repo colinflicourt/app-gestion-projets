@@ -12,6 +12,9 @@ const RFC_SEL = 'DGv6ra1nlYgDCS1FRnbzlw';
 const RFC_AUTH = 'BTBZMqHH6r4Tts7J_aSIgg';
 const RFC_CORPS = 'DGv6ra1nlYgDCS1FRnbzlwAAEABBBP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A_yl95bQpu6cVPTpK4Mqgkf1CXztLVBSt2Ks3oZwbuwXPXLWyouBWLVWGNWQexSgSxsj_Qulcy4a-fN';
 
+// Jeton du planificateur dans la config de test (POST /api/cron)
+const JETON_CRON_TEST = 'jeton-du-planificateur-pour-les-tests-0123456789';
+
 // Identifiant de 24 caractères hexadécimaux, comme ceux de Trello : la sorte sur 2, le numéro sur 22
 function id_test(string $sorte, int $n): string
 {

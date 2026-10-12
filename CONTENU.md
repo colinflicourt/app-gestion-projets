@@ -176,6 +176,18 @@
 | Promotion de Junior | Promotion | Junior passe Assistant. Il réclame déjà une augmentation. |
 | Nouvelle carte | Nouvelle carte | Le Poly à la BU, veille de médian. Études · 04 / 13. |
 
+Textes ajoutés au plan 2 du lot 2 (2026-10-12), **proposés par Claude, à relire par Colin** :
+
+| Où | Texte |
+|---|---|
+| Cours sans salle | « De 8 h à 10 h. » |
+| Échéance, toutes les étapes cochées | « Échéance à 12 h. Toutes les étapes sont cochées. » |
+| Titre du brief un jour particulier de l'UTC | « Lundi 26 octobre · Vacances », « · Férié », « · Jour d'examen » |
+| Brief, l'UTC suit l'emploi du temps d'un autre jour | le texte du bandeau en tête : « Aujourd'hui, l'UTC suit l'emploi du temps du lundi. » |
+| Brief, tâches | « 1 tâche du jour. », « 1 tâche du jour, 2 en retard. », « 2 tâches en retard. » |
+| Brief, médian proche | « Médian MT23 demain à 19 h 15. », « Médian MT23 aujourd'hui à 19 h 15. » |
+| Brief d'un jour absent de la copie de l'agenda | le titre seul : « Mardi 1er décembre » |
+
 ### 5.1 Répliques du brief du matin
 
 Ajoutées le 2026-10-11 (décision de Colin : le brief finit par une réplique). **Proposition de Claude, à relire par Colin.** Une seule par brief, tirée au hasard, jamais deux jours de suite la même.

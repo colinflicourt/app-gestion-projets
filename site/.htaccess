@@ -16,6 +16,10 @@ RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 # Fichiers en point (.ovhconfig, .htaccess…) : jamais servis. .well-known reste ouvert (validation des certificats)
 RewriteRule (^|/)\.(?!well-known/) - [R=404,L]
 
+# Jeton du planificateur et de Siri : Apache ne transmet pas toujours Authorization à PHP
+RewriteCond %{HTTP:Authorization} .
+RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
 # API : point d'entrée unique
 RewriteRule ^api/index\.php$ - [L]
 RewriteRule ^api/ api/index.php [L,QSA]

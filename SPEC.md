@@ -439,7 +439,7 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 
 ## 15. Lot 2 : rappels
 
-> Rédigé en autonomie le 2026-10-11, à partir de `PLAN.md` (§ Notifications, Planificateur), `CONTENU.md` (§ 3 Réglages, § 4 Capture, § 5 Notifications) et du code du lot 1. **Statut : validé par Colin le 2026-10-11**, avec ses réponses aux 3 points ouverts (Siri, répliques du brief, médians créés). Reste ouvert : le cron d'OVH en secours (§ 15.4), à vérifier sur l'offre.
+> Rédigé en autonomie le 2026-10-11, à partir de `PLAN.md` (§ Notifications, Planificateur), `CONTENU.md` (§ 3 Réglages, § 4 Capture, § 5 Notifications) et du code du lot 1. **Statut : validé par Colin le 2026-10-11**, avec ses réponses aux 3 points ouverts (Siri, répliques du brief, médians créés). **Plan 1 (socle des notifications) fait le 2026-10-11, plan 2 (planificateur) fait le 2026-10-12.** Reste ouvert : régler le cron d'OVH en secours (§ 15.4) si l'offre le permet, au plan 3.
 
 ### 15.1 Portée
 
@@ -453,7 +453,7 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
   - écran **Réglages** (ouvert depuis Moi) avec les parties Notifications, Brief, Rappels, Siri, Session.
 - **Hors du lot 2** : mails non lus dans le brief (lot 3, la phrase est omise d'ici là), rappel du journal, Wrapped, fin de session focus, promotion, nouvelle carte (lot 4). Le planificateur est écrit pour les accueillir sans changer de structure.
 
-### 15.2 Données (migration `003_rappels.sql`)
+### 15.2 Données (migrations `003_notifications.sql` pour `abonnements`, `004_rappels.sql` pour `rappels` et `envois`)
 
 | Table | Colonnes | Rôle |
 |---|---|---|
@@ -480,7 +480,7 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 ### 15.4 Planificateur
 
 - **Route `POST /api/cron`**, publique mais protégée par `Authorization: Bearer <CRON_JETON>` (comparaison `hash_equals`). Mauvais jeton : 404, comme une adresse inconnue.
-- **Appelants** : cron-job.org chaque minute. Secours : le cron d'OVH une fois par heure **[À vérifier sur l'offre : il lance un script PHP, pas une URL ; un petit `serveur/cron-ovh.php` appellerait alors la même fonction]**.
+- **Appelants** : cron-job.org chaque minute. Secours : le cron d'OVH une fois par heure, qui lance `serveur/cron-ovh.php` (même passage ; prêt, à régler dans l'espace client au plan 3 si l'offre le permet).
 - **Un passage**, sous `GET_LOCK('jr_cron', 0)` (si le verrou est pris, on sort aussitôt), 20 s au plus :
   1. rafraîchir les copies trop vieilles (Trello au-delà de 15 min, agenda au-delà d'1 h) avec la fonction de `rafraichir.php` (décision 5 du § 2) ;
   2. **générer** les notifications des 24 h à venir : `generer_rappels(copies, reglages, rappels, maintenant)`, **fonction pure** de `rappels.php`, qui rend une liste de `{cle, type, prevu_pour, titre, texte, url}` ;
@@ -493,6 +493,16 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
   - médians : événements « Médian … » de l'agenda principal (déjà repérés par `creneaux.php`), à J-7, J-3, J-1 à `heure` ;
   - brief : à `brief.heure` les jours choisis, construit comme au § 15.5 ;
   - manuels : à leur heure.
+
+- **Écarts faits au plan 2 (2026-10-12)**, `plans/2026-10-12-lot2-2-planificateur.md` :
+  - clés `cours:<début>:<empreinte du titre>` et `median:<début>:J7` : la copie de l'agenda ne garde pas l'identifiant Google ;
+  - fenêtre de génération de 12 h avant (la plus longue péremption) à 24 h après : une notification due pas encore partie n'est pas retirée avant son envoi ;
+  - une ligne encore prévue suit la source (heure, texte : le brief de demain est recalculé jusqu'à son envoi), une ligne retirée qui réapparaît redevient prévue ;
+  - la route répond tout de suite et fait le passage après (`fastcgi_finish_request`) : cron-job.org n'attend jamais Trello ni Google ;
+  - la notification de test reste envoyée directement (`notifier_tous()`, la même fonction), hors de `envois` ;
+  - réglage `cron_dernier_passage` (heure de Paris) écrit à chaque passage ;
+  - un réglage de rappel abîmé reprend sa valeur par défaut (`reglages_rappels_valides()`, à réutiliser pour l'écriture au plan 3) ;
+  - un médian « journée entière » n'a pas de rappel ; le brief d'un jour absent de la copie de l'agenda n'annonce ni cours ni « Pas de cours ».
 
 ### 15.5 Brief du matin
 
