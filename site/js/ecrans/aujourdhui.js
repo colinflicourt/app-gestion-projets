@@ -6,7 +6,7 @@ import { DOMAINES, NOMS, SCOTCH, compteurs, groupesAFaire } from '../lib/cartes.
 import { etatConduite, jourDe, medianProche, nomCreneau } from '../lib/conduite.js';
 import { phraseDuJour, salutation } from '../lib/phrases.js';
 import { IMMINENT, PAS, RELANCES, candidats, etiquetteProposition, ligneAfficheur, replique, rouler, tempsLibre, texteProposition, tirer } from '../lib/tirage.js';
-import { dateCourte, dateLongue, dureeTexte, enParis, heureParis } from '../lib/temps.js';
+import { dateCourte, dateLongue, dureeTexte, enParis, heureParis, heureTexte, jourParis } from '../lib/temps.js';
 import { regle, tampon, voyant } from './commun.js';
 import { ligneCarte } from './taches.js';
 
@@ -228,7 +228,27 @@ function compacte(app, c, libre, agenda) {
       }, A.go))));
 }
 
-function sousLePli(app, c, cartes, jours, maintenant) {
+function annulerRappel(app, r) {
+  app.ecrire('rappels/annuler', { id: r.id });
+  app.message(A.rappelAnnule);
+}
+
+function rappelsDuJour(app, rappels, jour, maintenant) {
+  const lignes = rappels.filter((r) => jourParis(new Date(r.heure)) === jour).map((r) => {
+    const passe = r.passe || new Date(r.heure) <= maintenant;
+    return h('div', { class: `rang rappel-rang${passe ? ' rappel-passe' : ''}` },
+      h('span', { class: 'rang-heure' }, heureParis(new Date(r.heure))),
+      h('div', { class: 'rang-corps' },
+        h('div', { class: 'rang-texte' }, h('p', { class: 'rang-titre' }, r.titre)),
+        r.annulable && !passe && h('button', { type: 'button', class: 'bouton bouton-petit rappel-annuler', 'aria-label': A.annulerRappelAria(r.titre), onclick: () => annulerRappel(app, r) }, A.annulerRappel)));
+  });
+  return [
+    h('h2', { class: 'section-titre' }, A.rappelsTitre), regle(),
+    lignes.length > 0 ? lignes : h('p', { class: 'vide' }, A.aucunRappel),
+  ];
+}
+
+function sousLePli(app, c, cartes, jours, rappels, maintenant) {
   const prochain = c.standby?.cours;
   const rangs = jourDe(jours, c.aujourdhui).evenements.map((e) => {
     const passe = !e.journee && new Date(e.fin) <= maintenant;
@@ -249,7 +269,8 @@ function sousLePli(app, c, cartes, jours, maintenant) {
     h('h2', { class: 'section-titre' }, A.conduite), regle(),
     rangs.length > 0 ? rangs : h('p', { class: 'vide' }, A.rienDePrevu),
     h('h2', { class: 'section-titre' }, A.aFaireTitre), regle(),
-    rien ? h('p', { class: 'vide' }, A.rienDUrgent) : [groupe('retard', g.retard), groupe('aujourdhui', g.aujourdhui), groupe('urgent', g.urgent)]);
+    rien ? h('p', { class: 'vide' }, A.rienDUrgent) : [groupe('retard', g.retard), groupe('aujourdhui', g.aujourdhui), groupe('urgent', g.urgent)],
+    rappelsDuJour(app, rappels, c.aujourdhui, maintenant));
 }
 
 export function rendre(app) {
@@ -273,7 +294,7 @@ export function rendre(app) {
         talkback(c, cartes, jours, maintenant)),
       tranches(app, cartes, jours, maintenant),
       panneauGo(app, libre)),
-    sousLePli(app, c, cartes, jours, maintenant));
+    sousLePli(app, c, cartes, jours, v?.rappels_du_jour ?? [], maintenant));
 }
 
 export function apres(app, route, ecran) {

@@ -5,7 +5,7 @@ test('routeur : GET sante répond sans session, avec la version et les en-têtes
     base_de_test();
     $r = traiter(requete());
     egal(200, $r['statut']);
-    egal(['ok' => true, 'version_app' => JR_VERSION, 'version_base' => 4, 'base_ok' => true], corps($r));
+    egal(['ok' => true, 'version_app' => JR_VERSION, 'version_base' => 5, 'base_ok' => true], corps($r));
     egal('no-store', $r['entetes']['Cache-Control']);
     vrai(str_contains($r['entetes']['Content-Security-Policy'], "frame-ancestors 'none'"), 'CSP attendue');
 });

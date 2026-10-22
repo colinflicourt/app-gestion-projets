@@ -439,7 +439,7 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 
 ## 15. Lot 2 : rappels
 
-> Rédigé en autonomie le 2026-10-11, à partir de `PLAN.md` (§ Notifications, Planificateur), `CONTENU.md` (§ 3 Réglages, § 4 Capture, § 5 Notifications) et du code du lot 1. **Statut : validé par Colin le 2026-10-11**, avec ses réponses aux 3 points ouverts (Siri, répliques du brief, médians créés). **Plan 1 (socle des notifications) fait le 2026-10-11, plan 2 (planificateur) fait le 2026-10-12.** Reste ouvert : régler le cron d'OVH en secours (§ 15.4) si l'offre le permet, au plan 3.
+> Rédigé en autonomie le 2026-10-11, à partir de `PLAN.md` (§ Notifications, Planificateur), `CONTENU.md` (§ 3 Réglages, § 4 Capture, § 5 Notifications) et du code du lot 1. **Statut : validé par Colin le 2026-10-11**, avec ses réponses aux 3 points ouverts (Siri, répliques du brief, médians créés). **Plan 1 (socle des notifications) fait le 2026-10-11, plan 2 (planificateur) fait le 2026-10-12, plan 3 (rappels manuels, Siri, Réglages) fait en local le 2026-10-22, mise en ligne et recette à faire (`RECETTE-LOT2.md`).** Reste ouvert : régler le cron d'OVH en secours (§ 15.4) si l'offre le permet, au plan 3.
 
 ### 15.1 Portée
 
@@ -523,6 +523,12 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 - **Destination** (décision de Colin du 2026-10-11) : une carte dans **Perso · À faire**, sauf si la phrase commence par un nom de domaine (« QYRIS … », « Asso … », « Études … », sans tenir compte des accents ni des majuscules ; le mot est alors retiré du titre) ; réponse lue par Siri : « Ajouté dans Perso. ».
 - Réglages explique la création du raccourci (action « Obtenir le contenu de l'URL », méthode POST, en-tête, champ dicté). Le jeton est montré une fois, avec « Changer le jeton ».
 
+- **Écarts faits au plan 3 (2026-10-22)**, `plans/2026-10-22-lot2-3-rappels-siri.md` :
+  - `rappels_du_jour` lit les rappels manuels dans `rappels` (visibles tout de suite) et les automatiques du jour dans `envois` ; un élément : `{id, type, heure, titre, passe, annulable}`. Heures du bloc écrites « 17:30 » comme l'agenda ;
+  - Siri : même phrase ignorée pendant 2 min (« Déjà noté. »), limite comptée sur les appels réussis, table `siri_appels` (migration `005_siri.sql`), réponses en texte brut ; une dictée de plus de 300 caractères reçoit le message de `tache_ajouter()` (limite d'un titre) ;
+  - `POST reglages/rappels` refuse en 400 un objet qui n'est pas déjà valide (minutes des cours parmi 5, 10, 15, 30, 60 ; médians parmi J-14, J-7, J-3, J-1) ; `reglages_rappels_valides()` reste le filet du planificateur ;
+  - les migrations s'appliquent au premier appel de l'API en ligne (`/api/sante` à la fin de la mise en ligne).
+
 ### 15.8 Sur l'iPhone
 
 - **Abonnement** : seulement depuis l'app installée (iOS 16.4 et plus) et sur un geste (« Activer les notifications ») ; `pushManager.subscribe({userVisibleOnly: true, applicationServerKey})` puis `POST /api/abonnements`. iOS ne gère pas `pushsubscriptionchange` : **à chaque ouverture**, l'app relit `getSubscription()` et le renvoie (met à jour `vu_le`, réenregistre s'il a changé). Suppression à la déconnexion.
@@ -539,6 +545,6 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 
 ### 15.10 Préparatifs de Colin
 
-- Compte **cron-job.org** (la tâche sera réglée ensemble après la mise en ligne).
+- ~~Compte **cron-job.org**~~ **Fait le 2026-10-22** (fuseau Europe/Paris ; la tâche sera réglée ensemble après la mise en ligne).
 - ~~Accord pour créer les 3 médians~~ **Fait le 2026-10-11** : « Médian MT23 » (21/10, 19 h 15), « Médian NF93 » (2/11, 7 h 45) et « Médian TN01 » (6/11, 16 h 45) créés par Claude dans l'agenda principal.
 - App installée sur l'iPhone (déjà fait au lot 1).

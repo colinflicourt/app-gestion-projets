@@ -40,9 +40,20 @@ test('Google déconnecté : « Reconnecter » mène à Google, puis revient sur 
   await attendre(async () => !(await page.locator('#statut').isVisible()), 'bandeau de Google retiré');
 });
 
-test("Se déconnecter : la copie de l'iPhone est effacée, écran de connexion sans message d'expiration", async ({ page, contexte, serveur }) => {
+test('Moi : plus de Session (déménagée dans Réglages), un lien « Réglages » qui y mène', async ({ page, contexte, serveur }) => {
   await preparer(page, contexte, serveur);
   await ouvrir(page, '/#/moi');
+  await page.getByText('Agenda connecté', { exact: true }).waitFor();
+  assert.equal(await page.getByRole('button', { name: 'Se déconnecter' }).count(), 0);
+  assert.equal(await page.getByRole('button', { name: 'Déconnecter tous les appareils' }).count(), 0);
+  assert.equal(await page.getByRole('heading', { name: 'Session' }).count(), 0);
+  await page.getByRole('link', { name: 'Réglages' }).click();
+  await page.getByRole('heading', { name: 'Session' }).waitFor();
+});
+
+test("Réglages, Session : se déconnecter : la copie de l'iPhone est effacée, écran de connexion sans message d'expiration", async ({ page, contexte, serveur }) => {
+  await preparer(page, contexte, serveur);
+  await ouvrir(page, '/#/reglages');
   await attendre(async () => (await copieLocale(page)) !== undefined, 'copie gardée');
   await page.getByRole('button', { name: 'Se déconnecter' }).click();
   await page.getByRole('heading', { name: 'JARVIS JR.' }).waitFor();
@@ -51,9 +62,9 @@ test("Se déconnecter : la copie de l'iPhone est effacée, écran de connexion s
   assert.equal(serveur.appels('deconnexion').length, 1);
 });
 
-test("Se déconnecter avec une session déjà effacée ailleurs : la copie est quand même effacée, écran de connexion", async ({ page, contexte, serveur }) => {
+test("Réglages, Session : se déconnecter avec une session déjà effacée ailleurs : la copie est quand même effacée, écran de connexion", async ({ page, contexte, serveur }) => {
   await preparer(page, contexte, serveur);
-  await ouvrir(page, '/#/moi');
+  await ouvrir(page, '/#/reglages');
   await attendre(async () => (await copieLocale(page)) !== undefined, 'copie gardée');
   await contexte.clearCookies();
   await page.getByRole('button', { name: 'Se déconnecter' }).click();
@@ -61,9 +72,9 @@ test("Se déconnecter avec une session déjà effacée ailleurs : la copie est q
   assert.equal(await copieLocale(page), undefined);
 });
 
-test('Déconnecter tous les appareils : rien sans confirmation, puis la déconnexion partout', async ({ page, contexte, serveur }) => {
+test('Réglages, Session : déconnecter tous les appareils : rien sans confirmation, puis la déconnexion partout', async ({ page, contexte, serveur }) => {
   await preparer(page, contexte, serveur);
-  await ouvrir(page, '/#/moi');
+  await ouvrir(page, '/#/reglages');
   await page.getByRole('button', { name: 'Déconnecter tous les appareils' }).click();
   assert.equal(serveur.appels('deconnexion-partout').length, 0);
   page.once('dialog', (d) => d.accept());

@@ -254,6 +254,10 @@ ul { padding: 0; list-style: none; }
 .rang-sous { font-size: calc(13 * var(--px)); color: var(--texte-2); }
 .conduite-rang.passe .rang-heure, .conduite-rang.passe .rang-titre { color: var(--texte-2); }
 .conduite-rang.passe .rang-sous { color: var(--texte-3); }
+.rappel-rang .rang-texte { padding: 8px 0; }
+.rappel-passe .rang-heure { text-decoration: line-through; }
+.rappel-passe .rang-titre, .rappel-passe .rang-heure { color: var(--texte-2); }
+.rappel-annuler { font-size: calc(13 * var(--px)); }
 .rang-groupe { align-items: start; padding-top: 10px; border-bottom: 0; }
 .rang-etiquette { display: flex; align-items: center; gap: 6px; padding-top: 12px; font-size: calc(13 * var(--px)); font-weight: 600; }
 .rang-etiquette.retard { color: var(--rouge-texte); }
@@ -270,6 +274,11 @@ ul { padding: 0; list-style: none; }
 .capture-champ { min-height: 0; margin-top: 12px; padding: 12px 14px; background: var(--graphite); line-height: 1.35; resize: none; }
 .capture-champ::placeholder { color: var(--texte-2); }
 .capture-aide { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: calc(13 * var(--px)); color: var(--texte-2); }
+.capture-type { margin-top: 12px; }
+.capture-type .bascule-choix { flex: 1 1 0; min-height: 44px; }
+.capture-quand { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.capture-quand-choix { opacity: 0.6; }
+.capture-quand-choix[aria-pressed='true'] { background: var(--console-on); opacity: 1; box-shadow: inset 0 0 0 2px var(--scotch), 0 4px 10px rgba(0, 0, 0, 0.4); }
 .capture-domaines { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
 .capture-domaine { position: relative; height: 58px; padding: 0 6px; border: 0; border-radius: 10px; background: var(--console); opacity: 0.6; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06); }
 .capture-domaine[aria-pressed='true'] { background: var(--console-on); opacity: 1; box-shadow: inset 0 0 0 2px var(--domaine), 0 4px 10px rgba(0, 0, 0, 0.4); }
@@ -324,3 +333,24 @@ ul { padding: 0; list-style: none; }
 .page-publique a { color: var(--scotch); }
 .page-publique-retour { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; }
 .page-publique-date { color: var(--texte-2); font-size: calc(14 * var(--px)); }
+
+/* Réglages : commandes */
+.reglage-nom { flex: 1 1 auto; min-width: 0; }
+.reglage-groupe { display: flex; flex-direction: column; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--panneau); font-size: calc(15 * var(--px)); font-weight: 600; }
+.reglage-bloc { border-bottom: 1px solid var(--panneau); }
+.reglage-bloc .reglage-ligne { border-bottom: 0; }
+.reglage-bloc .bascules { padding-bottom: 10px; }
+.reglage-bloc.eteint .bascules, .reglage-bloc.eteint .champ-heure { opacity: 0.45; }
+.bascules { display: flex; flex-wrap: wrap; gap: 6px; }
+.bascules .filtre { min-width: 44px; justify-content: center; }
+.champ-heure { flex: none; width: auto; min-height: 44px; padding: 0 10px; font-family: var(--mono); font-size: 16px; color-scheme: dark; background: var(--console); }
+.interrupteur { position: relative; flex: none; width: 52px; height: 32px; padding: 3px; display: flex; align-items: center; border: 0; border-radius: 16px; background: var(--graphite); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8); }
+.interrupteur::before { content: ''; position: absolute; inset: -6px 0; }
+.interrupteur-bille { width: 26px; height: 26px; border-radius: 50%; background: var(--contour); transition: transform 0.15s; }
+.interrupteur[aria-checked='true'] { background: var(--ambre-sombre); }
+.interrupteur[aria-checked='true'] .interrupteur-bille { transform: translateX(20px); background: var(--ambre); }
+.jeton-bloc { margin-top: 14px; }
+.jeton { padding: 12px; border-radius: 10px; background: var(--encre); border: 1px solid var(--bord); font-family: var(--mono); font-size: 13px; line-height: 1.5; color: var(--ambre); overflow-wrap: anywhere; user-select: all; -webkit-user-select: all; }
+.sous-titre { margin-top: 16px; font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--texte-2); }
+.etapes-siri { margin-top: 8px; padding-left: 22px; list-style: decimal; display: flex; flex-direction: column; gap: 8px; font-size: calc(14 * var(--px)); line-height: 1.45; color: var(--texte-2); }
+.etapes-siri li::marker { color: var(--ambre-doux); font-family: var(--mono); }

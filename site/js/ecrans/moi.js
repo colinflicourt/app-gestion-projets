@@ -1,8 +1,8 @@
-// Moi au lot 1 (SPEC § 8.1) : Google Agenda, la session, la version. Grade, XP, album et badges
+// Moi au lot 1 (SPEC § 8.1) : Google Agenda, la version, le lien vers Réglages (où est la session). Grade, XP, album et badges
 // arrivent au lot 4, avec un lien vers Réglages.
 import { h } from '../lib/dom.js';
 import { T } from '../lib/textes.js';
-import { appeler, ErreurReseau } from '../api.js';
+import { appeler } from '../api.js';
 import { regle } from './commun.js';
 
 const M = T.moi;
@@ -35,17 +35,6 @@ export function apres(app, route) {
   }
 }
 
-async function sortir(app, partout) {
-  const n = app.etat.file.length;
-  if (n > 0 && !window.confirm(M.confirmerFile(n))) return;
-  if (partout && !window.confirm(M.confirmerTout)) return;
-  try {
-    await app.deconnecter(partout);
-  } catch (e) {
-    app.message(e instanceof ErreurReseau ? M.reseau : e.message);
-  }
-}
-
 export function rendre(app) {
   const v = app.vue();
   const connecte = Boolean(v?.agenda.google_connecte) && v.agenda.erreur !== 'google_deconnecte';
@@ -57,9 +46,6 @@ export function rendre(app) {
     connecte
       ? h('a', { class: 'bouton bouton-large', href: '/api/google/connexion' }, M.reconnecter)
       : h('div', { class: 'cuvette cuvette-large' }, h('a', { class: 'bouton-allume bouton-large', href: '/api/google/connexion' }, M.connecter)),
-    h('h2', { class: 'section-titre' }, M.session), regle(),
-    h('button', { type: 'button', class: 'bouton bouton-large', onclick: () => sortir(app, false) }, M.deconnecter),
-    h('button', { type: 'button', class: 'bouton bouton-large', onclick: () => sortir(app, true) }, M.deconnecterTout),
     h('h2', { class: 'section-titre' }, M.app), regle(),
     h('a', { class: 'reglage-ligne lien', href: '#/reglages' }, M.reglages),
     h('p', { class: 'reglage-ligne' }, version ? M.version(version) : T.app),

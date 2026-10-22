@@ -123,3 +123,29 @@ test("agenda pas connecté : l'afficheur le dit, sans erreur", async ({ page, co
   serveur.etat.donnees.agenda = { recupere_le: null, erreur: null, google_connecte: false, jours: {} };
   await ouvrirAujourdhui(page, contexte, serveur, '2026-10-14T15:45:00+02:00', 'Agenda pas encore connecté. Ça se fait dans Moi.');
 });
+
+test('rappels du jour : 2 rappels (le passé a l\'heure barrée et pas de bouton, l\'autre s\'annule)', async ({ page, contexte, serveur }) => {
+  await ouvrirAujourdhui(page, contexte, serveur, '2026-10-14T15:45:00+02:00', 'Entracte');
+  await page.getByRole('heading', { name: 'Rappels du jour' }).waitFor();
+  const lignes = page.locator('.rappel-rang');
+  assert.equal(await lignes.count(), 2);
+  assert.deepEqual(await lignes.locator('.rang-heure').allTextContents(), ['12:00', '17:30']);
+  assert.deepEqual(await lignes.locator('.rang-titre').allTextContents(), ['Appeler le dentiste', 'Envoyer le devis à Cathy']);
+  const passe = lignes.nth(0);
+  assert.ok((await passe.getAttribute('class')).includes('rappel-passe'));
+  assert.equal(await passe.locator('.rang-heure').evaluate((e) => getComputedStyle(e).textDecorationLine), 'line-through');
+  assert.equal(await passe.getByRole('button').count(), 0);
+  await lignes.nth(1).getByRole('button', { name: 'Annuler' }).click();
+  await page.getByText('Rappel annulé.').waitFor();
+  await attendre(async () => (await lignes.count()) === 1, 'ligne disparue');
+  await attendre(() => serveur.appels('rappels/annuler').length === 1, 'annulation reçue');
+  assert.equal(serveur.appels('rappels/annuler')[0].corps.id, 'rm000002');
+  await page.getByText('Envoyer le devis à Cathy').waitFor({ state: 'detached' });
+});
+
+test('rappels du jour : un rappel passé pendant la session se barre ; vide : « Aucun rappel aujourd\'hui. »', async ({ page, contexte, serveur }) => {
+  serveur.etat.donnees.rappels_du_jour = [];
+  await ouvrirAujourdhui(page, contexte, serveur, '2026-10-14T15:45:00+02:00', 'Entracte');
+  await page.getByText("Aucun rappel aujourd'hui.").waitFor();
+  assert.equal(await page.locator('.rappel-rang').count(), 0);
+});

@@ -58,7 +58,9 @@ function session_prolonger_si_besoin(array $session): ?array
 
 function session_supprimer(int $id): void
 {
-    db()->prepare('DELETE FROM sessions WHERE id = ?')->execute([$id]);
+    $pdo = db();
+    $pdo->prepare('UPDATE abonnements SET session_id = NULL WHERE session_id = ?')->execute([$id]);
+    $pdo->prepare('DELETE FROM sessions WHERE id = ?')->execute([$id]);
 }
 
 function session_supprimer_toutes(): void
