@@ -45,6 +45,42 @@ function reglages_rappels_valides(mixed $stockes): array
     return $reglages;
 }
 
+// Validation stricte pour l'écriture : rend les réglages normalisés (jours triés), ou null au moindre écart
+function reglages_rappels_stricts(mixed $recus): ?array
+{
+    $heure = fn(mixed $v): bool => is_string($v) && preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $v) === 1;
+    $jours = fn(array $permis): Closure => fn(mixed $v): bool => is_array($v) && array_is_list($v) && $v !== []
+        && count(array_unique($v)) === count($v)
+        && array_filter($v, fn(mixed $n): bool => !is_int($n) || !in_array($n, $permis, true)) === [];
+    $regles = [
+        'brief' => ['heure' => $heure, 'jours' => $jours([1, 2, 3, 4, 5, 6, 7])],
+        'cours' => ['actif' => 'is_bool', 'minutes' => fn(mixed $v): bool => in_array($v, [5, 10, 15, 30, 60], true)],
+        'echeances' => ['actif' => 'is_bool', 'heure' => $heure],
+        'medians' => ['actif' => 'is_bool', 'jours' => $jours([1, 3, 7, 14]), 'heure' => $heure],
+    ];
+    if (!is_array($recus) || array_keys($recus) !== array_keys(array_intersect_key($recus, $regles)) || count($recus) !== count($regles)) {
+        return null;
+    }
+    $propres = [];
+    foreach ($regles as $partie => $champs) {
+        $recue = $recus[$partie];
+        if (!is_array($recue) || count($recue) !== count($champs)) {
+            return null;
+        }
+        foreach ($champs as $champ => $valide) {
+            if (!array_key_exists($champ, $recue) || !$valide($recue[$champ])) {
+                return null;
+            }
+            $valeur = $recue[$champ];
+            if (is_array($valeur)) {
+                sort($valeur);
+            }
+            $propres[$partie][$champ] = $valeur;
+        }
+    }
+    return $propres;
+}
+
 function reglages_rappels(): array
 {
     return reglages_rappels_valides(reglage_lire('rappels'));
