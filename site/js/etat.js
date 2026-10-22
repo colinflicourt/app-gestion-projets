@@ -52,11 +52,25 @@ export function appliquerEcriture(cartes, e) {
   return cartes;
 }
 
+const parHeure = (a, b) => a.heure.localeCompare(b.heure);
+
+// Rappels du jour : un rappel en attente s'ajoute (sans bouton « Annuler » tant qu'il n'a pas d'identifiant), une annulation le retire
+function appliquerRappel(rappels, e) {
+  if (e.route === 'rappels' && !rappels.some((r) => r.id === e.local.id)) {
+    rappels.push({ id: e.local.id, type: 'manuel', heure: e.corps.quand, titre: e.corps.texte, passe: false, annulable: false, attente: true });
+    rappels.sort(parHeure);
+  } else if (e.route === 'rappels/annuler') {
+    return rappels.filter((r) => r.id !== e.corps.id);
+  }
+  return rappels;
+}
+
 // Ce que montre l'écran : la copie du serveur, puis chaque écriture en attente, dans l'ordre
 export function vue(donnees, file) {
   if (!donnees) return null;
   const v = structuredClone(donnees);
   for (const e of file) appliquerEcriture(v.trello.cartes, e);
+  v.rappels_du_jour = file.reduce(appliquerRappel, v.rappels_du_jour ?? []);
   trierCartes(v.trello.cartes);
   return v;
 }
@@ -67,6 +81,13 @@ export function integrer(donnees, e, reponse) {
   if (e.route === 'taches/ajouter') {
     d.trello.cartes = d.trello.cartes.filter((c) => c.id !== e.local.id && c.id !== reponse.carte.id);
     d.trello.cartes.push(reponse.carte);
+  } else if (e.route === 'rappels') {
+    const r = reponse.rappel;
+    d.rappels_du_jour = (d.rappels_du_jour ?? []).filter((x) => x.id !== r.id);
+    d.rappels_du_jour.push({ id: r.id, type: 'manuel', heure: r.quand, titre: r.texte, passe: false, annulable: true });
+    d.rappels_du_jour.sort(parHeure);
+  } else if (e.route === 'rappels/annuler') {
+    d.rappels_du_jour = (d.rappels_du_jour ?? []).filter((x) => x.id !== e.corps.id);
   } else {
     appliquerEcriture(d.trello.cartes, e);
   }

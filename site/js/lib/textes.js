@@ -61,6 +61,11 @@ export const T = {
     journee: 'Toute la journée',
     groupes: { retard: 'En retard', aujourdhui: "Aujourd'hui", urgent: 'Urgent' },
     rienDUrgent: "Rien d'urgent. Profite, ou jette un œil à l'onglet Tâches.",
+    rappelsTitre: 'Rappels du jour',
+    aucunRappel: "Aucun rappel aujourd'hui.",
+    annulerRappel: 'Annuler',
+    annulerRappelAria: (titre) => `Annuler le rappel ${titre}`,
+    rappelAnnule: 'Rappel annulé.',
   },
   phrases: {
     generales: [
@@ -136,6 +141,21 @@ export const T = {
     horsLigne: "Pas de réseau. Je l'envoie dès que ça revient.",
     choisirDomaine: 'Choisis un domaine.',
     titreInvalide: 'Il me faut un titre (300 caractères au plus).',
+    type: 'Type',
+    tache: 'Tâche',
+    rappelNom: 'Rappel',
+    quand: 'Quand',
+    dateRappel: 'Date et heure du rappel',
+    rappel: {
+      dans1h: 'Dans 1 h',
+      dans1hMilieu: 'dans 1 h',
+      ce20: 'Ce soir 20 h',
+      demain20: 'Demain 20 h',
+      demain8: 'Demain 8 h',
+      choisir: 'Choisir…',
+      passe: 'Choisis une heure à venir.',
+      prevu: (quand) => `Rappel prévu ${quand}.`,
+    },
   },
   agenda: {
     titre: 'Agenda',

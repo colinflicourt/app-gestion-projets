@@ -132,8 +132,20 @@ function ecrire(req, res, route, corps, etat) {
   if (deja) return json(res, 200, deja.resultat);
   const cartes = etat.donnees.trello.cartes;
   const carte = cartes.find((c) => c.id === corps.carte);
+  const rappels = (etat.donnees.rappels_du_jour ??= []);
   let resultat;
-  if (route === 'taches/ajouter') {
+  if (route === 'rappels') {
+    const rappel = { id: `rm${String(etat.vus.size + 1).padStart(6, '0')}`, texte: corps.texte, quand: corps.quand };
+    if (rappel.quand.slice(0, 10) === etat.donnees.maintenant.slice(0, 10)) {
+      rappels.push({ id: rappel.id, type: 'manuel', heure: rappel.quand, titre: rappel.texte, passe: false, annulable: true });
+      rappels.sort((a, b) => a.heure.localeCompare(b.heure));
+    }
+    resultat = { rappel };
+  } else if (route === 'rappels/annuler') {
+    if (!rappels.some((r) => r.id === corps.id)) return json(res, 404, { code: 'rappel_introuvable', message: "Ce rappel n'existe plus." });
+    etat.donnees.rappels_du_jour = rappels.filter((r) => r.id !== corps.id);
+    resultat = { id: corps.id };
+  } else if (route === 'taches/ajouter') {
     const heure = corps.echeance && corps.echeance.length > 10 ? corps.echeance.slice(11, 16) : '18:00';
     const nouvelle = {
       id: `cb${String(etat.vus.size + 1).padStart(22, '0')}`, domaine: corps.domaine, colonne: 'a_faire', position: 1,

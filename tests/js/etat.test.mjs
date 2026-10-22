@@ -71,3 +71,15 @@ test("file : remplacer l'identifiant local, retirer une écriture, décider selo
   assert.equal(retirerEcriture(f, 'id-taches/annuler').length, 2);
   assert.deepEqual([200, 401, 404, 409, 400, 500, 502, null].map(decision), ['retirer', 'connexion', 'retirer', 'retirer', 'retirer', 'garder', 'garder', 'garder']);
 });
+
+test('rappels du jour : un rappel en attente s\'ajoute sans bouton, une annulation le retire, la réponse le confirme', () => {
+  const d = { ...donnees(), rappels_du_jour: [{ id: 'r1', type: 'manuel', heure: '2026-10-14T17:30:00+02:00', titre: 'Devis', passe: false, annulable: true }] };
+  const creation = ecriture('rappels', { texte: 'Pain', quand: '2026-10-14T16:45:00+02:00' }, { id: 'local-1' });
+  const v = vue(d, [creation]);
+  assert.deepEqual(v.rappels_du_jour.map((r) => [r.id, r.annulable]), [['local-1', false], ['r1', true]]);
+  assert.equal(d.rappels_du_jour.length, 1);
+  assert.deepEqual(vue(d, [ecriture('rappels/annuler', { id: 'r1' })]).rappels_du_jour, []);
+  const apres = integrer(d, creation, { rappel: { id: 'r2', texte: 'Pain', quand: '2026-10-14T16:45:00+02:00' } });
+  assert.deepEqual(apres.rappels_du_jour.map((r) => [r.id, r.annulable]), [['r2', true], ['r1', true]]);
+  assert.deepEqual(integrer(apres, ecriture('rappels/annuler', { id: 'r2' }), { id: 'r2' }).rappels_du_jour.map((r) => r.id), ['r1']);
+});
