@@ -96,6 +96,46 @@ $r['crypto'] = [
     'bcrypt' => essai(fn() => ['verif' => password_verify('x', password_hash('x', PASSWORD_DEFAULT))]),
 ];
 
+// --- Lot 2 : le code réel des notifications rejoué sur ce serveur ------------------------------
+// Vecteur de l'annexe A de la RFC 8291 (valeurs publiques de la norme, pas des secrets), signature VAPID ES256
+// vérifiée par openssl_verify, fastcgi_finish_request (le planificateur répond avant de travailler).
+// Utilise serveur/lib/push.php : le lot 2 doit être en ligne.
+
+$r['lot2'] = essai(function () {
+    $push = null;
+    foreach ([dirname(__DIR__) . '/serveur/lib/push.php', dirname(__DIR__, 2) . '/serveur/lib/push.php'] as $c) {
+        if (is_file($c)) { $push = $c; break; }
+    }
+    if ($push === null) throw new RuntimeException('serveur/lib/push.php introuvable : mets d\'abord le lot 2 en ligne');
+    require_once $push;
+
+    $pub = 'BP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A8';
+    $priv = 'yfWPiYE-n46HLnH0KqZOF1fJJU3MYrct3AELtAQ-oRw';
+    $attendu = 'DGv6ra1nlYgDCS1FRnbzlwAAEABBBP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A_yl95bQpu6cVPTpK4Mqgkf1CXztLVBSt2Ks3oZwbuwXPXLWyouBWLVWGNWQexSgSxsj_Qulcy4a-fN';
+    $ephemere = cle_p256(b64url_decoder($pub), b64url_decoder($priv));
+    $corps = chiffrer_message('When I grow up, I want to be a watermelon', b64url_decoder('BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4'),
+        b64url_decoder('BTBZMqHH6r4Tts7J_aSIgg'), $ephemere, b64url_decoder('DGv6ra1nlYgDCS1FRnbzlw'));
+    $vecteur = b64url_encoder($corps) === $attendu;
+
+    $entete = vapid_entete('https://web.push.apple.com/QGuQ', ['publique' => $pub, 'privee' => $priv, 'sujet' => 'mailto:contact@qyris.fr'], 1_760_000_000);
+    $es256 = false;
+    if (preg_match('/^vapid t=([^.]+)\.([^.]+)\.([^,]+), k=(.+)$/', $entete, $m)) {
+        $sig = b64url_decoder($m[3]);
+        $cle = openssl_pkey_get_details($ephemere)['key'];
+        $es256 = strlen($sig) === 64 && openssl_verify("$m[1].$m[2]", der_depuis_brut($sig), $cle, OPENSSL_ALGO_SHA256) === 1;
+    }
+    $php84 = version_compare(PHP_VERSION, '8.4.0', '>=');
+    $fin = function_exists('fastcgi_finish_request');
+    return [
+        'php_8_4_ou_plus' => $php84,
+        'vecteur_rfc8291_octet_pour_octet' => $vecteur,
+        'signature_es256_openssl_verify' => $es256,
+        'fastcgi_finish_request' => $fin,
+        'sapi' => PHP_SAPI,
+        'TOUT_EST_BON' => $php84 && $vecteur && $es256 && ($fin || PHP_SAPI === 'cli'),  // en ligne de commande, pas de FPM
+    ];
+});
+
 // --- Fichiers : dossier serveur/ hors du web ----------------------------------
 
 $serveur = dirname(__DIR__) . '/serveur';

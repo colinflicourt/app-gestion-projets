@@ -3,6 +3,9 @@
 # À lancer par Colin dans son terminal (les envois vers OVH restent entre ses mains) :
 #   cd ~/Desktop/jarvis-starter-kit/projects/jarvis-jr && outils/test-serveur/envoyer.sh [VERSION_PHP]
 # Exemple : outils/test-serveur/envoyer.sh 8.4  (passe aussi jr.qyris.fr en PHP 8.4)
+# Avec --lot2 (app déjà en ligne) : n'envoie que diagnostic.php, sous un nom aléatoire. Ni .htaccess, ni config de
+# test : rien de ce qui fait tourner l'app n'est touché. Le diagnostic rejoue alors le vrai code des notifications.
+#   outils/test-serveur/envoyer.sh --lot2
 #
 # Envoie :
 # - jr.qyris.fr/www/diag-<jeton>.php : diagnostic.php sous un nom aléatoire
@@ -19,9 +22,14 @@ PROJET="$(cd "$ICI/../.." && pwd)"
 SECRETS="$PROJET/../../secrets/jarvis-jr.env"
 SFTP="$PROJET/outils/ovh-sftp.sh"
 FILTRE="$HOME/.claude/hooks/redact-secrets"
+SEUL=0
+if [ "${1:-}" = "--lot2" ]; then
+    SEUL=1
+    shift
+fi
 VERSION="${1:-}"
 
-[ -f "$SECRETS" ] || { echo "Fichier de secrets manquant : $SECRETS"; exit 1; }
+[ "$SEUL" = 1 ] || [ -f "$SECRETS" ] || { echo "Fichier de secrets manquant : $SECRETS"; exit 1; }
 [ -x "$FILTRE" ] || { echo "Filtre des secrets introuvable : $FILTRE"; exit 1; }
 if [ -n "$VERSION" ] && ! [[ "$VERSION" =~ ^8\.[0-9]$ ]]; then
     echo "Version PHP invalide : $VERSION (exemple : 8.4)"
@@ -35,21 +43,23 @@ mkdir -p "$TMP/www" "$TMP/serveur"
 
 JETON="$(openssl rand -hex 12)"
 cp "$ICI/diagnostic.php" "$TMP/www/diag-$JETON.php"
-cp "$PROJET/site/img/fonds/fond-poly.webp" "$TMP/www/essai.webp"
-echo '{"name":"essai"}' > "$TMP/www/essai.webmanifest"
-cat > "$TMP/www/.htaccess" <<'EOF'
+if [ "$SEUL" = 0 ]; then
+    cp "$PROJET/site/img/fonds/fond-poly.webp" "$TMP/www/essai.webp"
+    echo '{"name":"essai"}' > "$TMP/www/essai.webmanifest"
+    cat > "$TMP/www/.htaccess" <<'EOF'
 Options -Indexes
 Header always set X-Jr-Essai "htaccess-ok"
 RewriteEngine On
 RewriteRule ^essai-reecriture$ essai.webmanifest [L]
 EOF
 
-# Config de la base, écrite par PHP depuis les variables d'environnement (rien sur la ligne de commande)
-(
-    set -a; source "$SECRETS"; set +a
-    umask 077
-    php -r 'echo "<?php\n// Généré par envoyer.sh pour le test serveur, retiré par nettoyer.sh\nreturn " . var_export(["host" => getenv("DB_HOST"), "name" => getenv("DB_NAME"), "user" => getenv("DB_USER"), "password" => getenv("DB_PASSWORD")], true) . ";\n";' > "$TMP/serveur/config-test.php"
-)
+    # Config de la base, écrite par PHP depuis les variables d'environnement (rien sur la ligne de commande)
+    (
+        set -a; source "$SECRETS"; set +a
+        umask 077
+        php -r 'echo "<?php\n// Généré par envoyer.sh pour le test serveur, retiré par nettoyer.sh\nreturn " . var_export(["host" => getenv("DB_HOST"), "name" => getenv("DB_NAME"), "user" => getenv("DB_USER"), "password" => getenv("DB_PASSWORD")], true) . ";\n";' > "$TMP/serveur/config-test.php"
+    )
+fi
 
 OVHCONFIG=""
 if [ -n "$VERSION" ]; then
@@ -66,15 +76,23 @@ EOF
 fi
 
 echo "Envoi sur jr.qyris.fr..."
+if [ "$SEUL" = 1 ]; then
+    touch "$ICI/.mode-lot2"
+    "$SFTP" "put '$TMP/www/diag-$JETON.php' -o 'jr.qyris.fr/www/diag-$JETON.php';
+cls -la jr.qyris.fr/www" 2>&1 | "$FILTRE"
+else
+rm -f "$ICI/.mode-lot2"
 "$SFTP" "mirror --reverse --verbose '$TMP/www/' 'jr.qyris.fr/www/';
 mirror --reverse --verbose '$TMP/serveur/' 'jr.qyris.fr/serveur/';
 chmod 600 jr.qyris.fr/serveur/config-test.php;
 $OVHCONFIG
 cls -la jr.qyris.fr jr.qyris.fr/www jr.qyris.fr/serveur" 2>&1 | "$FILTRE"
+fi
 
 echo "$JETON" > "$ICI/.jeton"
 echo
 echo "Fait. Dis à Claude que c'est envoyé (il lit l'adresse dans outils/test-serveur/.jeton)."
+echo "Adresse du diagnostic : https://jr.qyris.fr/diag-$JETON.php"
 if [ -n "$VERSION" ]; then
     echo "PHP $VERSION demandé : OVH peut mettre quelques minutes à l'appliquer."
 fi
