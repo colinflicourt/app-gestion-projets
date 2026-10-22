@@ -1,5 +1,7 @@
 # Jarvis Jr., lot 2, plan 3 sur 3 : rappels manuels, Siri, Réglages, mise en ligne
 
+> **Partie A faite le 2026-10-22** (247 tests PHP, 41 de modules, 73 d'écran, vérification indépendante conforme). Partie B (mise en ligne, recette) à faire avec Colin.
+
 > **Plan du 2026-10-22**, écrit par Claude en **mode chef d'orchestre** (`guides/CHEF-D-ORCHESTRE.md`) : ce plan fixe les décisions et les contrats, le code est écrit par des sous-agents, mission par mission, d'après les fiches ci-dessous. Partie A (code, en local) puis partie B (mise en ligne et recette, avec Colin).
 
 **Goal :** depuis l'iPhone, Colin se met un rappel en deux gestes, dicte une tâche à Siri, règle ses rappels dans Réglages, et le lot 2 tourne en ligne (cron-job.org chaque minute).

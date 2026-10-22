@@ -188,6 +188,20 @@ Textes ajoutés au plan 2 du lot 2 (2026-10-12), **proposés par Claude, à reli
 | Brief, médian proche | « Médian MT23 demain à 19 h 15. », « Médian MT23 aujourd'hui à 19 h 15. » |
 | Brief d'un jour absent de la copie de l'agenda | le titre seul : « Mardi 1er décembre » |
 
+Textes ajoutés au plan 3 du lot 2 (2026-10-22), **proposés par Claude, à relire par Colin** :
+
+| Où | Texte |
+|---|---|
+| Capture, après 19 h 30 | « Demain 20 h » remplace « Ce soir 20 h » |
+| Capture, confirmations | « Rappel prévu dans 1 h. », « Rappel prévu ce soir à 20 h. », « Rappel prévu demain à 8 h. », « Rappel prévu lundi 26 octobre à 14 h 30. » |
+| Capture, « Choisir… » dans le passé | « Choisis une heure à venir. » |
+| Rappels du jour | heure barrée pour un rappel passé ; bouton « Annuler », puis « Rappel annulé. » |
+| Réglages, rappels | « Avant les cours » (5, 10, 15, 30, 60 min), « Échéances, la veille à », « Médians » (J-14, J-7, J-3, J-1), « Heure » ; « Réglages enregistrés. » |
+| Réglages, planificateur | « Dernier passage il y a 1 min. », « Le planificateur ne tourne plus depuis 2 h. Tes rappels ne partent pas. », « Le planificateur n'est pas encore lancé. » |
+| Réglages, Siri | « Créer le jeton Siri », « Changer le jeton », « Un jeton existe. Le changer coupe l'ancien raccourci. », « Changer le jeton Siri ? L'ancien raccourci cessera de marcher. », « Copier », « Copié. », « Copie-le maintenant : il ne sera plus affiché. », mode d'emploi en 7 étapes (`site/js/lib/textes.js`) |
+| Siri, réponses lues | « Ajouté dans Perso. », « Déjà noté. », « Je n'ai rien entendu. », « Trop de notes d'un coup. Réessaie dans une heure. », « Trello ne répond pas. Réessaie dans un moment. » |
+| Notifications, échec d'abonnement | « Je n'ai pas pu activer les notifications. Réessaie dans un moment. » |
+
 ### 5.1 Répliques du brief du matin
 
 Ajoutées le 2026-10-11 (décision de Colin : le brief finit par une réplique). **Proposition de Claude, à relire par Colin.** Une seule par brief, tirée au hasard, jamais deux jours de suite la même.
