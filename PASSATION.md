@@ -1,58 +1,42 @@
-# Passation · Jarvis Jr. · 2026-10-22 16:20
+# Passation · Jarvis Jr. · 2026-10-22 16:40
 
 ## Objectif
-Jarvis Jr. (jr.qyris.fr), l'app perso d'organisation de Colin sur iPhone. Lot 2 (rappels) : finir la partie B du plan 3, c'est-à-dire mettre en ligne et faire la recette.
+Jarvis Jr. (jr.qyris.fr), l'app perso d'organisation de Colin sur iPhone. Lot 2 (rappels) : finir la recette du SPEC § 15.9, puis clore le lot.
 
 ## Où on en est
-- **Fait et vérifié** :
-  - Plans 1 à 3 du lot 2 écrits et fusionnés dans `main` en local (dernier commit `8479456`), pas encore en ligne ni sur GitHub.
-  - Plan 3, partie A : rappels manuels, capture « Rappel », bloc « Rappels du jour », Siri, `GET`/`POST reglages`, écran Réglages complet, mise en ligne préparée.
-  - Tests : 247 PHP, 41 de modules, 73 d'écran. Vérification indépendante conforme.
-- **Fait, pas encore vérifié** : rien n'a tourné sur OVH. Points à vérifier en ligne :
-  - la transmission d'`Authorization` ;
-  - `fastcgi_finish_request` ;
-  - les migrations 003 à 005 au premier appel ;
-  - le vecteur RFC 8291 sur PHP 8.4 ;
-  - la réception sur l'iPhone.
+- **Fait et vérifié** (22/10, avec Colin) :
+  - Mise en ligne de `main` (`8479456`) : `/api/sante` répond `version_app 0.2.0`, `version_base 5`, `base_ok true` (migrations 003 à 005 appliquées).
+  - Diagnostic `--lot2` : `TOUT_EST_BON` (PHP 8.4.27 fpm, vecteur RFC 8291, ES256, `fastcgi_finish_request`), puis nettoyé.
+  - `verifier-cron-en-ligne.sh` : 200 / 404 / 404, Apache transmet `Authorization`.
+  - cron-job.org : tâche « Jarvis Jr. planificateur », POST chaque minute, passages en 200. Alertes : échec après 3, retour à la normale, désactivation, TLS 7 jours.
+  - Cron OVH de secours créé : `jr.qyris.fr/serveur/cron-ovh.php`, PHP 8.4, toutes les heures, activé.
+  - Siri : raccourci renommé **« Retiens pour Jarvis »** (« Note pour… » est intercepté par l'app Notes). Il crée bien une carte dans Perso. Les 3 cartes de test ont été archivées.
+- **Fait, pas encore vérifié** :
+  - Notifications activées sur l'iPhone et notification de test : Colin ne l'a pas confirmé explicitement.
+  - Rappel manuel « Dans 1 h » : proposé, pas confirmé.
 - **En cours chez un sous-agent** : rien.
-- Compte cron-job.org créé par Colin (fuseau Europe/Paris), aucune tâche réglée.
 
 ## Décisions prises
-- Les sous-agents ne commitent pas. Claude commite après avoir lu chaque compte rendu.
-- Siri :
-  - jeton dont seule l'empreinte SHA-256 est gardée, mauvais jeton → 404 ;
-  - 30 notes réussies par heure, même phrase ignorée pendant 2 min ;
-  - réponses en texte brut.
-- Heures du bloc « Rappels du jour » écrites « 17:30 », comme l'agenda.
-- `POST reglages/rappels` refuse un objet invalide (400) ; `reglages_rappels_valides()` reste le filet du planificateur.
-- Session déplacée de Moi vers Réglages.
-- C'est Colin qui lance tout envoi vers OVH (Claude ne fait pas de SFTP).
+- Celles de la passation précédente restent valables : les sous-agents ne commitent pas ; Colin lance tout envoi vers OVH.
+- Nom du raccourci Siri : « Retiens pour Jarvis ».
+- Le cron OVH n'envoie pas de mail de log (24 par jour). C'est cron-job.org qui prévient en cas de panne.
 
 ## Prochaine étape
-1. Ouvrir `RECETTE-LOT2.md` avec Colin. Il lance, dans le terminal de VS Code, la mise en ligne (partie 2), puis le diagnostic `outils/test-serveur/envoyer.sh --lot2` et `nettoyer.sh` (partie 3). Claude lit les résultats à travers le filtre.
-2. Colin lance `outils/verifier-cron-en-ligne.sh` (attendu : 200, puis 404, puis 404).
-3. Régler la tâche cron-job.org, et le cron d'OVH si l'offre le permet. Sur l'iPhone : notifications, notification de test, jeton Siri et raccourci.
-4. Recette du SPEC § 15.9 sur 24 h. Le lendemain, Claude lit la table `envois` (pas de doublon, une seule carte Siri). Ensuite, envoyer `main` sur GitHub.
+1. Demander à Colin : notification de test reçue (aussi écran verrouillé) ? Rappel « Dans 1 h » arrivé à l'heure ? Brief du vendredi 23/10 arrivé à 7h30 ?
+2. Contrôler la table `envois` sur OVH (pas de doublon, une seule carte par dictée Siri), à travers le filtre, sans afficher de secret.
+3. Rappel de cours : pas de cours avant novembre (examens jusqu'au 24/10, vacances du 26 au 30/10). Claude a proposé un faux cours « Test Jarvis » dans l'agenda « UTC · Emploi du temps A26 », que Colin supprimerait ensuite. **Colin n'a pas encore répondu.** `rappels_cours` prend tout événement non « journée » de cet agenda.
+4. Remplacer « Note pour Jarvis » par « Retiens pour Jarvis » dans `site/js/lib/textes.js` (`siriEtapes`), `RECETTE-LOT2.md` et `SPEC.md`, puis mettre à jour `VERSION` dans `site/sw.js`. Mise en ligne par Colin, à grouper avec la suivante.
+5. Quand tout est coché : clore le lot 2 (README, HISTORY, Trello) et envoyer `main` sur GitHub.
 
-Effort conseillé : **moyen** (on guide et on lit des résultats, pas de conception).
+Effort conseillé : **moyen**.
 
 ## Fichiers clés
-- `RECETTE-LOT2.md` : les commandes de Colin et les cases de la recette
-- `plans/2026-10-22-lot2-3-rappels-siri.md` : décisions et partie B
-- `SPEC.md` § 15.9 : définition de « lot 2 fini »
-- `README.md` : section « Prochaine session »
+- `RECETTE-LOT2.md` § 8 : les cases de la recette
+- `serveur/lib/rappels.php` : règles des rappels (cours l. 108)
+- `site/js/lib/textes.js` l. 236 : mode d'emploi Siri à renommer
 
 ## Pièges et points ouverts
-- Le garde-fou bloque toute commande qui cite un script `deploy*`, `config.php`, `secrets/` ou MySQL. Il faut l'écrire `cd … && { … ; } 2>&1 | ~/.claude/hooks/redact-secrets`, avec le `cd` hors du groupe.
-- Avec `--lot2`, le diagnostic signale que `config-test.php` est absent : c'est normal.
-- Les libellés de cron-job.org et de l'espace client OVH dans la recette ont été écrits de mémoire et peuvent avoir changé.
-- Après toute modification de `site/`, la `VERSION` de `site/sw.js` doit prendre la valeur donnée par `php tests/run.php`.
-- À relire par Colin :
-  - textes nouveaux du plan 3 (`CONTENU.md` § 5) ;
-  - 20 répliques du brief (§ 5.1) ;
-  - textes des plans 1 et 2.
-- À trancher par Colin (README) :
-  - le piège de « Terminer » ;
-  - les chiffres des codes d'UV ;
-  - l'effacement de la copie de l'iPhone au premier 401.
-- Le contexte moyen de cette conversation était de 135k jetons, pour une cible de 80k : faire `/passation` dès que le plan est écrit.
+- Garde-fou : une commande qui cite `serveur/lib`, un `grep -r` ou un script de mise en ligne doit être entièrement dans `{ … ; } 2>&1 | ~/.claude/hooks/redact-secrets`. Un `cd` placé devant peut quand même être bloqué, utiliser des chemins absolus.
+- Dans cron-job.org, l'URL doit être en `https://` (en `http://`, on obtient un 301, déjà corrigé).
+- Passage à l'heure d'hiver dans la nuit du 24 au 25/10 : vérifier qu'aucun rappel n'est envoyé deux fois ni sauté.
+- Toujours à faire par Colin (README) : relire les textes (CONTENU.md § 5 et § 5.1) ; trancher le piège de « Terminer », les chiffres des codes d'UV et l'effacement de la copie de l'iPhone au premier 401.
