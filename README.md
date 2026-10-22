@@ -25,7 +25,7 @@ Remplace l'ancienne idée d'« application personnelle de gestion de projets » 
 ## Prochaine session
 
 1. Lot 2, plan 3 : rappels manuels (capture « Rappel », `POST /api/rappels`), bloc « Rappels du jour », Siri (route machine), reste de Réglages (heures et interrupteurs des rappels, écrits avec `reglages_rappels_valides()`, état du planificateur), mise en ligne, tâche cron-job.org, recette du lot 2 (SPEC § 15.9). **À vérifier en ligne** : qu'Apache d'OVH transmet `Authorization` (bon jeton → 200, mauvais → 404), que `fastcgi_finish_request` rend la main tout de suite, et que le cron d'OVH accepte un script PHP. Reprendre les petits défauts du plan 1 (`context/PROJETS.md`).
-2. Préparatifs de Colin restants (carte Trello) : compte cron-job.org (avant le plan 3), relire les répliques et les textes nouveaux (`CONTENU.md` § 3, § 5 et § 5.1), redirection UTC et mots de passe d'application avant le lot 3.
+2. Préparatifs de Colin restants (carte Trello) : relire les répliques et les textes nouveaux (`CONTENU.md` § 3, § 5 et § 5.1), redirection UTC et mots de passe d'application avant le lot 3.
 3. À trancher par Colin : les chiffres des codes d'UV au marqueur (`DESIGN.md`, fin), l'effacement de la copie de l'iPhone au premier 401 (constats ci-dessous), et le piège de « Terminer » vu à la recette : sur la carte ouverte, c'est le seul bouton allumé, Colin l'a touché pour quitter la carte après avoir coché une étape (la carte est partie dans Fait). Le retour est la petite flèche en haut à gauche.
 
 **À reprendre** (revue du plan 2, 2026-10-10) :

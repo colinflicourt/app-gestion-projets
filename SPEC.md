@@ -539,6 +539,6 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 
 ### 15.10 Préparatifs de Colin
 
-- Compte **cron-job.org** (la tâche sera réglée ensemble après la mise en ligne).
+- ~~Compte **cron-job.org**~~ **Fait le 2026-10-22** (fuseau Europe/Paris ; la tâche sera réglée ensemble après la mise en ligne).
 - ~~Accord pour créer les 3 médians~~ **Fait le 2026-10-11** : « Médian MT23 » (21/10, 19 h 15), « Médian NF93 » (2/11, 7 h 45) et « Médian TN01 » (6/11, 16 h 45) créés par Claude dans l'agenda principal.
 - App installée sur l'iPhone (déjà fait au lot 1).

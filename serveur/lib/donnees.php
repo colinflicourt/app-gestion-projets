@@ -8,6 +8,7 @@ require_once __DIR__ . '/actions.php';
 require_once __DIR__ . '/detection.php';
 require_once __DIR__ . '/google.php';
 require_once __DIR__ . '/rafraichir.php';
+require_once __DIR__ . '/rappels_manuels.php';
 require_once __DIR__ . '/reglages.php';
 require_once __DIR__ . '/trello.php';
 
@@ -95,6 +96,7 @@ function donnees_reponse(bool $force): array
             'cartes' => cartes_a_montrer($trello['contenu']['cartes'] ?? []),
         ],
         'agenda' => $agenda,
+        'rappels_du_jour' => rappels_du_jour_lire(),
         'notifications' => ['cle' => config('vapid')['publique']],
     ];
 }
