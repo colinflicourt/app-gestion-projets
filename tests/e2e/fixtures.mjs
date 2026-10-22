@@ -127,3 +127,19 @@ export function donneesDeBase() {
     notifications: { cle: 'BP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A8' },
   };
 }
+
+// Ce que rend GET reglages : réglages par défaut, planificateur passé il y a 1 min (14 oct. 2026, 15 h 44), pas de jeton Siri
+export function reglagesDeBase() {
+  return {
+    rappels: {
+      brief: { heure: '07:30', jours: [1, 2, 3, 4, 5, 6, 7] },
+      cours: { actif: true, minutes: 15 },
+      echeances: { actif: true, heure: '20:00' },
+      medians: { actif: true, jours: [7, 3, 1], heure: '09:00' },
+    },
+    planificateur: { dernier_passage: '2026-10-14T15:44:00+02:00' },
+    siri: { jeton_cree: false },
+  };
+}
+
+export const JETON_SIRI = 'Zm9vYmFyLWpldG9uLWRlLXRlc3QtMDEyMzQ1Njc4OWFi';

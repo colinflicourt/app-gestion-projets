@@ -21,6 +21,13 @@ async function abonnementActuel() {
 
 const envoyer = (abonnement) => appeler('POST', 'abonnements', { corps: { abonnement: abonnement.toJSON() } });
 
+// L'état connu sans attendre : la permission du navigateur, avant de lire l'abonnement
+export function etatRapide() {
+  if (!disponibles()) return 'indisponibles';
+  if (Notification.permission === 'denied') return 'coupees';
+  return Notification.permission === 'granted' ? 'actives' : 'inactives';
+}
+
 export async function etatNotifications() {
   if (!disponibles()) return 'indisponibles';
   if (Notification.permission === 'denied') return 'coupees';

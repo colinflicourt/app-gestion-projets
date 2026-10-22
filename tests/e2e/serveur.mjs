@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { donneesDeBase, joursSemaine } from './fixtures.mjs';
+import { donneesDeBase, joursSemaine, reglagesDeBase, JETON_SIRI } from './fixtures.mjs';
 
 const SITE = fileURLToPath(new URL('../../site/', import.meta.url));
 const TYPES = {
@@ -30,7 +30,7 @@ export async function demarrer() {
       for (const cle of Object.keys(etat)) delete etat[cle];
       // horsService : le réseau manque (connexion coupée). perdre : la prochaine écriture de cette route est
       // faite, mais sa réponse se perd. pannes : route → { statut, code, message }.
-      Object.assign(etat, { donnees, appels: [], vus: new Map(), pannes: {}, horsService: false, perdre: null, testEnvoyes: 1 });
+      Object.assign(etat, { donnees, appels: [], vus: new Map(), pannes: {}, horsService: false, perdre: null, testEnvoyes: 1, reglages: reglagesDeBase() });
     },
     appels(route) {
       return etat.appels.filter((a) => a.route === route);
@@ -120,6 +120,11 @@ async function api(req, res, url, etat) {
     etat.donnees.agenda.erreur = null;
     return envoyer(res, 302, 'text/plain; charset=utf-8', '', { Location: '/#/moi?google=connecte' });
   }
+  if (req.method === 'GET' && route === 'reglages') return json(res, 200, structuredClone(etat.reglages));
+  if (req.method === 'POST' && route === 'reglages/siri') {
+    etat.reglages.siri.jeton_cree = true;
+    return json(res, 200, { jeton: JETON_SIRI });
+  }
   if (req.method === 'POST' && (route === 'abonnements' || route === 'abonnements/supprimer')) return json(res, 200, {});
   if (req.method === 'POST' && route === 'notifications/test') return json(res, 200, { envoyes: etat.testEnvoyes, supprimes: 0, echecs: 0 });
   if (req.method === 'POST') return ecrire(req, res, route, corps, etat);
@@ -134,7 +139,10 @@ function ecrire(req, res, route, corps, etat) {
   const carte = cartes.find((c) => c.id === corps.carte);
   const rappels = (etat.donnees.rappels_du_jour ??= []);
   let resultat;
-  if (route === 'rappels') {
+  if (route === 'reglages/rappels') {
+    etat.reglages.rappels = corps.rappels;
+    resultat = { rappels: corps.rappels };
+  } else if (route === 'rappels') {
     const rappel = { id: `rm${String(etat.vus.size + 1).padStart(6, '0')}`, texte: corps.texte, quand: corps.quand };
     if (rappel.quand.slice(0, 10) === etat.donnees.maintenant.slice(0, 10)) {
       rappels.push({ id: rappel.id, type: 'manuel', heure: rappel.quand, titre: rappel.texte, passe: false, annulable: true });
