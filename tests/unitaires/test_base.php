@@ -1,21 +1,21 @@
 <?php
 declare(strict_types=1);
 
-const JR_TABLES = ['abonnements', 'actions', 'copies', 'ecritures', 'envois', 'essais_connexion', 'jetons', 'rappels', 'reglages', 'sessions', 'tentatives'];
+const JR_TABLES = ['abonnements', 'actions', 'copies', 'ecritures', 'envois', 'essais_connexion', 'jetons', 'rappels', 'reglages', 'sessions', 'siri_appels', 'tentatives'];
 
-test('base : les migrations créent les 11 tables (lot 1, abonnements, rappels et envois du lot 2) et notent la version', function () {
+test('base : les migrations créent les 12 tables (lot 1, abonnements, rappels, envois et siri_appels du lot 2) et notent la version', function () {
     $pdo = base_de_test();
     $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
     sort($tables);
     egal(JR_TABLES, $tables);
-    egal(4, version_base($pdo));
-    egal(4, version_attendue());
+    egal(5, version_base($pdo));
+    egal(5, version_attendue());
 });
 
 test('base : relancer les migrations ne change rien', function () {
     $pdo = base_de_test();
-    egal(4, migrer($pdo));
-    egal(4, version_base($pdo));
+    egal(5, migrer($pdo));
+    egal(5, version_base($pdo));
 });
 
 test('base : une base vide est en version 0', function () {
@@ -33,7 +33,7 @@ test('base : une migration interrompue (tables en partie créées, version non n
     }
     $pdo->exec("DELETE FROM reglages WHERE cle = 'version_base'");
     egal(0, version_base($pdo));
-    egal(4, migrer($pdo));
+    egal(5, migrer($pdo));
     $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
     sort($tables);
     egal(JR_TABLES, $tables);

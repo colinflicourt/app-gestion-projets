@@ -36,6 +36,17 @@ function reponse_json(array $donnees, int $statut = 200, array $cookies = []): a
     ];
 }
 
+// Pour un client qui lit le corps tel quel (le raccourci Siri le fait dire à voix haute)
+function reponse_texte(string $texte, int $statut = 200): array
+{
+    return [
+        'statut' => $statut,
+        'entetes' => entetes_securite() + ['Content-Type' => 'text/plain; charset=utf-8', 'Cache-Control' => 'no-store'],
+        'cookies' => [],
+        'corps' => $texte,
+    ];
+}
+
 function reponse_erreur(string $code, string $message, int $statut, array $cookies = []): array
 {
     return reponse_json(['erreur' => ['code' => $code, 'message' => $message]], $statut, $cookies);
