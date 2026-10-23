@@ -39,10 +39,10 @@ test("déploiement : la règle .htaccess qui transmet Authorization précède la
     vrai($auth !== false && $api !== false && $auth < $api, 'règle Authorization attendue avant la réécriture de /api/');
 });
 
-test("déploiement : les migrations 003 à 005 existent et le serveur en attend la dernière", function () {
+test("déploiement : les migrations 003 à 006 existent et le serveur en attend la dernière", function () {
     $dossier = dirname(__DIR__, 2) . '/serveur/migrations';
-    foreach (['003_', '004_', '005_'] as $debut) {
+    foreach (['003_', '004_', '005_', '006_'] as $debut) {
         vrai(count(glob("$dossier/$debut*.sql")) === 1, "migration $debut introuvable");
     }
-    vrai(version_attendue($dossier) >= 5, 'version attendue au moins 5');
+    vrai(version_attendue($dossier) >= 6, 'version attendue au moins 6');
 });
