@@ -548,3 +548,145 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 - ~~Compte **cron-job.org**~~ **Fait le 2026-10-22** (fuseau Europe/Paris ; la tâche sera réglée ensemble après la mise en ligne).
 - ~~Accord pour créer les 3 médians~~ **Fait le 2026-10-11** : « Médian MT23 » (21/10, 19 h 15), « Médian NF93 » (2/11, 7 h 45) et « Médian TN01 » (6/11, 16 h 45) créés par Claude dans l'agenda principal.
 - App installée sur l'iPhone (déjà fait au lot 1).
+
+---
+
+## 16. Lot 3 : mails
+
+> Rédigé le 2026-10-23 avec superpowers:brainstorming, à partir de `PLAN.md` (§ Mails), `CONTENU.md` (§ Aujourd'hui, § Mails, § Réglages), `INVENTAIRE.md` § 3, `PRODUCT.md` et du code des lots 1 et 2. Relu par un sous-agent « builder » le même jour (6 points, tous tranchés : vérifié au test serveur ou marqués « choix de Claude »). **Statut : validé par Colin le 2026-10-23**, textes nouveaux du § 16.11 compris.
+
+### 16.1 Décisions de Colin (2026-10-23)
+
+| # | Sujet | Décision |
+|---|---|---|
+| 1 | Boîte UTC | **Redirigée vers Gmail par Tuttifruti** (Mon compte > Gestion de compte, connexion CAS), réglée une fois par Colin. Colin accepte que ses mails UTC vivent dans Gmail et ne soient plus gardés par le serveur de l'UTC. L'app ne touche jamais au CAS ni au webmail UTC, et ne connaît pas le mot de passe UTC |
+| 2 | Notifications de mails | **Aucune.** Les mails s'affichent à l'ouverture de l'app (onglet Mails, bloc d'Aujourd'hui) et dans le brief du matin |
+| 3 | Pubs | **Repérées automatiquement et repliées** (« + 48 pubs »), jamais comptées dans les non lus. Un expéditeur mal classé se corrige d'un geste, retenu par Junior seul |
+| 4 | UTC | **Jamais filtrée** : les listes de diffusion de l'UTC portent les mêmes signes que les pubs, et un changement de salle caché serait la pire erreur du lot |
+| 5 | Ordre des sections | UTC, QYRIS (colin@ et contact@ réunis), Gmail, iCloud. C'est l'ordre d'importance donné par Colin |
+| 6 | Tri de la boîte iCloud | **Hors de l'app** (Junior reste en lecture seule) : chantier à part, carte Perso `h4xDF2bR` |
+
+### 16.2 Portée
+
+- **Dans le lot 3** :
+  - client IMAP maison en lecture seule pour 4 comptes : Gmail, iCloud, colin@qyris.fr, contact@qyris.fr ;
+  - section UTC tirée des mails de Gmail ;
+  - tri des pubs et corrections par expéditeur ;
+  - onglet **Mails** (5e onglet de la barre, § 8.1), bloc **Mails** d'Aujourd'hui, non lus dans le brief ;
+  - partie **Comptes mail** de Réglages (saisir, tester, supprimer).
+- **Hors du lot 3** : notifications de mails, réponse, suppression, archivage, marquage comme lu, lecture du mail entier dans l'app, ménage de la boîte iCloud.
+- **Anti-objectif** : Junior modifie quoi que ce soit dans une boîte. Un mail passé « lu » par Junior est un défaut bloquant.
+
+### 16.3 Comptes et secrets
+
+| Compte | Serveur IMAP | Identifiant pré-rempli | Mot de passe |
+|---|---|---|---|
+| `gmail` | `imap.gmail.com:993` | `colin.flicourt@gmail.com` | mot de passe d'application Google (validation en 2 étapes) |
+| `icloud` | `imap.mail.me.com:993` | `colin.flicourt@icloud.com` | mot de passe d'application Apple |
+| `colin` | `ssl0.ovh.net:993` | `colin@qyris.fr` | mot de passe de la boîte OVH |
+| `contact` | `ssl0.ovh.net:993` | `contact@qyris.fr` | mot de passe de la boîte OVH |
+
+- Serveurs et ports **écrits dans le code**, pas modifiables depuis l'app : sinon le serveur pourrait être poussé à se connecter n'importe où (même logique que la liste blanche des endpoints au § 15.3). L'identifiant est modifiable.
+- Mot de passe **chiffré avec `chiffrer()`** de `chiffrement.php` (libsodium, clé `APP_CLE_CHIFFREMENT` déjà en place), déchiffré seulement au moment de la connexion IMAP. **Il ne repart jamais vers l'iPhone** : l'API dit seulement s'il est enregistré, et quand il a marché pour la dernière fois.
+- Le mot de passe n'apparaît ni dans le journal d'erreurs ni dans une réponse d'erreur IMAP recopiée (la commande `LOGIN` n'est jamais journalisée).
+- Aucun nouveau secret dans les fichiers de secrets du Mac : Colin saisit les 4 mots de passe dans Réglages, sur l'iPhone.
+
+### 16.4 Données (migration `006_mails.sql`)
+
+| Table | Colonnes | Rôle |
+|---|---|---|
+| `comptes_mail` | `compte` (clé : `gmail`, `icloud`, `colin`, `contact`), `identifiant`, `mot_de_passe` VARBINARY (chiffré), `modifie_le`, `dernier_succes`, `derniere_erreur` (code court : `refus`, `injoignable`, `delai`) | Un compte par boîte |
+| `expediteurs_tri` | `adresse` (clé, en minuscules), `choix` (`afficher` ou `pub`), `cree_le` | Corrections de Colin, valables pour toutes les boîtes |
+
+- **Copies** dans la table `copies` existante, **une source par compte** (`mail:gmail`, `mail:icloud`, `mail:colin`, `mail:contact`), chacune avec son verrou (`rafraichir()` de `rafraichir.php`, réutilisé tel quel). Une boîte lente ou en panne ne bloque pas les autres.
+- **Contenu d'une copie** : `{uidvalidity, mails: [...]}`. Un mail : `{uid, message_id, date (UTC), de_nom, de_adresse, objet, extrait (200 caractères au plus, texte brut), non_lu, utc, signes_pub, lien}`. La copie garde **tous les mails lus au § 16.5** (les 60 derniers et les non lus récents), extrait compris (choix de Claude : une copie large permet qu'une correction d'expéditeur remplisse la liste sans relire la boîte). **L'affichage** montre les non lus et les 20 derniers mails hors pubs, plus les 20 dernières pubs dans la liste repliée. Rien d'autre du mail n'est stocké.
+- **Doublons** (choix de Claude) : dans une section qui réunit deux comptes (QYRIS), un mail présent dans les deux (même `Message-ID`) ne s'affiche et ne compte qu'une fois.
+- **Le tri (`pub`) et les compteurs sont calculés à la lecture** de la copie, pas à sa création : une correction de Colin s'applique tout de suite, sans relire la boîte. La copie garde donc les signes bruts utiles au tri (`signes_pub`, `utc`, voir § 16.6).
+
+### 16.5 Client IMAP (`serveur/lib/imap.php`)
+
+- **Connexion** : `stream_socket_client('tls://hôte:993')`, certificat vérifié, 8 s au plus pour se connecter et 8 s par réponse. Pas d'extension `imap` (absente du Mac, non maintenue : `README.md`). **Le réseau sortant IMAP 993 vers Gmail, iCloud et `ssl0.ovh.net` a été vérifié sur l'hébergement OVH** par le test serveur (`README.md`, constats du test serveur), extension `sockets` présente.
+- **Commandes autorisées, et seulement elles** : `CAPABILITY`, `LOGIN`, `EXAMINE "INBOX"`, `UID SEARCH`, `UID FETCH` (avec `BODY.PEEK[...]`, jamais `BODY[` seul), `LOGOUT`. **`EXAMINE` ouvre la boîte en lecture seule** (RFC 3501 § 6.3.2) et **`BODY.PEEK` ne pose jamais le drapeau `\Seen`** : deux protections indépendantes. Jamais `SELECT`, `STORE`, `COPY`, `EXPUNGE`. Une fonction centrale envoie les commandes et **refuse toute commande hors de cette liste** (testé).
+- **Un passage par compte**, sur `INBOX` seulement (choix de Claude : sur Gmail, les onglets Promotions et Réseaux sociaux sont des libellés de mails restés dans `INBOX`, donc lus ; le Spam et les mails archivés ne le sont pas) :
+  1. `UID SEARCH UNSEEN` (on garde les **200 plus récents** : les non lus plus anciens sont ignorés, choix de Claude, pour qu'une boîte iCloud pleine de pubs ne fasse pas exploser le temps de lecture), puis `UID SEARCH ALL` pour les **60 derniers UID** ;
+  2. `UID FETCH` de l'union de ces UID : `FLAGS`, `INTERNALDATE`, `ENVELOPE`, `BODYSTRUCTURE`, et les en-têtes `List-Unsubscribe`, `List-Id`, `Precedence`, `Received`, `To`, `Cc`, `Delivered-To`, `X-Forwarded-To` (`BODY.PEEK[HEADER.FIELDS (...)]`). Sur Gmail, aussi `X-GM-MSGID` ;
+  3. pour les mails gardés (§ 16.4), les 2 000 premiers octets de la partie `text/plain` (sinon `text/html`, débarrassée des balises) avec `BODY.PEEK[n]<0.2000>`, pour l'extrait.
+- **Décodage, en fonctions pures testées sur des réponses enregistrées** (`tests/fixtures/imap/`, mails inventés) : réponses IMAP (littéraux `{n}`), `ENVELOPE`, `BODYSTRUCTURE`, en-têtes RFC 2047, `quoted-printable` et `base64`, jeux de caractères vers UTF-8 (`mb_convert_encoding`, repli `iconv`), extrait sur une ligne sans espaces doublés.
+- **Erreurs** : `NO` ou `BAD` au `LOGIN` donne `refus` ; connexion impossible, `injoignable` ; dépassement, `delai`. Code rangé dans `comptes_mail.derniere_erreur`, et la dernière copie reste affichée.
+- **Laissé au builder** : découpe interne du client, ordre exact des `FETCH` (un seul groupé ou deux), gestion de l'`UIDVALIDITY` (une copie dont l'`UIDVALIDITY` change est simplement remplacée).
+
+### 16.6 Section UTC et tri des pubs (`serveur/lib/tri_mails.php`, fonctions pures)
+
+- **UTC** : un mail de Gmail est `utc` si l'un de ses en-têtes `To`, `Cc`, `Delivered-To`, `X-Forwarded-To` contient `utc.fr`, **ou** si un en-tête `Received` montre un passage par un serveur `utc.fr`. Les mails `utc` quittent la section Gmail et forment la section UTC. **Règle à confirmer sur 2 ou 3 vrais mails une fois la redirection faite**, car les en-têtes ajoutés par la redirection de l'UTC ne sont pas connus d'avance. Le test serveur (`outils/test-serveur/diagnostic.php`) aura une section qui affiche les en-têtes bruts des derniers mails Gmail pour cela. **Qui et quand** : à la recette, après la redirection faite par Colin, Colin s'envoie un mail sur l'adresse `@etu.utc.fr` et lance le diagnostic ; Claude relit les en-têtes et ajuste la règle si besoin. La règle reste **écrite dans le code** (une liste de marqueurs dans `tri_mails.php`), pas un réglage en base (choix de Claude : elle ne changera qu'une fois, à la recette). En attendant, elle est volontairement large : mieux vaut un mail de trop dans la section UTC qu'un mail UTC perdu dans Gmail.
+- **Pub**, dans cet ordre :
+  1. un mail `utc` n'est **jamais** une pub ;
+  2. l'adresse de l'expéditeur est dans `expediteurs_tri` : son `choix` décide ;
+  3. sinon c'est une pub si l'un de ces signes est présent : en-tête `List-Unsubscribe`, `Precedence: bulk` ou `list`, `List-Id`.
+- **Laissé au builder** : des signes en plus (adresses `noreply`, `Auto-Submitted`) seulement si les vrais mails de Colin montrent qu'ils aident sans cacher de vrais mails.
+
+### 16.7 Rafraîchissement et routes
+
+- **`GET /api/mails`** : rend les 4 sections triées (§ 16.8) **depuis les copies, sans appel IMAP**, avec, par compte, `recupere_le` et `erreur`.
+- **`POST /api/mails/rafraichir`** {`compte`} : `rafraichir('mail:<compte>', 300, …)` pour **un seul compte** (une copie de plus de 5 min est relue), puis rend la section concernée. **L'iPhone lance un appel par compte, en parallèle** (choix de Claude) : une boîte lente ne retarde pas les autres, et chaque requête reste sous 30 s (`set_time_limit(30)`), bien en dessous de la limite d'OVH. L'iPhone affiche d'abord sa copie locale (IndexedDB, comme au lot 1), puis `GET /api/mails`, puis remplace chaque section à mesure que son rafraîchissement revient.
+- **`GET donnees`** ajoute `mails_resume` : `{total, par_section: {utc, qyris, gmail, icloud}}`, en non lus hors pubs, **lu dans les copies sans appel IMAP**. L'écran Aujourd'hui n'attend jamais une boîte mail.
+- **Planificateur** (§ 15.4) : à chaque passage, s'il reste du temps sur les 20 s, il rafraîchit **au plus un compte** dont la copie a plus de 15 min, le plus vieux d'abord. Le brief compte donc sur des copies récentes.
+- **Comptes** :
+  - `GET /api/comptes-mail` : identifiant, enregistré ou non, dernier succès, dernière erreur, jamais le mot de passe ;
+  - `POST /api/comptes-mail` {`compte`, `identifiant`, `mot_de_passe`} : enregistre **après une connexion d'essai réussie** (sinon 400 avec le code d'erreur, rien n'est gardé) ;
+  - `POST /api/comptes-mail/tester` {`compte`} ;
+  - `POST /api/comptes-mail/supprimer` {`compte`} : efface le compte et sa copie.
+- **Corrections** : `POST /api/mails/expediteur` {`adresse`, `choix`: `afficher` | `pub` | `auto`} (`auto` efface la correction).
+- Toutes ces routes exigent la connexion (§ 3) et passent par les protections du § 5.3.
+
+### 16.8 Sur l'iPhone
+
+- **Onglet Mails** (textes de `CONTENU.md` § Mails, dessin de la maquette v28) :
+  - 4 sections dans l'ordre UTC, QYRIS, Gmail, iCloud ; en tête de chaque section, son nombre de non lus ;
+  - QYRIS réunit colin@ et contact@ ; chaque mail porte une petite étiquette de son adresse ;
+  - un mail : expéditeur, objet, extrait, heure (« 14:32 », « hier », « lun. 19/10 ») ; un non lu est mis en évidence ;
+  - pubs repliées sous « + 48 pubs » (texte nouveau), dépliables ;
+  - sur un mail, un bouton discret propose « Toujours afficher » ou « C'est une pub » (textes nouveaux), et sur une pub « Ce n'est pas une pub » ;
+  - bouton d'ouverture par section : « Ouvrir dans Gmail » (UTC et Gmail), « Ouvrir dans iCloud Mail », « Ouvrir le webmail OVH » (QYRIS) ;
+  - mention « Lecture seule : Junior ne marque rien comme lu. » ;
+  - section en erreur : son message (`CONTENU.md`), les autres s'affichent normalement ; compte non enregistré : « Pas encore connecté », avec un lien vers Réglages (texte nouveau).
+- **Ouverture** (choix de Claude) : on ouvre **la boîte**, pas le mail précis, car iOS ne permet pas d'ouvrir un mail donné dans l'app Gmail ou Mail de façon fiable. Gmail : `googlegmail://`, repli sur `https://mail.google.com/` ; iCloud : `https://www.icloud.com/mail/` ; OVH : le webmail OVH. Pour Gmail, le lien web du mail (`X-GM-MSGID`) est gardé dans `lien` et utilisé si le builder constate qu'il s'ouvre bien sur l'iPhone.
+- **Bloc Mails d'Aujourd'hui** : « 3 non lus · UTC 2 · QYRIS 1 » (sections à 0 omises), « Boîtes à jour. » s'il n'y en a aucun. Un toucher ouvre l'onglet Mails.
+- **Réglages, partie Comptes mail** : une ligne par compte avec son état (« Connecté, vérifié à 14:32 », « Mot de passe refusé », « Pas encore connecté »), le champ identifiant pré-rempli, un champ mot de passe (vide, jamais rempli par l'app), « Enregistrer » (qui teste avant de garder), « Tester la connexion » et « Supprimer ». Un court mode d'emploi par compte dit où créer le mot de passe d'application (Google, Apple).
+- **Hors ligne** : la copie locale s'affiche avec « à jour il y a 12 min », comme les autres écrans.
+- **Barre d'onglets** : Aujourd'hui · Agenda · Tâches · Mails · Moi, et le +.
+
+### 16.9 Brief du matin
+
+- La phrase des mails, prévue au § 15.5, s'ajoute après les tâches : « 3 mails non lus. » (non lus hors pubs, toutes sections), omise s'il n'y en a aucun. La réplique « 0 mail non lu » de `CONTENU.md` (l. 249) reste dans la banque des répliques.
+- Comptée sur les copies (§ 16.7), sans appel IMAP pendant la construction du brief.
+
+### 16.10 Tests et fin du lot 3
+
+- **Tests PHP** :
+  - décodage IMAP sur des réponses enregistrées (littéraux, `ENVELOPE`, `BODYSTRUCTURE`, RFC 2047, QP, base64, Latin-1) ;
+  - **lecture seule** : sur un faux serveur IMAP local (`stream_socket_server` dans le test), le client n'envoie que les commandes autorisées, jamais `SELECT`, `STORE` ni `BODY[` sans `PEEK` ; une commande interdite est refusée avant l'envoi ;
+  - règle UTC, tri des pubs et priorité des corrections (un mail UTC n'est jamais une pub) ;
+  - mot de passe chiffré en base, absent des réponses de l'API et du journal ;
+  - `mails_resume` et phrase du brief ;
+  - une boîte en erreur n'empêche pas les autres de s'afficher.
+- **Tests JS** : format des heures de la liste, résumé « 3 non lus · UTC 2 · QYRIS 1 ».
+- **Playwright** (boîtes simulées) : onglet Mails (sections, pubs repliées, correction d'un expéditeur), bloc d'Aujourd'hui, Réglages > Comptes mail, une section en erreur.
+- **Le lot 3 est fini quand** :
+  - les 4 comptes sont connectés depuis l'iPhone ;
+  - un mail envoyé à l'adresse `@etu.utc.fr` apparaît dans la section UTC ;
+  - une newsletter est repliée dans les pubs et ne compte pas dans les non lus ;
+  - **un mail non lu reste non lu** dans Gmail, iCloud et le webmail OVH après que Junior l'a affiché (vérifié à la main par Colin) ;
+  - le brief du lendemain annonce le bon nombre de mails non lus ;
+  - un mot de passe faux affiche le message d'erreur de sa boîte sans gêner les autres.
+
+### 16.11 Textes nouveaux, à valider par Colin
+
+« + 48 pubs » · « Toujours afficher » · « C'est une pub » · « Ce n'est pas une pub » · « Pas encore connecté » · « Connecté, vérifié à 14:32 » · « Mot de passe refusé » · « 3 mails non lus. » (brief).
+
+### 16.12 Préparatifs de Colin
+
+- **Redirection UTC** dans Tuttifruti (Mon compte > Gestion de compte). Regarder s'il existe une case « garder une copie » sur le serveur de l'UTC. Puis s'envoyer un mail de test sur l'adresse `@etu.utc.fr`.
+- **Gmail** : validation en 2 étapes, puis un mot de passe d'application.
+- **iCloud** : un mot de passe d'application (compte Apple > Connexion et sécurité).
+- **colin@ et contact@** : avoir leurs mots de passe OVH (contact@ n'a jamais été testée).
+- Ces préparatifs bloquent les tests réels, pas le développement (boîtes simulées et faux serveur IMAP).
