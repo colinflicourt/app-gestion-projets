@@ -120,6 +120,7 @@ function lancer_tests(string $filtre): int
             throw new EchecTest("Appel HTTP sans faux_http() : $methode $url");
         };
         $GLOBALS['JR_APPELS_HTTP'] = [];
+        $GLOBALS['JR_IMAP_ADRESSE'] = null;
         $GLOBALS['JR_TRELLO_IDS'] = fabrique_trello_ids();
         $GLOBALS['JR_VERROU_ATTENTE'] = null;
         try {

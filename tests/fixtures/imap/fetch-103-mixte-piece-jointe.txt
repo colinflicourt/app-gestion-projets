@@ -1,0 +1,4 @@
+* 3 FETCH (UID 103 FLAGS (\Recent) INTERNALDATE "21-Oct-2026 18:40:10 +0200" ENVELOPE ("Wed, 21 Oct 2026 18:40:00 +0200" [[[Facture de septembre]]] (("Facturation Atelier Éclair" NIL "factures" "atelier-eclair.exemple")) NIL NIL ((NIL NIL "colin.test" "exemple.org")) NIL NIL NIL "<facture-9@atelier-eclair.exemple>") BODYSTRUCTURE ((("TEXT" "PLAIN" ("CHARSET" "iso-8859-1") NIL NIL "QUOTED-PRINTABLE" 200 5 NIL NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "iso-8859-1") NIL NIL "QUOTED-PRINTABLE" 500 12 NIL NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "a") NIL NIL NIL)("APPLICATION" "PDF" ("NAME" "facture.pdf") NIL NIL "BASE64" 20000 NIL ("ATTACHMENT" ("FILENAME" "facture.pdf")) NIL NIL) "MIXED" ("BOUNDARY" "m") NIL NIL NIL) BODY[HEADER.FIELDS (LIST-UNSUBSCRIBE LIST-ID PRECEDENCE RECEIVED TO CC DELIVERED-TO X-FORWARDED-TO)] <<<
+To: colin.test@exemple.org
+Cc: compta@exemple.org
+>>>)

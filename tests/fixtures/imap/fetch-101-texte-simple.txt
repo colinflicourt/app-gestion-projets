@@ -1,0 +1,8 @@
+* 1 FETCH (UID 101 FLAGS () INTERNALDATE "23-Oct-2026 14:32:05 +0200" X-GM-MSGID 1778877365540085600 ENVELOPE ("Fri, 23 Oct 2026 14:31:58 +0200" "=?UTF-8?Q?R=C3=A9union_de_l=27=C3=A9quipe?=" (("Camille Martin" NIL "camille.martin" "Exemple.FR")) (("Camille Martin" NIL "camille.martin" "exemple.fr")) (("Camille Martin" NIL "camille.martin" "exemple.fr")) (("Colin" NIL "colin.test" "exemple.org")) NIL NIL NIL "<msg-101@exemple.fr>") BODYSTRUCTURE ("TEXT" "PLAIN" ("CHARSET" "utf-8") NIL NIL "QUOTED-PRINTABLE" 120 4 NIL NIL NIL NIL) BODY[HEADER.FIELDS (LIST-UNSUBSCRIBE LIST-ID PRECEDENCE RECEIVED TO CC DELIVERED-TO X-FORWARDED-TO)] <<<
+To: Colin <colin.test@exemple.org>
+List-Unsubscribe: <mailto:stop@exemple.fr>,
+ <https://exemple.fr/stop>
+Subject: pas un en-tete demande
+Received: from relais.etu.utc.fr (relais.etu.utc.fr [192.0.2.10])
+	by mx.exemple.org with ESMTPS id abc123
+>>>)
