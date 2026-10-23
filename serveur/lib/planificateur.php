@@ -8,6 +8,7 @@ require_once __DIR__ . '/amorce.php';
 require_once __DIR__ . '/base.php';
 require_once __DIR__ . '/donnees.php';
 require_once __DIR__ . '/envois.php';
+require_once __DIR__ . '/mails.php';
 require_once __DIR__ . '/rappels.php';
 require_once __DIR__ . '/reglages.php';
 
@@ -48,6 +49,46 @@ function rappels_a_venir(DateTimeImmutable $maintenant): array
     ], $requete->fetchAll());
 }
 
+// Non lus des copies, pour le brief : un souci avec les mails n'arrête jamais les rappels
+function mails_pour_brief(): int
+{
+    try {
+        return mails_non_lus_total();
+    } catch (Throwable $e) {
+        journal_erreur('cron/mails', $e);
+        return 0;
+    }
+}
+
+// Au plus une boîte par passage : la plus vieille copie de plus de 15 min (copie absente = la plus vieille),
+// et seulement s'il reste 12 s avant $limite
+function planificateur_mails(float $limite): void
+{
+    if ($limite - microtime(true) < JR_MAILS_RESTE_CRON) {
+        return;
+    }
+    try {
+        $candidats = [];
+        foreach (comptes_mail_lire() as $compte => $etat) {
+            if (!$etat['enregistre']) {
+                continue;
+            }
+            $copie = copie_lire('mail:' . $compte);
+            $age = $copie === null ? PHP_INT_MAX : maintenant()->getTimestamp() - $copie['recupere_le']->getTimestamp();
+            if ($age >= JR_MAILS_AGE_CRON) {
+                $candidats[$compte] = $age;
+            }
+        }
+        if ($candidats === []) {
+            return;
+        }
+        arsort($candidats);
+        mails_rafraichir((string) array_key_first($candidats), JR_MAILS_AGE_CRON, $limite);
+    } catch (Throwable $e) {
+        journal_erreur('cron/mails', $e);
+    }
+}
+
 // Un passage, sous verrou : un second appel pendant un passage repart aussitôt. Au-delà de $limite
 // (microtime, 20 s par défaut), plus rien ne part : le reste partira au passage suivant.
 function planificateur_passage(?float $limite = null): array
@@ -59,8 +100,9 @@ function planificateur_passage(?float $limite = null): array
     try {
         [$cartes, $jours] = copies_pour_rappels();
         $maintenant = maintenant();
-        envois_enregistrer(generer_rappels($cartes, $jours, reglages_rappels(), rappels_a_venir($maintenant), $maintenant));
+        envois_enregistrer(generer_rappels($cartes, $jours, reglages_rappels(), rappels_a_venir($maintenant), $maintenant, mails_pour_brief()));
         $bilan = envoyer_dus(maintenant(), $limite);
+        planificateur_mails($limite);
         envois_purger(maintenant());
         reglage_ecrire('cron_dernier_passage', iso_paris(maintenant()));
         return ['verrou' => true] + $bilan;

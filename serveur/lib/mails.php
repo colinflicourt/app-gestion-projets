@@ -6,7 +6,21 @@ declare(strict_types=1);
 require_once __DIR__ . '/amorce.php';
 require_once __DIR__ . '/base.php';
 require_once __DIR__ . '/chiffrement.php';
+require_once __DIR__ . '/imap.php';
+require_once __DIR__ . '/rafraichir.php';
+require_once __DIR__ . '/reponse.php';
 require_once __DIR__ . '/tri_mails.php';
+
+const JR_MAILS_AGE_ROUTE = 300;   // une copie de plus de 5 min est relue quand l'iPhone le demande
+const JR_MAILS_AGE_CRON = 900;    // et de plus de 15 min par le planificateur
+const JR_MAILS_LIMITE_ROUTE = 25; // secondes de lecture IMAP au plus pour une requête (set_time_limit(30) dans la route)
+const JR_MAILS_RESTE_CRON = 12;   // le planificateur ne lance une lecture que s'il lui reste ce temps
+const JR_MAILS_SECTIONS_DU_COMPTE = ['gmail' => ['utc', 'gmail'], 'icloud' => ['icloud'], 'colin' => ['qyris'], 'contact' => ['qyris']];
+const JR_MAILS_MESSAGES = [
+    'refus' => 'Mot de passe refusé',
+    'injoignable' => "Boîte injoignable pour l'instant.",
+    'delai' => 'La boîte a mis trop de temps à répondre.',
+];
 
 const JR_MAILS_IDENTIFIANTS = [
     'gmail' => 'colin.flicourt@gmail.com',
@@ -114,4 +128,148 @@ function correction_ecrire(string $adresse, string $choix): void
     }
     db()->prepare('INSERT INTO expediteurs_tri (adresse, choix, cree_le) VALUES (?, ?, ?) AS n
         ON DUPLICATE KEY UPDATE choix = n.choix')->execute([$adresse, $choix, utc(maintenant())]);
+}
+
+// --- Lecture des boîtes et copies ---------------------------------------------------------------
+
+// Lit la boîte (JR_LECTEUR_IMAP en test), garde la copie et note le succès ou l'erreur dans comptes_mail.
+// Compte non enregistré : rien n'est lu. $limite : microtime absolu.
+function mails_rafraichir(string $compte, int $age, float $limite): array
+{
+    $acces = compte_mail_acces($compte);
+    if ($acces === null) {
+        return ['contenu' => null, 'recupere_le' => null, 'erreur' => 'non_connecte'];
+    }
+    $resultat = rafraichir('mail:' . $compte, $age, function () use ($compte, $acces, $limite): array {
+        try {
+            $brut = ($GLOBALS['JR_LECTEUR_IMAP'] ?? 'imap_lire_boite')($compte, $acces['identifiant'], $acces['mot_de_passe'], $limite);
+        } catch (ErreurSource $e) {
+            compte_mail_noter($compte, $e->codeErreur);
+            throw $e;
+        }
+        compte_mail_noter($compte, null);
+        return [
+            'uidvalidity' => (int) $brut['uidvalidity'],
+            'mails' => array_map(fn(array $m): array => mail_pour_copie($m, $compte), $brut['mails']),
+        ];
+    });
+    // Verrou de la source pris trop longtemps par une autre lecture : la boîte n'y est pour rien
+    if ($resultat['erreur'] !== null && !isset(JR_MAILS_MESSAGES[$resultat['erreur']])) {
+        $resultat['erreur'] = 'delai';
+    }
+    return $resultat;
+}
+
+// compte => ['contenu', 'recupere_le'] ou null (compte non enregistré ou jamais lu)
+function mails_copies_datees(): array
+{
+    $copies = [];
+    foreach (comptes_mail_lire() as $compte => $etat) {
+        $copie = $etat['enregistre'] ? copie_lire('mail:' . $compte) : null;
+        $copies[$compte] = $copie === null ? null : ['contenu' => $copie['contenu'], 'recupere_le' => $copie['recupere_le']];
+    }
+    return $copies;
+}
+
+function mails_copies(): array
+{
+    return array_map(fn(?array $c): ?array => $c['contenu'] ?? null, mails_copies_datees());
+}
+
+// Ce que rend GET mails : sections triées et état de chaque compte, tout depuis les copies (aucun appel IMAP)
+function mails_reponse(): array
+{
+    $datees = mails_copies_datees();
+    $etats = comptes_mail_lire();
+    $comptes = [];
+    foreach (JR_MAILS_COMPTES as $compte) {
+        $comptes[$compte] = [
+            'recupere_le' => isset($datees[$compte]) ? iso_paris($datees[$compte]['recupere_le']) : null,
+            'erreur' => $etats[$compte]['enregistre'] ? $etats[$compte]['derniere_erreur'] : 'non_connecte',
+        ];
+    }
+    $copies = array_map(fn(?array $c): ?array => $c['contenu'] ?? null, $datees);
+    return ['sections' => mails_sections($copies, corrections_lire()), 'comptes' => $comptes];
+}
+
+// Non lus hors pubs, toutes sections
+function mails_non_lus_total(): int
+{
+    return mails_resume(mails_sections(mails_copies(), corrections_lire()))['total'];
+}
+
+// --- Aides des routes ---------------------------------------------------------------------------
+
+// Les InvalidArgumentException de ce fichier sont des erreurs de requête
+function mails_ou_400(callable $action): array
+{
+    try {
+        return $action();
+    } catch (InvalidArgumentException) {
+        throw new ErreurApi('requete_invalide', 400, 'Requête illisible.');
+    }
+}
+
+function mails_compte_du_corps(array $corps): string
+{
+    $compte = $corps['compte'] ?? null;
+    if (!is_string($compte) || !in_array($compte, JR_MAILS_COMPTES, true)) {
+        throw new ErreurApi('compte_invalide', 400, 'Compte mail inconnu.');
+    }
+    return $compte;
+}
+
+// Texte de 1 à 200 caractères sans caractère de contrôle
+function mails_texte_du_corps(array $corps, string $cle): string
+{
+    $texte = $corps[$cle] ?? null;
+    if (!is_string($texte)) {
+        throw new ErreurApi('requete_invalide', 400, 'Requête illisible.');
+    }
+    $texte = $cle === 'identifiant' ? trim($texte) : $texte;
+    if ($texte === '' || mb_strlen($texte) > 200 || preg_match('/[\x00-\x1f\x7f]/', $texte) === 1) {
+        throw new ErreurApi('requete_invalide', 400, 'Requête illisible.');
+    }
+    return $texte;
+}
+
+// Connexion d'essai (JR_ESSAI_IMAP en test). Échec : ErreurApi 400 avec le code refus, injoignable ou delai.
+function mails_essayer(string $compte, string $identifiant, #[\SensitiveParameter] string $mot_de_passe): void
+{
+    set_time_limit(30);
+    try {
+        ($GLOBALS['JR_ESSAI_IMAP'] ?? 'imap_essayer')($compte, $identifiant, $mot_de_passe, microtime(true) + JR_MAILS_LIMITE_ROUTE);
+    } catch (ErreurSource $e) {
+        $code = isset(JR_MAILS_MESSAGES[$e->codeErreur]) ? $e->codeErreur : 'injoignable';
+        journal_erreur("comptes-mail/$compte", $e);
+        throw new ErreurApi($code, 400, JR_MAILS_MESSAGES[$code]);
+    }
+}
+
+// Teste un compte enregistré et note le résultat
+function mails_tester(string $compte): void
+{
+    $acces = compte_mail_acces($compte);
+    if ($acces === null) {
+        throw new ErreurApi('non_connecte', 400, 'Pas encore connecté');
+    }
+    try {
+        mails_essayer($compte, $acces['identifiant'], $acces['mot_de_passe']);
+    } catch (ErreurApi $e) {
+        compte_mail_noter($compte, $e->codeErreur);
+        throw $e;
+    }
+    compte_mail_noter($compte, null);
+}
+
+// Enregistre après une connexion d'essai réussie ; sinon rien n'est gardé. Une autre adresse : l'ancienne copie part.
+function mails_enregistrer(string $compte, string $identifiant, #[\SensitiveParameter] string $mot_de_passe): void
+{
+    $avant = comptes_mail_lire()[$compte];
+    mails_essayer($compte, $identifiant, $mot_de_passe);
+    if ($avant['enregistre'] && $avant['identifiant'] !== $identifiant) {
+        db()->prepare('DELETE FROM copies WHERE source = ?')->execute(['mail:' . $compte]);
+    }
+    compte_mail_enregistrer($compte, $identifiant, $mot_de_passe);
+    compte_mail_noter($compte, null);
 }
