@@ -433,7 +433,7 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 | 3 | 5 boîtes mail en lecture seule (client IMAP maison, section UTC), onglet Mails, bloc Mails d'Aujourd'hui | Oui |
 | 4 | XP, niveaux, séries, badges calculés depuis `actions`, cartes et album, journal et Wrapped, combat contre le boss avec « J'ai fini la tâche » (« C'est parti » lance alors le boss) | Oui |
 
-**Préparatifs de Colin restants** : compte cron-job.org (avant le lot 2), redirection UTC dans Tuttifruti et mots de passe d'application Gmail et iCloud (avant le lot 3), accord pour créer les 3 médians dans l'agenda principal (avant le lot 2).
+**Préparatifs de Colin restants** : compte cron-job.org (avant le lot 2), redirection UTC dans le webmail UTC et mots de passe d'application Gmail et iCloud (avant le lot 3), accord pour créer les 3 médians dans l'agenda principal (avant le lot 2).
 
 ---
 
@@ -559,7 +559,7 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 
 | # | Sujet | Décision |
 |---|---|---|
-| 1 | Boîte UTC | **Redirigée vers Gmail par Tuttifruti** (Mon compte > Gestion de compte, connexion CAS), réglée une fois par Colin. Colin accepte que ses mails UTC vivent dans Gmail et ne soient plus gardés par le serveur de l'UTC. L'app ne touche jamais au CAS ni au webmail UTC, et ne connaît pas le mot de passe UTC |
+| 1 | Boîte UTC | **Redirigée vers Gmail depuis le webmail UTC**, réglée une fois par Colin. Colin accepte que ses mails UTC vivent dans Gmail et ne soient plus gardés par le serveur de l'UTC. L'app ne touche jamais au CAS ni au webmail UTC, et ne connaît pas le mot de passe UTC |
 | 2 | Notifications de mails | **Aucune.** Les mails s'affichent à l'ouverture de l'app (onglet Mails, bloc d'Aujourd'hui) et dans le brief du matin |
 | 3 | Pubs | **Repérées automatiquement et repliées** (« + 48 pubs »), jamais comptées dans les non lus. Un expéditeur mal classé se corrige d'un geste, retenu par Junior seul |
 | 4 | UTC | **Jamais filtrée** : les listes de diffusion de l'UTC portent les mêmes signes que les pubs, et un changement de salle caché serait la pire erreur du lot |
@@ -685,7 +685,7 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 
 ### 16.12 Préparatifs de Colin
 
-- **Redirection UTC** dans Tuttifruti (Mon compte > Gestion de compte). Regarder s'il existe une case « garder une copie » sur le serveur de l'UTC. Puis s'envoyer un mail de test sur l'adresse `@etu.utc.fr`.
+- **Redirection UTC** dans le webmail UTC. Regarder s'il existe une case « garder une copie » sur le serveur de l'UTC. Puis s'envoyer un mail de test sur l'adresse `@etu.utc.fr`.
 - **Gmail** : validation en 2 étapes, puis un mot de passe d'application.
 - **iCloud** : un mot de passe d'application (compte Apple > Connexion et sécurité).
 - **colin@ et contact@** : avoir leurs mots de passe OVH (contact@ n'a jamais été testée).

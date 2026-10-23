@@ -17,7 +17,7 @@ On suit `guides/CREER-UN-SITE-WEB.md`, adapté à une app. On avance une étape 
 | Forme | **Web app installable** sur l'écran d'accueil, hébergée sur ton OVH. Pas d'app iOS native : elle coûterait 99 $/an, sinon il faudrait la réinstaller tous les 7 jours |
 | To-do | **Trello Jarvis**, une seule source : les tableaux QYRIS, Asso, Études et Perso. Ce que tu ajoutes depuis le téléphone, Jarvis le voit au `/prime` |
 | Mails | **UTC** (redirigé vers Gmail, voir ci-dessous), **Gmail**, **iCloud**, **QYRIS** (colin@ et contact@) |
-| Mot de passe UTC | **Jamais dans l'app.** Tu rediriges ta boîte UTC vers Gmail avec Tuttifruti, et l'app range ces mails dans une section « UTC » |
+| Mot de passe UTC | **Jamais dans l'app.** Tu rediriges ta boîte UTC vers Gmail depuis le webmail UTC, et l'app range ces mails dans une section « UTC » |
 | Fonctions | Brief du matin et rappels automatiques, capture rapide et Siri, « Je fais quoi maintenant ? », XP, niveaux, séries et badges, journal et Wrapped du dimanche, session focus (au ski dans ce plan, remplacée le 2026-10-07 par un combat contre un boss de fin) |
 | Univers du design | Le dev et l'IA, la scène, le jeu vidéo : trois pistes de direction artistique |
 | Écarté pour l'instant | Espace auto-entrepreneur, rendus Moodle, comptes à rebours, widget d'écran d'accueil. Tout reste faisable plus tard sur le même socle |
@@ -167,7 +167,7 @@ projects/<nom>/
 | Google Cloud (API Agenda, connexion Google) | Gratuit, sans carte | Projet, API Agenda activée, écran de consentement **« En production »** (en « Test », Google te déconnecte tous les 7 jours), identifiant OAuth « Application Web ». Je te guide pas à pas |
 | Trello API | Gratuit | Un jeton dédié à l'app, même procédure que le 30/09, révocable sans casser Jarvis |
 | Gmail IMAP | Gratuit | Validation en 2 étapes, puis un mot de passe d'application |
-| Tuttifruti (UTC) | Gratuit | Redirection de la boîte UTC vers Gmail, puis un mail test |
+| Webmail UTC | Gratuit | Redirection de la boîte UTC vers Gmail, puis un mail test |
 | iCloud IMAP | Gratuit | Mot de passe d'application Apple |
 | OVH MX (colin@ et contact@) | Inclus | Leurs mots de passe, que tu saisis toi-même |
 | Notifications web Apple | Gratuit | Installer l'app sur l'écran d'accueil, puis autoriser les notifications |
@@ -251,7 +251,7 @@ La session focus et les mécaniques de jeu existent quelle que soit la piste. Tu
   - installer l'app et autoriser les notifications ;
   - me laisser créer les 3 médians dans Google Agenda : MT23 le 21/10 à 19 h 15, NF93 le 2/11 à 7 h 45, TN01 le 6/11 à 16 h 45. Ils ne sont pas dans ton agenda principal aujourd'hui.
 - **Avant le lot 3** :
-  - redirection UTC dans Tuttifruti ;
+  - redirection UTC dans le webmail UTC ;
   - mots de passe d'application Gmail (avec la validation en 2 étapes) et iCloud ;
   - saisir toi-même les mots de passe dans Réglages.
 

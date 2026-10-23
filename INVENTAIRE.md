@@ -78,7 +78,7 @@ Il y a de grands créneaux libres entre les cours : c'est là que « Je fais quo
 
 | Boîte | Accès prévu | État au 07/10 |
 |---|---|---|
-| UTC (etu.utc.fr) | Redirigée vers Gmail par Tuttifruti, section « UTC » dans l'app | Redirection à faire par toi (avant le lot 3) |
+| UTC (etu.utc.fr) | Redirigée vers Gmail depuis le webmail UTC, section « UTC » dans l'app | Redirection à faire par toi (avant le lot 3) |
 | Gmail | IMAP, mot de passe d'application | Validation en 2 étapes à vérifier, mot de passe à créer |
 | iCloud | IMAP, mot de passe d'application Apple | À créer |
 | colin@qyris.fr | IMAP OVH | Mot de passe connu de toi |

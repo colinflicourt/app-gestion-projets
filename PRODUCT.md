@@ -82,7 +82,7 @@ C'est le petit frère de Jarvis, l'assistant Claude Code de Colin. Quatre choses
 
 **Accès et sécurité** :
 - Mails en lecture seule : l'app ne marque jamais un mail comme lu.
-- Le mot de passe UTC n'est jamais stocké : la boîte UTC sera redirigée vers Gmail par Tuttifruti.
+- Le mot de passe UTC n'est jamais stocké : la boîte UTC sera redirigée vers Gmail depuis le webmail UTC.
 - L'app ne touche qu'aux 4 tableaux Trello Jarvis, jamais à Courses ni à Repas étudiant.
 - Les mots de passe d'application sont saisis par Colin dans Réglages et chiffrés. Aucun secret dans le code ni dans git.
 - Un seul compte, une session de 90 jours, 10 essais de mot de passe par 15 min.

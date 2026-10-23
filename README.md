@@ -27,7 +27,7 @@ Remplace l'ancienne idée d'« application personnelle de gestion de projets » 
 
 ## Prochaine session
 
-1. **Lot 3, partie B (avec Colin)** : suivre `RECETTE-LOT3.md` : préparatifs (redirection Tuttifruti, mots de passe d'application Gmail et iCloud, mots de passe OVH), mise en ligne par Colin, saisie des 4 comptes dans Réglages, diagnostic `entetes_gmail` lu par Claude à travers le filtre (ajuster `JR_MARQUEURS_UTC` si besoin), recette du SPEC § 16.10. Adresse du webmail OVH à confirmer. Puis envoyer `main` sur GitHub
+1. **Lot 3, partie B (avec Colin)** : suivre `RECETTE-LOT3.md` : préparatifs (redirection depuis le webmail UTC, mots de passe d'application Gmail et iCloud, mots de passe OVH), mise en ligne par Colin, saisie des 4 comptes dans Réglages, diagnostic `entetes_gmail` lu par Claude à travers le filtre (ajuster `JR_MARQUEURS_UTC` si besoin), recette du SPEC § 16.10. Adresse du webmail OVH à confirmer. Puis envoyer `main` sur GitHub
 2. Lot 2 : rappel « Dans 1 h » à recréer puis contrôler (`envoyer.sh --lot2`), brief ni doublé ni sauté au passage à l'heure d'hiver (25/10). Relire `CONTENU.md` § 5 et § 5.1
 3. À trancher par Colin : les chiffres des codes d'UV au marqueur (`DESIGN.md`, fin), l'effacement de la copie de l'iPhone au premier 401 (constats ci-dessous), et le piège de « Terminer » vu à la recette : sur la carte ouverte, c'est le seul bouton allumé, Colin l'a touché pour quitter la carte après avoir coché une étape (la carte est partie dans Fait). Le retour est la petite flèche en haut à gauche.
 
@@ -59,7 +59,7 @@ Remplace l'ancienne idée d'« application personnelle de gestion de projets » 
 
 - Web app installable (pas d'app iOS native), hébergée sur l'OVH perso, stack HTML/CSS/JS natifs et PHP sans Composer
 - To-do = les 4 tableaux Trello Jarvis seulement (QYRIS, Asso, Études, Perso)
-- Mot de passe UTC jamais dans l'app : boîte UTC redirigée vers Gmail par Tuttifruti
+- Mot de passe UTC jamais dans l'app : boîte UTC redirigée vers Gmail depuis le webmail UTC
 - Direction artistique : la console de régie du Cabaret, choisie contre « La lineup », « HEAD » et « Player 1 ». Fond graphite, afficheur ambre sans halo, une couleur par domaine, tampons FAIT et JOUÉ, un seul bouton GO
 - Nom : Jarvis Jr., « Junior » dans l'app, adresse jr.qyris.fr. Icône : « Jr. » sur la touche GO ambre (choisie le 2026-10-07). Junior monte en grade avec l'XP de Colin (Stagiaire, Assistant, Bras droit, Majordome)
 - Base MySQL sur l'OVH (3 bases libres). SFTP probablement inclus, à vérifier au premier déploiement. iPhone 14 en iOS 26.6 : notifications et Wake Lock disponibles

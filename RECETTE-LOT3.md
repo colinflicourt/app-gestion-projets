@@ -17,8 +17,8 @@ Ils bloquent les tests réels, pas la mise en ligne elle-même. Compte 30 à 45 
 
 ### 1.1 Rediriger la boîte UTC vers Gmail
 
-- [ ] Va dans Tuttifruti (Mon compte, Gestion de compte) et active la redirection de ta boîte `@etu.utc.fr` vers `colin.flicourt@gmail.com`.
-- [ ] Regarde s'il existe une case « garder une copie » sur le serveur de l'UTC. Si oui, coche-la (tes mails UTC restent alors aussi chez l'UTC). Si la case n'existe pas, note-le : ce n'est pas bloquant.
+- [ ] Connecte-toi au webmail UTC, ouvre ses préférences (rubrique transfert ou redirection) et active le transfert de ta boîte `@etu.utc.fr` vers `colin.flicourt@gmail.com`.
+- [ ] Regarde s'il existe une option pour garder une copie sur le serveur de l'UTC (ou, à l'inverse, une case « ne pas conserver de copie » à laisser décochée). Choisis de garder la copie : tes mails UTC restent alors aussi chez l'UTC. Si l'option n'existe pas, note-le : ce n'est pas bloquant.
 - [ ] Envoie-toi un mail de test sur ton adresse `@etu.utc.fr` (depuis un autre compte, par exemple iCloud) avec l'objet « Test UTC ». Vérifie qu'il arrive dans Gmail (dossier Réception, pas Spam). Garde-le : il sert à régler la règle UTC (partie 5).
 
 ### 1.2 Mot de passe d'application Gmail

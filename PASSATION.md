@@ -17,7 +17,7 @@ Jarvis Jr. (jr.qyris.fr), l'app perso d'organisation de Colin sur iPhone. Le **l
 - Sous-agents sans commit (Claude relit et commite). C'est Colin qui lance tout envoi vers OVH.
 
 ## Prochaine étape
-1. **Colin fait ses préparatifs** (`RECETTE-LOT3.md` partie 1, 30 à 45 min) : redirection Tuttifruti vers Gmail + mail « Test UTC », mot de passe d'application Gmail (validation en 2 étapes), mot de passe d'application iCloud, mots de passe OVH de colin@ et contact@. Jamais de mot de passe collé dans la conversation.
+1. **Colin fait ses préparatifs** (`RECETTE-LOT3.md` partie 1, 30 à 45 min) : redirection depuis le webmail UTC vers Gmail + mail « Test UTC », mot de passe d'application Gmail (validation en 2 étapes), mot de passe d'application iCloud, mots de passe OVH de colin@ et contact@. Jamais de mot de passe collé dans la conversation.
 2. Colin lance la mise en ligne (commandes exactes dans `RECETTE-LOT3.md`, migration 006 comprise), saisit les 4 comptes dans Réglages sur l'iPhone, lance le diagnostic.
 3. Claude lit `entetes_gmail` à travers le filtre ; si le mail « Test UTC » n'est pas reconnu, petite mission pour ajuster `JR_MARQUEURS_UTC`, nouvelle mise en ligne.
 4. Recette du SPEC § 16.10 (cases de `RECETTE-LOT3.md`), puis `main` sur GitHub, README, Trello.
