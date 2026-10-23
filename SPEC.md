@@ -553,7 +553,7 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 
 ## 16. Lot 3 : mails
 
-> Rédigé le 2026-10-23 avec superpowers:brainstorming, à partir de `PLAN.md` (§ Mails), `CONTENU.md` (§ Aujourd'hui, § Mails, § Réglages), `INVENTAIRE.md` § 3, `PRODUCT.md` et du code des lots 1 et 2. Relu par un sous-agent « builder » le même jour (6 points, tous tranchés : vérifié au test serveur ou marqués « choix de Claude »). **Statut : validé par Colin le 2026-10-23**, textes nouveaux du § 16.11 compris.
+> Rédigé le 2026-10-23 avec superpowers:brainstorming, à partir de `PLAN.md` (§ Mails), `CONTENU.md` (§ Aujourd'hui, § Mails, § Réglages), `INVENTAIRE.md` § 3, `PRODUCT.md` et du code des lots 1 et 2. Relu par un sous-agent « builder » le même jour (6 points, tous tranchés : vérifié au test serveur ou marqués « choix de Claude »). **Statut : validé par Colin le 2026-10-23**, textes nouveaux du § 16.11 compris. **Partie code faite en local le 2026-10-23** (`plans/2026-10-23-lot3-1-mails.md`, missions M1 à M7, vérification indépendante conforme) ; mise en ligne et recette à faire (`RECETTE-LOT3.md`).
 
 ### 16.1 Décisions de Colin (2026-10-23)
 
@@ -679,7 +679,7 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
   - le brief du lendemain annonce le bon nombre de mails non lus ;
   - un mot de passe faux affiche le message d'erreur de sa boîte sans gêner les autres.
 
-### 16.11 Textes nouveaux, à valider par Colin
+### 16.11 Textes nouveaux (validés par Colin le 2026-10-23, complétés dans le plan du lot 3 et dans `CONTENU.md` § 3)
 
 « + 48 pubs » · « Toujours afficher » · « C'est une pub » · « Ce n'est pas une pub » · « Pas encore connecté » · « Connecté, vérifié à 14 h 32 » · « Mot de passe refusé » · « 3 mails non lus. » (brief).
 
