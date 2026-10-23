@@ -322,7 +322,7 @@ test('Comptes mail : un état par compte, identifiants pré-remplis, champ mot d
   await compteMail(page, 'iCloud').getByText('Pas encore connecté', { exact: true }).waitFor();
   await compteMail(page, 'colin@qyris.fr').getByText('Mot de passe refusé', { exact: true }).waitFor();
   await compteMail(page, 'contact@qyris.fr').getByText("Boîte injoignable pour l'instant.", { exact: true }).waitFor();
-  for (const [nom, id] of [['Gmail', 'colin.flicourt@gmail.com'], ['iCloud', 'colin.flicourt@icloud.com'], ['colin@qyris.fr', 'colin@qyris.fr'], ['contact@qyris.fr', 'contact@qyris.fr']]) {
+  for (const [nom, id] of [['UTC', 'cflicour'], ['Gmail', 'colin.flicourt@gmail.com'], ['iCloud', 'colin.flicourt@icloud.com'], ['colin@qyris.fr', 'colin@qyris.fr'], ['contact@qyris.fr', 'contact@qyris.fr']]) {
     const c = compteMail(page, nom);
     assert.equal(await c.getByLabel('Identifiant').inputValue(), id);
     const mdp = c.getByLabel('Mot de passe');
@@ -330,10 +330,12 @@ test('Comptes mail : un état par compte, identifiants pré-remplis, champ mot d
     assert.equal(await mdp.getAttribute('type'), 'password');
     assert.equal(await mdp.getAttribute('autocomplete'), 'off');
   }
+  await compteMail(page, 'UTC').getByText('Ton mot de passe UTC, celui du CAS.', { exact: true }).waitFor();
   await compteMail(page, 'Gmail').getByText('Compte Google > Sécurité > Validation en deux étapes, puis Mots de passe des applications. Colle ici le mot de passe de 16 lettres.').waitFor();
   await compteMail(page, 'iCloud').getByText('Compte Apple > Connexion et sécurité > Mots de passe pour app. Colle ici le mot de passe créé.').waitFor();
   await compteMail(page, 'colin@qyris.fr').getByText('Le mot de passe de la boîte, celui du webmail OVH.').waitFor();
   // Pas encore connecté : ni « Tester » ni « Supprimer »
+  assert.equal(await compteMail(page, 'UTC').getByRole('button', { name: 'Supprimer' }).count(), 0);
   assert.equal(await compteMail(page, 'iCloud').getByRole('button', { name: 'Tester la connexion' }).count(), 0);
   assert.equal(await compteMail(page, 'iCloud').getByRole('button', { name: 'Supprimer' }).count(), 0);
   assert.equal(await compteMail(page, 'Gmail').getByRole('button', { name: 'Tester la connexion' }).count(), 1);

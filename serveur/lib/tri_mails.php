@@ -3,9 +3,8 @@
 
 declare(strict_types=1);
 
-const JR_MAILS_COMPTES = ['gmail', 'icloud', 'colin', 'contact'];
+const JR_MAILS_COMPTES = ['utc', 'gmail', 'icloud', 'colin', 'contact'];
 const JR_MAILS_SECTIONS = ['utc', 'qyris', 'gmail', 'icloud'];
-const JR_MARQUEURS_UTC = ['utc.fr'];
 const JR_MAILS_AFFICHES_MIN = 20;
 const JR_MAILS_PUBS_MAX = 20;
 
@@ -19,21 +18,6 @@ function mail_valeurs_entete(array $entetes, string $nom): array
         }
     }
     return $valeurs;
-}
-
-// Règle volontairement large (SPEC § 16.6) : un marqueur dans un destinataire ou un passage Received
-function mail_est_utc(array $entetes): bool
-{
-    foreach (['to', 'cc', 'delivered-to', 'x-forwarded-to', 'received'] as $nom) {
-        foreach (mail_valeurs_entete($entetes, $nom) as $valeur) {
-            foreach (JR_MARQUEURS_UTC as $marqueur) {
-                if (stripos($valeur, $marqueur) !== false) {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
 }
 
 function mail_signes_pub(array $entetes): array
@@ -97,16 +81,15 @@ function mail_pour_copie(array $brut, string $compte): array
         'objet' => (string) ($brut['objet'] ?? ''),
         'extrait' => (string) ($brut['extrait'] ?? ''),
         'non_lu' => (bool) ($brut['non_lu'] ?? false),
-        'utc' => $gmail && mail_est_utc($entetes),
         'signes_pub' => mail_signes_pub($entetes),
         'lien' => $lien,
     ];
 }
 
-// Dans l'ordre : UTC jamais pub, puis la correction de Colin, puis les signes
+// Dans l'ordre : UTC (compte utc) jamais pub, puis la correction de Colin, puis les signes
 function mail_est_pub(array $mail, array $corrections): bool
 {
-    if (!empty($mail['utc'])) {
+    if (($mail['compte'] ?? null) === 'utc') {
         return false;
     }
     $adresse = strtolower(preg_replace('/\s+/', '', (string) ($mail['de_adresse'] ?? '')));
@@ -167,7 +150,8 @@ function mails_sections(array $copies, array $corrections): array
         foreach ((array) ($copies[$compte]['mails'] ?? []) as $mail) {
             $mail['compte'] = $compte;
             $section = match ($compte) {
-                'gmail' => !empty($mail['utc']) ? 'utc' : 'gmail',
+                'utc' => 'utc',
+                'gmail' => 'gmail',
                 'icloud' => 'icloud',
                 default => 'qyris',
             };

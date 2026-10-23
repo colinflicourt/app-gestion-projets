@@ -9,7 +9,7 @@ import { ageTexte, minutesEntre } from '../lib/temps.js';
 
 const M = T.mails;
 const CODES_BOITE = ['refus', 'injoignable', 'delai'];
-const LIENS = { icloud: 'https://www.icloud.com/mail/', qyris: 'https://www.ovhcloud.com/fr/mail/' };
+const LIENS = { utc: 'https://webmail.utc.fr', icloud: 'https://www.icloud.com/mail/', qyris: 'https://www.ovhcloud.com/fr/mail/' };
 const GMAIL_APP = 'googlegmail://';
 const GMAIL_WEB = 'https://mail.google.com/';
 const REPLI_GMAIL = 1500;
@@ -136,7 +136,7 @@ function avis(section, { compte, code }) {
       h('p', {}, section === 'qyris' && h('strong', {}, `${M.adresseCompte[compte]} : `), M.pasConnecte),
       h('a', { class: 'bouton bouton-petit', href: '#/reglages' }, M.ouvrirReglages));
   }
-  const texte = { gmail: M.erreurGmail, icloud: M.erreurIcloud }[compte] ?? M.erreurQyris(M.adresseCompte[compte]);
+  const texte = { utc: M.erreurUtc, gmail: M.erreurGmail, icloud: M.erreurIcloud }[compte] ?? M.erreurQyris(M.adresseCompte[compte]);
   return h('div', { class: 'mails-avis erreur', role: 'status' }, h('p', {}, texte));
 }
 
@@ -157,7 +157,7 @@ function boutonOuvrir(section) {
 }
 
 function ageSection(app, section) {
-  const comptes = section === 'qyris' ? ['colin', 'contact'] : [section === 'icloud' ? 'icloud' : 'gmail'];
+  const comptes = section === 'qyris' ? ['colin', 'contact'] : [section];
   const dates = comptes.map((c) => etat.comptes?.[c]?.recupere_le).filter(Boolean).map((iso) => new Date(iso));
   if (dates.length === 0) return null;
   const plusVieux = dates.reduce((a, b) => (a < b ? a : b));

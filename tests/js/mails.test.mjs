@@ -40,13 +40,15 @@ test('resumeMails : 0, 1, plusieurs, sections à 0 omises, ordre UTC QYRIS Gmail
 });
 
 const comptes = (o = {}) => ({
-  gmail: { recupere_le: null, erreur: null }, icloud: { recupere_le: null, erreur: null },
+  utc: { recupere_le: null, erreur: null },  gmail: { recupere_le: null, erreur: null }, icloud: { recupere_le: null, erreur: null },
   colin: { recupere_le: null, erreur: null }, contact: { recupere_le: null, erreur: null }, ...o,
 });
 
-test("etatSection : UTC suit Gmail, QYRIS suit colin et contact, une boîte sans erreur n'a aucun avis", () => {
+test("etatSection : UTC suit son compte utc, Gmail le sien, QYRIS suit colin et contact, une boîte sans erreur n'a aucun avis", () => {
   assert.deepEqual(etatSection('utc', comptes()), []);
-  assert.deepEqual(etatSection('utc', comptes({ gmail: { erreur: 'refus' } })), [{ compte: 'gmail', code: 'refus' }]);
+  assert.deepEqual(etatSection('utc', comptes({ utc: { erreur: 'refus' } })), [{ compte: 'utc', code: 'refus' }]);
+  assert.deepEqual(etatSection('utc', comptes({ gmail: { erreur: 'refus' } })), []);
+  assert.deepEqual(etatSection('gmail', comptes({ utc: { erreur: 'refus' } })), []);
   assert.deepEqual(etatSection('gmail', comptes({ gmail: { erreur: 'non_connecte' } })), [{ compte: 'gmail', code: 'non_connecte' }]);
   assert.deepEqual(etatSection('icloud', comptes({ icloud: { erreur: 'delai' } })), [{ compte: 'icloud', code: 'delai' }]);
   assert.deepEqual(

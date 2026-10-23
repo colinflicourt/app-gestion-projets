@@ -16,8 +16,8 @@ On suit `guides/CREER-UN-SITE-WEB.md`, adapté à une app. On avance une étape 
 |---|---|
 | Forme | **Web app installable** sur l'écran d'accueil, hébergée sur ton OVH. Pas d'app iOS native : elle coûterait 99 $/an, sinon il faudrait la réinstaller tous les 7 jours |
 | To-do | **Trello Jarvis**, une seule source : les tableaux QYRIS, Asso, Études et Perso. Ce que tu ajoutes depuis le téléphone, Jarvis le voit au `/prime` |
-| Mails | **UTC** (redirigé vers Gmail, voir ci-dessous), **Gmail**, **iCloud**, **QYRIS** (colin@ et contact@) |
-| Mot de passe UTC | **Jamais dans l'app.** Tu rediriges ta boîte UTC vers Gmail depuis le webmail UTC, et l'app range ces mails dans une section « UTC » |
+| Mails | **UTC** (boîte lue directement, voir ci-dessous), **Gmail**, **iCloud**, **QYRIS** (colin@ et contact@) |
+| Mot de passe UTC | **Saisi par toi dans Réglages**, chiffré en base comme les autres, pour lire ta boîte UTC directement en IMAP (`imaps.utc.fr`). Risque accepté le 23/10/2026 : le webmail UTC ne permet ni filtre ni transfert, la redirection vers Gmail est impossible |
 | Fonctions | Brief du matin et rappels automatiques, capture rapide et Siri, « Je fais quoi maintenant ? », XP, niveaux, séries et badges, journal et Wrapped du dimanche, session focus (au ski dans ce plan, remplacée le 2026-10-07 par un combat contre un boss de fin) |
 | Univers du design | Le dev et l'IA, la scène, le jeu vidéo : trois pistes de direction artistique |
 | Écarté pour l'instant | Espace auto-entrepreneur, rendus Moodle, comptes à rebours, widget d'écran d'accueil. Tout reste faisable plus tard sur le même socle |
@@ -80,7 +80,7 @@ iPhone : web app installée (HTML/CSS/JS natifs, service worker, stockage local)
 API PHP sur ton OVH (nouveau sous-domaine, non indexé)
    ├─ Google Agenda (API officielle, connexion Google, lecture seule)
    ├─ Trello (API, jeton dédié à l'app, 4 tableaux Jarvis seulement)
-   ├─ IMAP en lecture seule : Gmail (+ UTC redirigé), iCloud, OVH colin@ et contact@
+   ├─ IMAP en lecture seule : UTC, Gmail, iCloud, OVH colin@ et contact@
    ├─ Notifications web (serveur de notifications d'Apple, gratuit)
    └─ Base : MySQL OVH si une base est libre, sinon SQLite hors du dossier public
 cron-job.org (gratuit) ── appelle le planificateur chaque minute
@@ -103,7 +103,7 @@ cron-job.org (gratuit) ── appelle le planificateur chaque minute
   - la connexion à Google se fait une fois. Son jeton est chiffré sur le serveur.
 - **Mails** :
   - l'extension IMAP n'existe plus en PHP 8.4 et plus, d'où un petit client maison sur une connexion chiffrée. Il ouvre la boîte en lecture seule, compte les non lus, puis lit les en-têtes et un extrait décodé ;
-  - la section UTC regroupe les mails Gmail adressés à ton adresse etu.utc.fr ;
+  - la section UTC est ta boîte UTC (etu.utc.fr), lue directement ;
   - les mots de passe d'application sont **saisis par toi dans Réglages**, chiffrés avec libsodium. Claude ne les voit jamais.
 - **Notifications** :
   - envoi maison, sans dépendance, selon les normes du web (VAPID et chiffrement aes128gcm), vérifié avec le vecteur de test officiel de la RFC 8291 ;
@@ -153,7 +153,7 @@ projects/<nom>/
 | **Artifact** avec base de données | Canvas de suivi du projet (étapes, décisions, questions) |
 | **Playwright** (sinon Chrome sans fenêtre, comme aujourd'hui quand il était occupé) | Tests à 375, 390 et 768 px, hors ligne, mouvement réduit, parcours complets |
 | **Connecteur Google Agenda** | Créer les 3 médians dans ton agenda (sur ton accord) et vérifier les données |
-| **Connecteur Gmail** | Vérifier que la redirection UTC arrive bien |
+| **Connecteur Gmail** | Vérifier qu'un mail envoyé à ton adresse UTC arrive bien dans la section UTC |
 | **`trello.py`** | Carte de suivi du projet dans Trello |
 | **DALL-E** (toi), **Canva** | Icône de l'app, illustrations éventuelles |
 | **PHP 8.5**, **sqlite3**, **Node**, **gh** (installés) | Aperçu local, tests, base locale, dépôt GitHub **privé** sur ton accord |
@@ -167,7 +167,7 @@ projects/<nom>/
 | Google Cloud (API Agenda, connexion Google) | Gratuit, sans carte | Projet, API Agenda activée, écran de consentement **« En production »** (en « Test », Google te déconnecte tous les 7 jours), identifiant OAuth « Application Web ». Je te guide pas à pas |
 | Trello API | Gratuit | Un jeton dédié à l'app, même procédure que le 30/09, révocable sans casser Jarvis |
 | Gmail IMAP | Gratuit | Validation en 2 étapes, puis un mot de passe d'application |
-| Webmail UTC | Gratuit | Redirection de la boîte UTC vers Gmail, puis un mail test |
+| Boîte UTC (IMAP) | Gratuit | Ton mot de passe CAS à saisir dans Réglages, puis un mail test |
 | iCloud IMAP | Gratuit | Mot de passe d'application Apple |
 | OVH MX (colin@ et contact@) | Inclus | Leurs mots de passe, que tu saisis toi-même |
 | Notifications web Apple | Gratuit | Installer l'app sur l'écran d'accueil, puis autoriser les notifications |
@@ -251,7 +251,7 @@ La session focus et les mécaniques de jeu existent quelle que soit la piste. Tu
   - installer l'app et autoriser les notifications ;
   - me laisser créer les 3 médians dans Google Agenda : MT23 le 21/10 à 19 h 15, NF93 le 2/11 à 7 h 45, TN01 le 6/11 à 16 h 45. Ils ne sont pas dans ton agenda principal aujourd'hui.
 - **Avant le lot 3** :
-  - redirection UTC dans le webmail UTC ;
+  - ton mot de passe CAS de l'UTC sous la main ;
   - mots de passe d'application Gmail (avec la validation en 2 étapes) et iCloud ;
   - saisir toi-même les mots de passe dans Réglages.
 
@@ -263,10 +263,10 @@ La session focus et les mécaniques de jeu existent quelle que soit la piste. Tu
 - **Notifications web sur iPhone** : elles fonctionnent, en Europe aussi, mais elles sont un peu moins fiables qu'une app native, car l'abonnement peut sauter. Pour ça :
   - un indicateur d'état et une notification de test dans Réglages ;
   - les médians gardent aussi leur alerte dans Google Agenda.
-- **Redirection UTC** :
-  - d'après l'UTC, les mails redirigés ne sont plus gardés sur leur serveur ;
-  - surveille le dossier spam de Gmail ;
-  - répondre avec ton adresse UTC depuis Gmail obligerait à donner ton mot de passe UTC à Google : à toi de voir, hors de l'app.
+- **Boîte UTC lue directement** :
+  - ton mot de passe CAS est chiffré en base sur ton hébergement OVH, comme les autres, et ne sert qu'à lire (jamais à répondre ni à marquer lu) ;
+  - si tu changes ton mot de passe CAS, ressaisis-le dans Réglages ;
+  - c'est un risque que tu as accepté, faute de transfert possible depuis le webmail UTC.
 - **Google** : un écran « application non vérifiée » s'affiche une seule fois, c'est normal pour une app perso. Il faut la laisser « En production ».
 - **Trello** : l'app ne touche qu'aux 4 tableaux Jarvis (Courses et Repas étudiant jamais), comme le veut la règle de `CLAUDE.md`.
 - **Heure** : passage à l'heure d'hiver le 25/10/2026, cas couvert par les tests des rappels.

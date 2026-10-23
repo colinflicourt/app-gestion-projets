@@ -6,7 +6,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/imap_decodage.php';
 
-const JR_IMAP_SERVEURS = ['gmail' => 'imap.gmail.com', 'icloud' => 'imap.mail.me.com', 'colin' => 'ssl0.ovh.net', 'contact' => 'ssl0.ovh.net'];
+const JR_IMAP_SERVEURS = ['utc' => 'imaps.utc.fr', 'gmail' => 'imap.gmail.com', 'icloud' => 'imap.mail.me.com', 'colin' => 'ssl0.ovh.net', 'contact' => 'ssl0.ovh.net'];
 const JR_IMAP_PORT = 993;
 const JR_IMAP_DELAI = 8;
 const JR_IMAP_NON_LUS_MAX = 200;

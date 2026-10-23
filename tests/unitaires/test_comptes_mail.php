@@ -4,8 +4,9 @@ declare(strict_types=1);
 test('comptes mail : les 4 comptes sont toujours présents, identifiants pré-remplis, rien d enregistré', function () {
     base_de_test();
     $c = comptes_mail_lire();
-    egal(['gmail', 'icloud', 'colin', 'contact'], array_keys($c));
+    egal(['utc', 'gmail', 'icloud', 'colin', 'contact'], array_keys($c));
     egal(['identifiant' => 'colin.flicourt@gmail.com', 'enregistre' => false, 'dernier_succes' => null, 'derniere_erreur' => null], $c['gmail']);
+    egal(['identifiant' => 'cflicour', 'enregistre' => false, 'dernier_succes' => null, 'derniere_erreur' => null], $c['utc']);
     egal('contact@qyris.fr', $c['contact']['identifiant']);
     egal(null, compte_mail_acces('gmail'));
 });

@@ -84,8 +84,8 @@ test('mails : « Ce n\'est pas une pub » remet le mail dans la liste et compte 
 
 test('mails : chargement en trois temps, GET mails puis un POST mails/rafraichir par compte', async ({ page, contexte, serveur }) => {
   await ouvrirMails(page, contexte, serveur);
-  await attendre(() => serveur.appels('mails/rafraichir').length === 4, 'les 4 rafraîchissements');
-  assert.deepEqual(serveur.appels('mails/rafraichir').map((a) => a.corps.compte).sort(), ['colin', 'contact', 'gmail', 'icloud']);
+  await attendre(() => serveur.appels('mails/rafraichir').length === 5, 'les 5 rafraîchissements');
+  assert.deepEqual(serveur.appels('mails/rafraichir').map((a) => a.corps.compte).sort(), ['colin', 'contact', 'gmail', 'icloud', 'utc']);
   assert.equal(serveur.appels('mails').length, 1);
 });
 
@@ -101,12 +101,11 @@ test('mails : une section en erreur affiche son message et les autres restent af
   assert.equal(await section(page, 'UTC').locator('.mail').count(), 3);
 });
 
-test('mails : la section UTC suit l\'état de Gmail', async ({ page, contexte, serveur }) => {
-  serveur.etat.mails.comptes.gmail.erreur = 'injoignable';
+test('mails : la section UTC suit l\'état du compte UTC, et Gmail le sien', async ({ page, contexte, serveur }) => {
+  serveur.etat.mails.comptes.utc.erreur = 'refus';
   await ouvrirMails(page, contexte, serveur);
-  const texteGmail = "Gmail ne répond pas. Vérifie le mot de passe d'application dans Réglages.";
-  assert.equal(await texte(section(page, 'UTC'), '.mails-avis'), texteGmail);
-  assert.equal(await texte(section(page, 'Gmail'), '.mails-avis'), texteGmail);
+  assert.equal(await texte(section(page, 'UTC'), '.mails-avis'), 'La boîte UTC ne répond pas. Vérifie ton mot de passe UTC dans Réglages.');
+  assert.equal(await section(page, 'Gmail').locator('.mails-avis').count(), 0);
   assert.equal(await section(page, 'QYRIS').locator('.mails-avis').count(), 0);
 });
 
@@ -128,14 +127,14 @@ test('mails : un compte non enregistré dit « Pas encore connecté » avec un l
   assert.equal(await texte(section(page, 'iCloud'), '.mails-avis p'), 'Pas encore connecté');
   assert.equal(await texte(section(page, 'QYRIS'), '.mails-avis p'), 'colin@qyris.fr : Pas encore connecté');
   assert.equal(await section(page, 'iCloud').getByRole('link', { name: 'Ouvrir Réglages' }).getAttribute('href'), '#/reglages');
-  await attendre(() => serveur.appels('mails/rafraichir').length === 2, 'rafraîchissement de gmail et contact seulement');
+  await attendre(() => serveur.appels('mails/rafraichir').length === 3, 'rafraîchissement de utc, gmail et contact seulement');
   await page.waitForTimeout(200);
-  assert.deepEqual(serveur.appels('mails/rafraichir').map((a) => a.corps.compte).sort(), ['contact', 'gmail']);
+  assert.deepEqual(serveur.appels('mails/rafraichir').map((a) => a.corps.compte).sort(), ['contact', 'gmail', 'utc']);
 });
 
 test('mails : boutons d\'ouverture par section', async ({ page, contexte, serveur }) => {
   await ouvrirMails(page, contexte, serveur);
-  assert.equal(await section(page, 'UTC').getByRole('button', { name: 'Ouvrir dans Gmail' }).count(), 1);
+  assert.equal(await section(page, 'UTC').getByRole('link', { name: 'Ouvrir le webmail UTC' }).getAttribute('href'), 'https://webmail.utc.fr');
   assert.equal(await section(page, 'Gmail').getByRole('button', { name: 'Ouvrir dans Gmail' }).count(), 1);
   assert.equal(await section(page, 'iCloud').getByRole('link', { name: 'Ouvrir dans iCloud Mail' }).getAttribute('href'), 'https://www.icloud.com/mail/');
   const ovh = section(page, 'QYRIS').getByRole('link', { name: 'Ouvrir le webmail OVH' });
@@ -145,7 +144,7 @@ test('mails : boutons d\'ouverture par section', async ({ page, contexte, serveu
 
 test('mails : hors ligne, la copie locale s\'affiche avec « à jour il y a 12 min »', async ({ page, contexte, serveur }) => {
   await ouvrirMails(page, contexte, serveur);
-  await attendre(() => serveur.appels('mails/rafraichir').length === 4, 'les 4 rafraîchissements');
+  await attendre(() => serveur.appels('mails/rafraichir').length === 5, 'les 5 rafraîchissements');
   await page.waitForTimeout(150);
   serveur.etat.horsService = true;
   await page.reload();
