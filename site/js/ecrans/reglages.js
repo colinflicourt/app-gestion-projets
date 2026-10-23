@@ -1,15 +1,18 @@
-// Réglages (SPEC § 15.7 et § 15.8) : notifications, brief du matin, rappels, Siri, session.
+// Réglages (SPEC § 15.7, § 15.8 et § 16.8) : notifications, brief du matin, rappels, comptes mail, Siri, session.
 import { h, icone } from '../lib/dom.js';
 import { T } from '../lib/textes.js';
 import { appeler, ErreurApi, ErreurReseau } from '../api.js';
 import * as notifications from '../notifications.js';
-import { ageTexte, minutesEntre } from '../lib/temps.js';
+import { ageTexte, heureParis, heureTexte, jourParis, minutesEntre } from '../lib/temps.js';
+import { heureMail } from '../lib/mails.js';
 import { regle } from './commun.js';
 
 const R = T.reglages;
 const MINUTES = [5, 10, 15, 30, 60];
 const JOURS_MEDIANS = [14, 7, 3, 1];
 const SEUIL_PLANIFICATEUR = 5;  // minutes sans passage avant d'alerter
+const COMPTES_MAIL = ['gmail', 'icloud', 'colin', 'contact'];
+const DELAI_BOITE = 30000;  // le serveur s'arrête à 25 s
 
 let etatNotif = null;  // null tant que l'état n'est pas lu
 let occupe = false;    // une demande en cours (activer, tester, jeton)
@@ -17,6 +20,10 @@ let reg = null;        // réponse de GET reglages
 let echecReg = null;   // texte si la lecture a échoué
 let jeton = null;      // jeton Siri tout juste créé : en mémoire seulement, jamais stocké
 let copie = false;
+let comptes = null;    // réponse de GET comptes-mail : jamais de mot de passe
+let identifiants = {}; // identifiant en cours de saisie, par compte
+let motsDePasse = {};  // mot de passe en cours de saisie, par compte : en mémoire seulement, jamais écrit ni mis en file
+let retours = {};      // dernier échec d'un envoi, par compte : code d'erreur
 let focus = null;      // data-cle de la commande à refocaliser après un nouveau rendu
 
 export function quitter() {
@@ -25,6 +32,10 @@ export function quitter() {
   echecReg = null;
   jeton = null;
   copie = false;
+  comptes = null;
+  identifiants = {};
+  motsDePasse = {};
+  retours = {};
   focus = null;
 }
 
@@ -44,6 +55,12 @@ export function apres(app, route, ecran, changement) {
         echecReg = e instanceof ErreurReseau ? R.reseau : e.message;
         app.rendre();
       });
+    appeler('GET', 'comptes-mail')
+      .then((r) => {
+        comptes = r.comptes;
+        app.rendre();
+      })
+      .catch(() => {});
     return;
   }
   // Un nouveau rendu vide le DOM : la commande touchée retrouve le focus, sauf si Colin est ailleurs
@@ -199,6 +216,121 @@ function blocRappels(app) {
   ];
 }
 
+const horsLigne = (app) => app.etat.horsLigne || !navigator.onLine;
+
+// « Connecté, vérifié à 14 h 32 » aujourd'hui, « … vérifié hier », « … vérifié lun. 19/10 » (comme l'heure d'un mail)
+function etatCompte(app, c) {
+  if (!c.enregistre) return { texte: T.mails.pasConnecte, ok: false };
+  if (c.derniere_erreur) return { texte: R.etatsMail[c.derniere_erreur] ?? R.etatsMail.injoignable, ok: false };
+  if (!c.dernier_succes) return { texte: T.mails.pasConnecte, ok: false };
+  const date = new Date(c.dernier_succes);
+  const aujourdhui = jourParis(date) === jourParis(app.maintenant());
+  return { texte: aujourdhui ? R.connecteA(heureTexte(heureParis(date))) : R.connecteLe(heureMail(c.dernier_succes, app.maintenant())), ok: true };
+}
+
+// Un appel direct (pas la file : il faut une réponse tout de suite). Un échec garde le code, jamais le message du serveur.
+async function agirCompte(app, compte, cle, envoyer, succes) {
+  if (occupe) return;
+  if (horsLigne(app)) {
+    app.message(R.reseauMail);
+    return;
+  }
+  occupe = true;
+  focus = cle;
+  app.rendre();
+  try {
+    const r = await envoyer();
+    comptes = r.comptes;
+    delete retours[compte];
+    app.message(succes);
+    return true;
+  } catch (e) {
+    if (e instanceof ErreurReseau) {
+      app.message(R.reseau);
+    } else if (e instanceof ErreurApi && e.statut === 401) {
+      app.message(e.message);
+    } else {
+      retours[compte] = e instanceof ErreurApi ? e.code : 'injoignable';
+      if (e instanceof ErreurApi && ['refus', 'injoignable', 'delai'].includes(e.code)) {
+        appeler('GET', 'comptes-mail').then((r) => { comptes = r.comptes; app.rendre(); }).catch(() => {});
+      }
+    }
+  } finally {
+    occupe = false;
+    app.rendre();
+  }
+}
+
+function enregistrerCompte(app, compte) {
+  const identifiant = (identifiants[compte] ?? comptes[compte].identifiant).trim();
+  const motDePasse = motsDePasse[compte] ?? '';
+  if (!identifiant || !motDePasse) return;
+  delete motsDePasse[compte];  // vidé dès l'envoi, réussi ou non
+  agirCompte(app, compte, `mail-${compte}-enregistrer`,
+    () => appeler('POST', 'comptes-mail', { corps: { compte, identifiant, mot_de_passe: motDePasse }, delai: DELAI_BOITE }), R.compteEnregistre);
+}
+
+function testerCompte(app, compte) {
+  agirCompte(app, compte, `mail-${compte}-tester`,
+    () => appeler('POST', 'comptes-mail/tester', { corps: { compte }, delai: DELAI_BOITE }), R.connexionReussie);
+}
+
+// Passe par la file, comme les autres écritures : l'écran change tout de suite
+function supprimerCompte(app, compte) {
+  comptes = { ...comptes, [compte]: { ...comptes[compte], enregistre: false, dernier_succes: null, derniere_erreur: null } };
+  delete retours[compte];
+  delete motsDePasse[compte];
+  focus = `mail-${compte}-supprimer`;
+  app.rendre();
+  app.ecrire('comptes-mail/supprimer', { compte });
+  app.message(horsLigne(app) ? T.capture.horsLigne : R.compteSupprime);
+}
+
+function ligneCompte(app, compte) {
+  const c = comptes[compte];
+  const etat = etatCompte(app, c);
+  const nom = R.comptesMailNoms[compte];
+  const sansReseau = horsLigne(app);
+  const enregistrer = h('button', {
+    type: 'button', class: 'bouton', 'data-cle': `mail-${compte}-enregistrer`,
+    disabled: occupe || sansReseau || !(motsDePasse[compte] ?? ''),
+    onclick: () => enregistrerCompte(app, compte),
+  }, R.enregistrer);
+  return h('section', { class: 'compte-mail', 'aria-label': nom },
+    h('h3', {}, nom),
+    h('p', { class: 'reglage-ligne', role: 'status' }, h('span', { class: `temoin${etat.ok ? ' allume' : ''}` }), etat.texte),
+    retours[compte] && h('p', { class: 'erreur', role: 'alert' }, R.etatsMail[retours[compte]] ?? R.etatsMail.injoignable),
+    h('label', {}, h('span', {}, R.identifiant),
+      h('input', {
+        type: 'email', class: 'champ', autocomplete: 'off', autocapitalize: 'none', autocorrect: 'off', spellcheck: 'false',
+        value: identifiants[compte] ?? c.identifiant, 'data-cle': `mail-${compte}-identifiant`,
+        oninput: (ev) => { identifiants[compte] = ev.target.value; },
+      })),
+    h('label', {}, h('span', {}, R.motDePasse),
+      h('input', {
+        type: 'password', class: 'champ', autocomplete: 'off', autocapitalize: 'none', autocorrect: 'off', spellcheck: 'false',
+        value: motsDePasse[compte] ?? '', 'data-cle': `mail-${compte}-mot-de-passe`,
+        oninput: (ev) => {
+          motsDePasse[compte] = ev.target.value;
+          enregistrer.disabled = occupe || horsLigne(app) || ev.target.value === '';
+        },
+      })),
+    h('p', { class: 'reglage-aide' }, R.modeEmploiMail[compte]),
+    h('div', { class: 'compte-mail-actions' },
+      enregistrer,
+      c.enregistre && h('button', {
+        type: 'button', class: 'bouton', 'data-cle': `mail-${compte}-tester`, disabled: occupe || sansReseau, onclick: () => testerCompte(app, compte),
+      }, R.testerBoite),
+      c.enregistre && h('button', {
+        type: 'button', class: 'bouton', 'data-cle': `mail-${compte}-supprimer`, disabled: occupe, onclick: () => supprimerCompte(app, compte),
+      }, R.supprimerCompte)),
+    sansReseau && h('p', { class: 'reglage-aide' }, R.reseauMail));
+}
+
+function blocComptesMail(app) {
+  return COMPTES_MAIL.map((compte) => ligneCompte(app, compte));
+}
+
 function creerJeton(app) {
   faire(app, async () => {
     if (reg.siri.jeton_cree && !window.confirm(R.siriConfirmer)) return;
@@ -249,6 +381,7 @@ export function rendre(app) {
     reg && [
       h('h2', { class: 'section-titre' }, R.brief), regle(), blocBrief(app),
       h('h2', { class: 'section-titre' }, R.rappels), regle(), blocRappels(app),
+      comptes && [h('h2', { class: 'section-titre' }, R.comptesMail), regle(), blocComptesMail(app)],
       h('h2', { class: 'section-titre' }, R.siri), regle(), blocSiri(app),
     ],
     h('h2', { class: 'section-titre' }, R.session), regle(),

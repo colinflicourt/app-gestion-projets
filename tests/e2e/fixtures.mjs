@@ -113,6 +113,50 @@ export function cartes() {
   ];
 }
 
+const mail = (compte, uid, de_nom, de_adresse, objet, extrait, date, non_lu, autres = {}) => ({
+  uid, message_id: `<${compte}-${uid}@exemple.fr>`, date, de_nom, de_adresse, objet, extrait, non_lu, utc: false, signes_pub: [], lien: null, compte, ...autres,
+});
+
+// Ce que rend GET mails le 14 octobre 2026 à 15 h 45 : 4 non lus (UTC 2, QYRIS 1, Gmail 1), 48 pubs dans Gmail,
+// boîtes relevées il y a 12 min. Les mails sont inventés.
+export function mailsDeBase() {
+  const releve = '2026-10-14T15:33:00+02:00';
+  return {
+    sections: [
+      {
+        section: 'utc', non_lus: 2, pubs_total: 0, pubs: [],
+        mails: [
+          mail('gmail', 101, 'Secrétariat GI', 'secretariat-gi@utc.fr', 'Inscription aux UV de A27', 'Les inscriptions ouvrent lundi, pense à vérifier ton dossier.', '2026-10-14T12:32:00Z', true, { utc: true }),
+          mail('gmail', 102, 'Prof. Durand', 'durand@utc.fr', 'TD de jeudi déplacé', 'Le TD de jeudi se tiendra en salle FA420.', '2026-10-13T09:10:00Z', true, { utc: true }),
+          mail('gmail', 103, 'BDE', 'bde@utc.fr', 'Compte rendu de la réunion', 'Voici le compte rendu de la réunion de vendredi.', '2026-10-09T15:00:00Z', false, { utc: true }),
+        ],
+      },
+      {
+        section: 'qyris', non_lus: 1, pubs_total: 0, pubs: [],
+        mails: [
+          mail('colin', 201, 'Cathy Martin', 'cathy@exemple-idfense.fr', 'Devis du site', 'Bonjour Colin, voici le devis signé.', '2026-10-14T08:05:00Z', true),
+          mail('contact', 202, 'Léa Bernard', 'lea@exemple.fr', 'Question sur la formation', "Bonjour, la formation est-elle ouverte aux débutants ?", '2026-10-12T10:00:00Z', false),
+        ],
+      },
+      {
+        section: 'gmail', non_lus: 1, pubs_total: 48,
+        mails: [mail('gmail', 301, 'Hébergeur', 'support@exemple-hebergeur.fr', 'Nouvelle connexion détectée', 'Une connexion depuis un nouvel appareil a eu lieu.', '2026-10-14T11:20:00Z', true)],
+        pubs: [
+          mail('gmail', 302, 'Boutique Exemple', 'promo@exemple-boutique.fr', '-30 % sur tout le site', 'Profitez de la vente flash jusqu à dimanche.', '2026-10-14T06:00:00Z', false, { signes_pub: ['list-unsubscribe'] }),
+          mail('gmail', 303, 'La Lettre du mercredi', 'lettre@exemple-news.fr', 'Les nouvelles de la semaine', 'Au sommaire cette semaine : trois idées à tester.', '2026-10-13T05:00:00Z', true, { signes_pub: ['list-id'] }),
+        ],
+      },
+      {
+        section: 'icloud', non_lus: 0, pubs_total: 0, pubs: [],
+        mails: [mail('icloud', 401, 'Maman', 'maman@exemple.fr', 'Dimanche midi', 'On mange à 12 h 30, tu viens ?', '2025-12-24T10:00:00Z', false)],
+      },
+    ],
+    comptes: Object.fromEntries(['gmail', 'icloud', 'colin', 'contact'].map((c) => [c, { recupere_le: releve, erreur: null }])),
+  };
+}
+
+export const MAILS_RESUME = { total: 4, par_section: { utc: 2, qyris: 1, gmail: 1, icloud: 0 } };
+
 export function donneesDeBase() {
   const maintenant = '2026-10-14T15:45:00+02:00';
   return {
@@ -124,6 +168,7 @@ export function donneesDeBase() {
       { id: 'rm000001', type: 'manuel', heure: '2026-10-14T12:00:00+02:00', titre: 'Appeler le dentiste', passe: true, annulable: false },
       { id: 'rm000002', type: 'manuel', heure: '2026-10-14T17:30:00+02:00', titre: 'Envoyer le devis à Cathy', passe: false, annulable: true },
     ],
+    mails_resume: structuredClone(MAILS_RESUME),
     notifications: { cle: 'BP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A8' },
   };
 }
@@ -139,6 +184,18 @@ export function reglagesDeBase() {
     },
     planificateur: { dernier_passage: '2026-10-14T15:44:00+02:00' },
     siri: { jeton_cree: false },
+  };
+}
+
+// Ce que rend GET comptes-mail : jamais de mot de passe. Gmail vérifié à 14 h 32, iCloud pas encore saisi,
+// colin@ refusé, contact@ injoignable.
+export function comptesMailDeBase() {
+  const compte = (identifiant, enregistre, dernier_succes, derniere_erreur) => ({ identifiant, enregistre, dernier_succes, derniere_erreur });
+  return {
+    gmail: compte('colin.flicourt@gmail.com', true, '2026-10-14T12:32:00Z', null),
+    icloud: compte('colin.flicourt@icloud.com', false, null, null),
+    colin: compte('colin@qyris.fr', true, '2026-10-13T08:00:00Z', 'refus'),
+    contact: compte('contact@qyris.fr', true, '2026-10-14T12:00:00Z', 'injoignable'),
   };
 }
 

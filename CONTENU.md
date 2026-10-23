@@ -100,11 +100,18 @@
 
 ### Mails
 
-- **Une section par boîte** : UTC, Gmail, iCloud, colin@qyris.fr, contact@qyris.fr.
-- **Chaque mail** : expéditeur, objet, extrait, heure.
+- **4 sections, dans l'ordre** : UTC (mails UTC arrivés dans Gmail), QYRIS (colin@ et contact@ réunis, chaque mail porte l'étiquette de son adresse), Gmail, iCloud. En tête de chaque section, son nombre de non lus.
+- **Chaque mail** : expéditeur, objet, extrait, heure (« 14 h 32 », « hier », « lun. 19/10 », « 19/10/2025 »).
+- **Pubs** : repliées sous « + 48 pubs », puis « Masquer les pubs ». Sur un mail : « Toujours afficher » ou « C'est une pub » ; sur une pub : « Ce n'est pas une pub ». Après une correction : « Retenu. »
 - **Boutons d'ouverture** : « Ouvrir dans Gmail », « Ouvrir dans iCloud Mail », « Ouvrir le webmail OVH ».
 - **Mention** : « Lecture seule : Junior ne marque rien comme lu. »
-- **Erreur** : « iCloud ne répond pas. Vérifie le mot de passe d'application dans Réglages. »
+- **Erreurs** :
+  - « iCloud ne répond pas. Vérifie le mot de passe d'application dans Réglages. »
+  - « Gmail ne répond pas. Vérifie le mot de passe d'application dans Réglages. » (sections Gmail et UTC)
+  - « La boîte colin@qyris.fr ne répond pas. Vérifie son mot de passe dans Réglages. » (ou contact@)
+  - compte non enregistré : « Pas encore connecté », avec le lien « Ouvrir Réglages ».
+- **Bloc Mails d'Aujourd'hui** : « 3 non lus · UTC 2 · QYRIS 1 » (sections à 0 omises), « Boîtes à jour. » s'il n'y en a aucun.
+- Textes du lot 3 validés par Colin le 2026-10-23 (SPEC § 16.11 et plan du lot 3).
 
 ### Moi
 
@@ -133,7 +140,13 @@
   - médians (J-7, J-3, J-1 à 9 h).
 - **Journal** : rappel du soir (21 h 30), désactivable.
 - **Wrapped** : dimanche à 19 h.
-- **Comptes mail** : ajouter, modifier, tester la connexion.
+- **Comptes mail** (lot 3, textes validés le 2026-10-23) :
+  - états : « Connecté, vérifié à 14 h 32 », « Mot de passe refusé », « Boîte injoignable pour l'instant. », « La boîte a mis trop de temps à répondre. », « Pas encore connecté » ;
+  - boutons « Enregistrer » (teste avant de garder), « Tester la connexion », « Supprimer » ; après : « Compte enregistré. », « Connexion réussie. », « Compte supprimé. » ;
+  - hors ligne : « Il faut du réseau pour tester une boîte. » ;
+  - mode d'emploi Gmail : « Compte Google > Sécurité > Validation en deux étapes, puis Mots de passe des applications. Colle ici le mot de passe de 16 lettres. » ;
+  - mode d'emploi iCloud : « Compte Apple > Connexion et sécurité > Mots de passe pour app. Colle ici le mot de passe créé. » ;
+  - mode d'emploi OVH : « Le mot de passe de la boîte, celui du webmail OVH. »
 - **Siri** : « Créer le raccourci Retiens pour Jarvis », avec le mode d'emploi.
 - **Session** : « Se déconnecter », « Déconnecter tous les appareils ».
 

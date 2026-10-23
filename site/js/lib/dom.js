@@ -29,6 +29,7 @@ const ICONES = {
   aujourdhui: [['path', { d: 'M6 4v16M12 4v16M18 4v16' }], ['rect', { x: 4, y: 13, width: 4, height: 3, rx: 1, fill: 'currentColor' }], ['rect', { x: 10, y: 7, width: 4, height: 3, rx: 1, fill: 'currentColor' }], ['rect', { x: 16, y: 10, width: 4, height: 3, rx: 1, fill: 'currentColor' }]],
   agenda: [['rect', { x: 3.5, y: 5, width: 17, height: 15, rx: 2 }], ['path', { d: 'M3.5 10h17M8 3v4M16 3v4' }]],
   taches: [['path', { d: 'M4 6.5l1.6 1.6 2.9-2.9M4 12.5l1.6 1.6 2.9-2.9M4 18.5l1.6 1.6 2.9-2.9M11.5 7h8.5M11.5 13h8.5M11.5 19h8.5' }]],
+  mails: [['rect', { x: 3.5, y: 5.5, width: 17, height: 13, rx: 2 }], ['path', { d: 'M4 7.5l8 6 8-6' }]],
   moi: [['circle', { cx: 12, cy: 8.5, r: 3.5 }], ['path', { d: 'M5 20c1.2-3.6 4-5.5 7-5.5s5.8 1.9 7 5.5' }]],
   plus: [['path', { d: 'M12 5v14M5 12h14' }]],
   micro: [['rect', { x: 9, y: 3, width: 6, height: 11, rx: 3 }], ['path', { d: 'M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21' }]],

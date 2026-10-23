@@ -1,0 +1,2 @@
+* 3 FETCH (UID 103 BODY[1.1]<0> [[[Voil=E0 la facture de septembre,=
+ merci de votre confiance.]]])

@@ -1,8 +1,8 @@
 #!/bin/bash
 # Mise en ligne de Jarvis Jr. sur jr.qyris.fr. À lancer par Colin dans son terminal :
 #   cd ~/Desktop/jarvis-starter-kit/projects/jarvis-jr && outils/deploy-ovh.sh
-# Le lot 2 part avec : serveur/lib, routes, migrations, cron-ovh.php et site/. Les migrations s'appliquent seules
-# au premier appel de l'API (assurer_migrations), donc à la vérification de l'étape 6.
+# Les lots 2 et 3 partent avec : serveur/lib, routes, migrations (003 à 006), cron-ovh.php et site/. Les migrations
+# s'appliquent seules au premier appel de l'API (assurer_migrations), donc à la vérification de l'étape 6.
 # 1. tests  2. config de production  3. simulation  4. confirmation  5. envoi  6. vérification
 # Garde en ligne : www/.ovhconfig, serveur/data/ (journal). config.php et trello-ids.json sont posés à part.
 # sw.js part en dernier : un iPhone qui s'ouvre pendant l'envoi ne met jamais en cache un mélange de fichiers.
@@ -62,5 +62,5 @@ if ! printf '%s' "$SANTE" | grep -q '"base_ok":true'; then
     echo "Échec : /api/sante ne répond pas « base_ok »: true. Le site est peut-être cassé, préviens Claude."
     exit 1
 fi
-echo "Les migrations en retard (003 à 005 pour le lot 2) se sont appliquées à cet appel : version_base = version attendue."
+echo "Les migrations en retard (003 à 006 pour les lots 2 et 3) se sont appliquées à cet appel : version_base = version attendue."
 echo "En ligne."

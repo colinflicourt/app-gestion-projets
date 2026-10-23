@@ -1,0 +1,8 @@
+* 1 FETCH (UID 101 BODY[1]<0> <<<
+Bonjour Colin,
+On se retrouve demain =C3=A0 9 h pour la r=C3=A9union de l'=C3=A9quipe.=
+ Pense =C3=A0 apporter tes notes.
+
+--
+Camille
+>>>)

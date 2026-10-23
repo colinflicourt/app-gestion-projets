@@ -120,6 +120,15 @@ function lancer_tests(string $filtre): int
             throw new EchecTest("Appel HTTP sans faux_http() : $methode $url");
         };
         $GLOBALS['JR_APPELS_HTTP'] = [];
+        $GLOBALS['JR_IMAP_ADRESSE'] = null;
+        // Jamais de boîte réelle dans les tests : toute lecture ou tout essai IMAP doit être prévu par faux_imap()
+        $GLOBALS['JR_LECTEUR_IMAP'] = function (): array {
+            throw new EchecTest("Lecture IMAP sans faux_imap()");
+        };
+        $GLOBALS['JR_ESSAI_IMAP'] = function (): void {
+            throw new EchecTest("Essai IMAP sans faux_imap()");
+        };
+        $GLOBALS['JR_APPELS_IMAP'] = [];
         $GLOBALS['JR_TRELLO_IDS'] = fabrique_trello_ids();
         $GLOBALS['JR_VERROU_ATTENTE'] = null;
         try {
@@ -318,4 +327,32 @@ function appeler(string $methode, string $chemin, array $corps = [], array $para
         'corps_brut' => $methode === 'GET' ? '' : json_encode($corps, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
         'cookies' => cookies_session(),
     ]));
+}
+
+// Remplace la lecture et l'essai d'une boîte. Par compte : le contenu brut {uidvalidity, mails} rendu par
+// imap_lire_boite(), ou un code d'erreur en texte (refus, injoignable, delai) qui lève une ErreurSource.
+// Chaque appel est noté dans $GLOBALS['JR_APPELS_IMAP'] (voir appels_imap()).
+function faux_imap(array $par_compte): void
+{
+    $GLOBALS['JR_APPELS_IMAP'] = [];
+    $reponse = function (string $genre, string $compte, string $identifiant, string $mot_de_passe, float $limite) use ($par_compte) {
+        $GLOBALS['JR_APPELS_IMAP'][] = ['genre' => $genre, 'compte' => $compte, 'identifiant' => $identifiant, 'mot_de_passe' => $mot_de_passe, 'limite' => $limite];
+        if (!array_key_exists($compte, $par_compte)) {
+            throw new EchecTest("Appel IMAP inattendu : $genre $compte");
+        }
+        if (is_string($par_compte[$compte])) {
+            throw new ErreurSource($par_compte[$compte], 'IMAP : ' . $par_compte[$compte]);
+        }
+        return $par_compte[$compte];
+    };
+    $GLOBALS['JR_LECTEUR_IMAP'] = fn(string $compte, string $identifiant, string $mot_de_passe, float $limite): array => $reponse('lecture', $compte, $identifiant, $mot_de_passe, $limite);
+    $GLOBALS['JR_ESSAI_IMAP'] = function (string $compte, string $identifiant, string $mot_de_passe, float $limite) use ($reponse): void {
+        $reponse('essai', $compte, $identifiant, $mot_de_passe, $limite);
+    };
+}
+
+// « lecture gmail », « essai icloud »… dans l'ordre des appels
+function appels_imap(): array
+{
+    return array_map(fn(array $a): string => $a['genre'] . ' ' . $a['compte'], $GLOBALS['JR_APPELS_IMAP']);
 }

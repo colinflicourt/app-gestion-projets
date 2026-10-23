@@ -18,6 +18,19 @@ const pli = async (p) => {
   await p.locator('.sous-le-pli .rang-groupe').last().scrollIntoViewIfNeeded();
   await p.waitForTimeout(300);
 };
+const pubs = async (p) => {
+  await p.getByRole('region', { name: 'Gmail' }).getByRole('button', { name: '+ 48 pubs' }).click();
+  await p.getByRole('region', { name: 'Gmail' }).scrollIntoViewIfNeeded();
+  await p.waitForTimeout(300);
+};
+const blocMails = async (p) => {
+  await p.locator('.mails-resume').scrollIntoViewIfNeeded();
+  await p.waitForTimeout(300);
+};
+const comptesMail = async (p) => {
+  await p.getByRole('heading', { name: 'Comptes mail' }).evaluate((el) => el.scrollIntoView({ block: 'start' }));
+  await p.waitForTimeout(300);
+};
 const noter = async (p) => {
   await p.getByRole('button', { name: 'Noter quelque chose' }).click();
   await p.getByRole('dialog').waitFor();
@@ -36,6 +49,10 @@ const PLANCHES = [
   ['09-noter', MERCREDI, '/#/aujourdhui', true, noter],
   ['10-agenda', MERCREDI, '/#/agenda', true, null],
   ['11-moi', MERCREDI, '/#/moi', true, null],
+  ['12-mails', MERCREDI, '/#/mails', true, null],
+  ['13-mails-pubs', MERCREDI, '/#/mails', true, pubs],
+  ['14-aujourdhui-mails', MERCREDI, '/#/aujourdhui', true, blocMails],
+  ['15-reglages-comptes-mail', MERCREDI, '/#/reglages', true, comptesMail],
 ];
 
 mkdirSync(DOSSIER, { recursive: true });

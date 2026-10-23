@@ -1,0 +1,6 @@
+* 2 FETCH (UID 102 FLAGS (\Seen \Flagged) INTERNALDATE "22-Oct-2026 09:05:00 +0000" ENVELOPE ("Thu, 22 Oct 2026 11:04:00 +0200" "=?utf-8?B?UHJvbW8gZOKAmWF1dG9tbmUgOiAtMjAgJQ==?=" ((NIL NIL "boutique" "newsletter.exemple.com")) ((NIL NIL "boutique" "newsletter.exemple.com")) ((NIL NIL "boutique" "newsletter.exemple.com")) ((NIL NIL "colin.test" "exemple.org")) NIL NIL NIL "<promo-22@newsletter.exemple.com>") BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "UTF-8") NIL NIL "BASE64" 300 6 NIL NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "QUOTED-PRINTABLE" 900 20 NIL NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "b1") NIL NIL NIL) BODY[HEADER.FIELDS (LIST-UNSUBSCRIBE LIST-ID PRECEDENCE RECEIVED TO CC DELIVERED-TO X-FORWARDED-TO)] <<<
+Delivered-To: colin.test@exemple.org
+List-Id: <promo.newsletter.exemple.com>
+Precedence: bulk
+List-Unsubscribe: <https://newsletter.exemple.com/desabo>
+>>>)

@@ -56,7 +56,7 @@ function replique_du_jour(string $date): string
 
 // Un jour absent de la copie de l'agenda (Google pas connecté, copie trop vieille) : ni cours ni
 // « Pas de cours », on ne sait pas.
-function brief_du_matin(string $date, array $cartes, array $jours): array
+function brief_du_matin(string $date, array $cartes, array $jours, int $mails_non_lus = 0): array
 {
     $titre = date_longue(new DateTimeImmutable("$date 12:00", paris()));
     $morceaux = [];
@@ -80,6 +80,7 @@ function brief_du_matin(string $date, array $cartes, array $jours): array
         }
     }
     $morceaux[] = brief_taches($cartes, $date);
+    $morceaux[] = brief_mails($mails_non_lus);
     $morceaux[] = brief_median($jours, $date);
     $morceaux[] = replique_du_jour($date);
     return ['titre' => $titre, 'texte' => implode(' ', array_filter($morceaux, fn(string $m): bool => $m !== ''))];
@@ -106,6 +107,16 @@ function brief_taches(array $cartes, string $date): string
         $du_jour > 0 => pluriel($du_jour, 'tâche') . ' du jour.',
         $en_retard > 0 => pluriel($en_retard, 'tâche') . ' en retard.',
         default => '',
+    };
+}
+
+// « 3 mails non lus. » (non lus hors pubs, comptés sur les copies), rien s'il n'y en a aucun
+function brief_mails(int $non_lus): string
+{
+    return match (true) {
+        $non_lus <= 0 => '',
+        $non_lus === 1 => '1 mail non lu.',
+        default => "$non_lus mails non lus.",
     };
 }
 

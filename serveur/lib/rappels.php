@@ -178,7 +178,7 @@ function rappels_medians(array $jours, array $reglage, DateTimeImmutable $mainte
 }
 
 // Le brief d'aujourd'hui et celui de demain, les jours choisis
-function rappels_brief(array $cartes, array $jours, array $reglage, DateTimeImmutable $maintenant): array
+function rappels_brief(array $cartes, array $jours, array $reglage, DateTimeImmutable $maintenant, int $mails_non_lus = 0): array
 {
     $liste = [];
     $aujourdhui = $maintenant->setTimezone(paris())->setTime(0, 0);
@@ -187,7 +187,7 @@ function rappels_brief(array $cartes, array $jours, array $reglage, DateTimeImmu
             continue;
         }
         $date = $jour->format('Y-m-d');
-        $brief = brief_du_matin($date, $cartes, $jours);
+        $brief = brief_du_matin($date, $cartes, $jours, $mails_non_lus);
         $liste[] = rappel("brief:$date", 'brief', a_heure($jour, $reglage['heure']), $brief['titre'], $brief['texte'], '/#/aujourdhui');
     }
     return $liste;
@@ -210,13 +210,13 @@ function rappels_manuels(array $rappels): array
 
 // Les notifications prévues entre 12 h avant et 24 h après $maintenant, une par clé. Une source vide
 // ($cartes ou $jours à []) ne donne rien pour elle.
-function generer_rappels(array $cartes, array $jours, array $reglages, array $rappels, DateTimeImmutable $maintenant): array
+function generer_rappels(array $cartes, array $jours, array $reglages, array $rappels, DateTimeImmutable $maintenant, int $mails_non_lus = 0): array
 {
     $liste = array_merge(
         $reglages['cours']['actif'] ? rappels_cours($jours, $reglages['cours'], $maintenant) : [],
         $reglages['echeances']['actif'] ? rappels_echeances($cartes, $reglages['echeances']) : [],
         $reglages['medians']['actif'] ? rappels_medians($jours, $reglages['medians'], $maintenant) : [],
-        rappels_brief($cartes, $jours, $reglages['brief'], $maintenant),
+        rappels_brief($cartes, $jours, $reglages['brief'], $maintenant, $mails_non_lus),
         rappels_manuels($rappels),
     );
     $debut = $maintenant->modify('-' . JR_RAPPELS_APRES . ' seconds');

@@ -92,3 +92,81 @@ test('planificateur : un rappel manuel en base part à son heure ; annulé, il n
     egal(1, planificateur_passage()['envoyees']);
     egal(['Appeler Sébastien'], db()->query('SELECT titre FROM envois')->fetchAll(PDO::FETCH_COLUMN));
 });
+
+function boite_pour_cron_test(string $compte, string $copie_du, array $mails = []): void
+{
+    compte_mail_enregistrer($compte, "$compte@exemple.fr", 'mdp');
+    copie_ecrire("mail:$compte", ['uidvalidity' => 1, 'mails' => array_map(fn(array $m): array => mail_pour_copie($m, $compte), $mails)], utc_test($copie_du));
+}
+
+test('planificateur : une seule boîte relue par passage, la copie la plus vieille d abord, jamais avant 15 min', function () {
+    base_de_test();
+    sans_brief_en_base();
+    fixer_heure('2026-10-14 10:00:00');
+    copies_fraiches([]);
+    boite_pour_cron_test('gmail', '2026-10-14 09:40:00');
+    boite_pour_cron_test('icloud', '2026-10-14 09:20:00');
+    boite_pour_cron_test('colin', '2026-10-14 09:50:00');
+    faux_imap(['gmail' => ['uidvalidity' => 1, 'mails' => []], 'icloud' => ['uidvalidity' => 1, 'mails' => []]]);
+    faux_http([]);
+    egal(true, planificateur_passage()['verrou']);
+    egal(['lecture icloud'], appels_imap());
+    planificateur_passage();
+    egal(['lecture icloud', 'lecture gmail'], appels_imap());
+    planificateur_passage();
+    egal(['lecture icloud', 'lecture gmail'], appels_imap());
+    fixer_heure('2026-10-14 10:05:00');
+    copies_fraiches([]);
+    planificateur_passage();
+    egal(['lecture icloud', 'lecture gmail', 'lecture colin'], appels_imap());
+});
+
+test('planificateur : une boîte jamais lue passe, mais pas s il reste moins de 12 s ; une boîte non enregistrée jamais', function () {
+    base_de_test();
+    sans_brief_en_base();
+    fixer_heure('2026-10-14 10:00:00');
+    copies_fraiches([]);
+    compte_mail_enregistrer('icloud', 'a@icloud.com', 'mdp');
+    faux_imap(['icloud' => ['uidvalidity' => 1, 'mails' => []]]);
+    faux_http([]);
+    planificateur_passage(microtime(true) + 11);
+    egal([], appels_imap());
+    $avant = microtime(true);
+    planificateur_passage($avant + 20);
+    egal(['lecture icloud'], appels_imap());
+    $limite = $GLOBALS['JR_APPELS_IMAP'][0]['limite'];
+    egal(true, $limite === $avant + 20, 'la lecture reçoit la limite du passage');
+});
+
+test('planificateur : une boîte en refus n arrête pas le passage, et le refus est noté', function () {
+    base_de_test();
+    sans_brief_en_base();
+    fixer_heure('2026-10-14 14:31:00');
+    copies_fraiches([], [evenement_google('TN01 - TD', '2026-10-14T16:45', '2026-10-14T18:45', 'FA510')]);
+    abonnement_enregistrer(abonnement_exemple(), null);
+    compte_mail_enregistrer('gmail', 'a@gmail.com', 'mdp');
+    faux_imap(['gmail' => 'refus']);
+    faux_http(['POST https://web.push.apple.com/' => ['statut' => 201, 'corps' => '']]);
+    egal(1, planificateur_passage()['envoyees']);
+    egal('refus', comptes_mail_lire()['gmail']['derniere_erreur']);
+});
+
+test('planificateur : le brief annonce les mails non lus des copies, et son texte suit le compte à chaque passage', function () {
+    base_de_test();
+    fixer_heure('2026-10-14 05:00:00');  // 7 h à Paris, le brief part à 7 h 30
+    copies_fraiches([]);
+    faux_imap([]);
+    faux_http([]);
+    $texte = fn(): string => (string) db()->query("SELECT texte FROM envois WHERE cle = 'brief:2026-10-14'")->fetchColumn();
+    $non_lus = fn(int $n): array => array_map(fn(int $i): array => brut_test($i, ['non_lu' => true]), range(1, $n));
+    boite_pour_cron_test('icloud', '2026-10-14 04:55:00', $non_lus(2));
+    planificateur_passage();
+    vrai(str_contains($texte(), '2 mails non lus.'), $texte());
+    boite_pour_cron_test('icloud', '2026-10-14 04:56:00', $non_lus(1));
+    planificateur_passage();
+    vrai(str_contains($texte(), '1 mail non lu.') && !str_contains($texte(), 'mails non lus'), $texte());
+    boite_pour_cron_test('icloud', '2026-10-14 04:57:00', []);
+    planificateur_passage();
+    vrai(!str_contains($texte(), 'non lu'), $texte());
+    egal([], appels_imap());
+});

@@ -1,44 +1,40 @@
-# Passation · Jarvis Jr. · 2026-10-23 11:23
+# Passation · Jarvis Jr. · 2026-10-23 12:11
 
 ## Objectif
-Jarvis Jr. (jr.qyris.fr), l'app perso d'organisation de Colin sur iPhone. Mener le **lot 3 (Mails)** en mode chef d'orchestre : la spec est validée, il reste à écrire le plan de missions puis à le faire exécuter. Le lot 4 (le fun) viendra après.
+Jarvis Jr. (jr.qyris.fr), l'app perso d'organisation de Colin sur iPhone. On mène le **lot 3 (Mails, lecture seule)** en mode chef d'orchestre, d'après `plans/2026-10-23-lot3-1-mails.md`. Le lot 4 (le fun) viendra après.
 
 ## Où on en est
-- **Fait et vérifié** (23/10) :
-  - **Spec du lot 3 validée par Colin** : `SPEC.md` § 16 (l. 552 et suivantes), relue par un sous-agent « builder » dont les 6 points ont tous été tranchés dans le document.
-  - Mise en ligne de `cd57b3c` faite par Colin (il le confirme).
-  - Carte Trello Perso `h4xDF2bR` « iCloud : trier la boîte » créée (chantier à part, hors de l'app).
-- **Pas encore fait** : contrôle de la table `rappels`. Colin doit d'abord recréer un rappel « Dans 1 h », puis on lance le diagnostic (`envoyer.sh --lot2`, curl, `nettoyer.sh`). Reporté à plus tard, à sa demande.
-- **En cours chez un sous-agent** : rien. `SPEC.md` n'est pas commité.
+- **Fait et vérifié** (23/10, branche `lot3-mails`, partie de `main` à `39ba5e5`) :
+  - Plan du lot 3 écrit (7 missions) et commité (`3f19baa`). Colin a dit « on commence ici », sans encore trancher les textes nouveaux ni le format des heures.
+  - **M1** client IMAP en lecture seule (`695ad15`) : liste blanche stricte, un seul `fwrite` gardé par elle, faux serveur IMAP lancé par `proc_open`.
+  - **M2** migration 006, comptes chiffrés, tri UTC et pubs (`6e75234`).
+  - **M3** routes, rafraîchissement par compte, planificateur, brief (`b953cba`).
+  - Claude a relancé la suite PHP lui-même après chaque mission : **348 tests verts** (247 au départ). JS : 41, écran : 73, non touchés.
+  - Le plan contient maintenant le **format exact de l'API livrée par M3** (§ Interfaces), pour M4 et M5.
+- **En cours chez un sous-agent** : rien. Arbre git propre.
 
-## Décisions prises (détail au § 16.1)
-- UTC : la boîte est redirigée vers Gmail par Tuttifruti (Mon compte > Gestion de compte). Colin accepte que ses mails UTC ne soient plus gardés sur le serveur de l'UTC. L'app ne touche jamais au CAS.
-- Aucune notification de mail : les mails sont seulement affichés (onglet, bloc d'Aujourd'hui, brief).
-- Les pubs sont repérées par leurs en-têtes, repliées (« + 48 pubs ») et jamais comptées. La section UTC n'est jamais filtrée. Correction par expéditeur dans la base de Junior.
-- Ordre des sections : UTC, QYRIS (colin@ et contact@), Gmail, iCloud.
-- Lecture seule stricte : `EXAMINE` et `BODY.PEEK` seulement, avec une liste blanche de commandes testée.
-- Un rafraîchissement par compte, lancés en parallèle depuis l'iPhone ; copies dans `copies` (`mail:<compte>`).
-- Toujours en vigueur : les sous-agents ne commitent pas, et c'est Colin qui lance tout envoi vers OVH.
+## Décisions prises
+- Celles du plan (décisions 1 à 12) et du SPEC § 16.1, à ne pas rediscuter.
+- Écarts acceptés : un mail illisible est écarté au lieu de faire échouer la boîte ; dates des mails en ISO UTC avec `Z` ; doublon QYRIS : on garde colin@, non lu si l'un des deux l'est ; changer l'identifiant d'un compte efface sa copie ; second crochet de test `JR_ESSAI_IMAP` (réglé par `faux_imap()`).
+- Toujours en vigueur : les sous-agents ne commitent pas (Claude relit et commite), et c'est Colin qui lance tout envoi vers OVH.
 
 ## Prochaine étape
-1. Commiter `SPEC.md` (§ 16) et cette passation sur `main`.
-2. Écrire le plan de missions du lot 3 avec superpowers:writing-plans, en partant de `SPEC.md` § 16 et du modèle `plans/2026-10-22-lot2-3-rappels-siri.md` : `plans/2026-10-2X-lot3-1-....md`. Découpage probable : (a) client IMAP, décodage et faux serveur ; (b) tri UTC et pubs, comptes, routes, brief ; (c) écrans Mails, Aujourd'hui, Réglages, Playwright. Le montrer à Colin, puis lancer les sous-agents (`guides/CHEF-D-ORCHESTRE.md`).
-3. Ajouter au diagnostic une section qui montre les en-têtes bruts des derniers mails Gmail (§ 16.6), pour régler la règle UTC à la recette.
-4. Clore le lot 2 : README, HISTORY, case Trello « Lot 2 : mise en ligne et recette », `main` sur GitHub. Il restera le rappel des vrais cours à vérifier en novembre.
+1. **Demander à Colin** (bloquant pour M4) : heures des mails « 14:32 » (SPEC § 16.8) ou « 14 h 32 » (style du reste de l'app, conseillé par Claude) ; validation des textes nouveaux du plan (§ Textes nouveaux). Reporter ses réponses dans le plan (décision 8, tableau).
+2. Lancer **M4** (onglet Mails et bloc d'Aujourd'hui, `developpeur` Sonnet moyen) avec la fiche du plan, puis **M5** (Réglages > Comptes mail), **M6** (diagnostic `entetes_gmail`, migration 006 à la mise en ligne, `RECETTE-LOT3.md`), **M7** (`verificateur` Haiku).
+3. Relecture ciblée par Claude, SPEC § 16 et `CONTENU.md` à jour, README, fusion dans `main`.
+4. Partie B avec Colin : ses préparatifs (SPEC § 16.12), mise en ligne, réglage de la règle UTC sur de vrais en-têtes, recette.
 
-Effort conseillé : **haut** (plan du lot 3).
+Effort conseillé pour la conversation suivante : **moyen**.
 
 ## Fichiers clés
-- `SPEC.md` § 16 : spec du lot 3 (validée), § 15 et `rafraichir.php` comme modèles
-- `plans/2026-10-22-lot2-3-rappels-siri.md` : modèle de plan
-- `serveur/lib/chiffrement.php` (`chiffrer`, `dechiffrer`), `serveur/lib/rafraichir.php` (`rafraichir`), `serveur/lib/brief.php`
-- `CONTENU.md` § Mails et § Réglages : textes
+- `plans/2026-10-23-lot3-1-mails.md` : plan, décisions, interfaces, API de M3, fiches M4 à M7
+- `SPEC.md` § 16.8 (écrans), `CONTENU.md` § 3 Mails et Réglages, `DESIGN.md` (lien de la maquette v28)
+- `serveur/routes/mails.php`, `serveur/lib/mails.php` : l'API que M4 et M5 consomment
 
 ## Pièges et points ouverts
-- Garde-fou : toute commande qui cite `.env`, `serveur/lib`, un `grep -r` ou un script de mise en ligne passe entièrement par `{ … ; } 2>&1 | ~/.claude/hooks/redact-secrets`. Un heredoc qui contient le mot « .env » est bloqué aussi : écrire avec l'outil Edit.
-- Claude n'a aucun accès direct à la base OVH : il passe par le diagnostic, que Colin envoie puis retire.
-- Le 25/10, après le passage à l'heure d'hiver, vérifier que le brief de 10h30 n'est ni doublé ni sauté (relire `envois`).
-- Préparatifs du lot 3 côté Colin, pas faits : redirection Tuttifruti (regarder s'il existe une case « garder une copie »), validation en 2 étapes puis mot de passe d'application Gmail, mot de passe d'application iCloud, mots de passe OVH de colin@ et contact@. Ils bloquent les tests réels, pas le développement.
-- La page de la DSI sur Tuttifruti répondait en 502 le 23/10 : le chemin du menu vient seulement d'un résumé de moteur de recherche.
-- Encore à trancher par Colin : le piège de « Terminer », les chiffres des codes d'UV, l'effacement de la copie de l'iPhone au premier 401, la relecture de `CONTENU.md` § 5 et § 5.1.
-- Colin veut des passations fréquentes : en proposer une après chaque étape livrée.
+- Garde-fou : toute commande qui cite `.env`, `serveur/lib` en recherche récursive, un `grep -r` ou un script de mise en ligne passe entièrement par `{ … ; } 2>&1 | ~/.claude/hooks/redact-secrets`. Un heredoc contenant « .env » est bloqué.
+- La suite PHP dure environ 70 s (un test attend le délai de 8 s du serveur muet). Filtre par nom : `php tests/run.php <morceau du nom>`.
+- Adresse du webmail OVH (décision 9) à confirmer à la recette.
+- Lot 2, toujours ouvert : rappel « Dans 1 h » à recréer puis contrôler (`envoyer.sh --lot2`) ; le 25/10, vérifier que le brief n'est ni doublé ni sauté au passage à l'heure d'hiver ; clore le lot (README, HISTORY, case Trello, `main` sur GitHub).
+- Préparatifs de Colin pour le lot 3 pas faits (redirection Tuttifruti, mots de passe d'application Gmail et iCloud, mots de passe OVH) : ils bloquent la recette, pas le code.
+- Encore à trancher par Colin : piège de « Terminer », chiffres des codes d'UV, effacement de la copie de l'iPhone au premier 401, relecture de `CONTENU.md` § 5 et § 5.1.

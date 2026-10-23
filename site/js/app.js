@@ -13,6 +13,7 @@ import * as carte from './ecrans/carte.js';
 import * as aujourdhui from './ecrans/aujourdhui.js';
 import * as capture from './ecrans/capture.js';
 import * as agenda from './ecrans/agenda.js';
+import * as mails from './ecrans/mails.js';
 import * as moi from './ecrans/moi.js';
 import * as reglages from './ecrans/reglages.js';
 import * as notifications from './notifications.js';
@@ -22,13 +23,14 @@ const ECRANS = {
   agenda,
   taches,
   carte,
+  mails,
   moi,
   reglages,
 };
 const FEUILLES = {
   capture,
 };
-const ONGLETS = ['aujourdhui', 'agenda', 'taches', 'moi'];
+const ONGLETS = ['aujourdhui', 'agenda', 'taches', 'mails', 'moi'];
 const PARENTS = { carte: 'taches', reglages: 'moi' };  // l'onglet allumé sur un écran sans onglet
 const DOMAINES = ['qyris', 'asso', 'etudes', 'perso'];
 const RENVOI = 30000;

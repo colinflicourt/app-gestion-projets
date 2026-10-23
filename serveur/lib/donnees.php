@@ -7,6 +7,7 @@ require_once __DIR__ . '/amorce.php';
 require_once __DIR__ . '/actions.php';
 require_once __DIR__ . '/detection.php';
 require_once __DIR__ . '/google.php';
+require_once __DIR__ . '/mails.php';
 require_once __DIR__ . '/rafraichir.php';
 require_once __DIR__ . '/rappels_manuels.php';
 require_once __DIR__ . '/reglages.php';
@@ -88,6 +89,13 @@ function donnees_reponse(bool $force): array
             'jours' => $copie['contenu']['jours'] ?? new stdClass(),
         ];
     }
+    // Lu dans les copies, jamais d'appel IMAP : une panne des mails ne retient pas le reste
+    try {
+        $mails_resume = mails_resume(mails_sections(mails_copies(), corrections_lire()));
+    } catch (Throwable $e) {
+        journal_erreur('donnees/mails', $e);
+        $mails_resume = mails_resume([]);
+    }
     return [
         'maintenant' => iso_paris(maintenant()),
         'trello' => [
@@ -97,6 +105,7 @@ function donnees_reponse(bool $force): array
         ],
         'agenda' => $agenda,
         'rappels_du_jour' => rappels_du_jour_lire(),
+        'mails_resume' => $mails_resume,
         'notifications' => ['cle' => config('vapid')['publique']],
     ];
 }

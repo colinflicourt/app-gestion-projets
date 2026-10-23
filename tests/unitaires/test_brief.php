@@ -73,3 +73,25 @@ test('brief : répliques tirées par la date, jamais deux jours de suite la mêm
         }
     }
 });
+
+test('brief : les mails non lus viennent après les tâches, au singulier à 1, rien à 0', function () {
+    $cartes = [carte_normalisee(['id' => id_test('carte', 1), 'echeance' => '2026-10-14T18:00:00+02:00'])];
+    $jours = jours_brief([], []);
+    $texte = fn(int $n): string => brief_du_matin('2026-10-14', $cartes, $jours, $n)['texte'];
+    vrai(str_contains($texte(3), '1 tâche du jour. 3 mails non lus.'), $texte(3));
+    vrai(str_contains($texte(1), '1 tâche du jour. 1 mail non lu.') && !str_contains($texte(1), 'mails'), $texte(1));
+    foreach ([0, -2] as $n) {
+        vrai(!str_contains($texte($n), 'non lu'), $texte($n));
+    }
+    egal(brief_du_matin('2026-10-14', $cartes, $jours), brief_du_matin('2026-10-14', $cartes, $jours, 0));
+    vrai(!str_contains(brief_du_matin('2026-10-14', [], $jours, 2)['texte'], 'tâche'), 'sans tâche, la phrase des mails reste');
+});
+
+test('rappels : generer_rappels passe le nombre de mails non lus au brief', function () {
+    $reglages = reglages_rappels_valides(null);
+    $liste = generer_rappels([], [], $reglages, [], utc_test('2026-10-14 05:00:00'), 4);
+    $briefs = array_values(array_filter($liste, fn(array $r): bool => $r['type'] === 'brief'));
+    vrai($briefs !== [] && str_contains($briefs[0]['texte'], '4 mails non lus.'), json_encode($briefs));
+    $sans = generer_rappels([], [], $reglages, [], utc_test('2026-10-14 05:00:00'));
+    vrai(!str_contains(json_encode($sans), 'non lu'), 'sans le paramètre, pas de phrase');
+});
