@@ -643,7 +643,7 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 - **Onglet Mails** (textes de `CONTENU.md` § Mails, dessin de la maquette v28) :
   - 4 sections dans l'ordre UTC, QYRIS, Gmail, iCloud ; en tête de chaque section, son nombre de non lus ;
   - QYRIS réunit colin@ et contact@ ; chaque mail porte une petite étiquette de son adresse ;
-  - un mail : expéditeur, objet, extrait, heure (« 14:32 », « hier », « lun. 19/10 ») ; un non lu est mis en évidence ;
+  - un mail : expéditeur, objet, extrait, heure (« 14 h 32 », « hier », « lun. 19/10 ») ; un non lu est mis en évidence ;
   - pubs repliées sous « + 48 pubs » (texte nouveau), dépliables ;
   - sur un mail, un bouton discret propose « Toujours afficher » ou « C'est une pub » (textes nouveaux), et sur une pub « Ce n'est pas une pub » ;
   - bouton d'ouverture par section : « Ouvrir dans Gmail » (UTC et Gmail), « Ouvrir dans iCloud Mail », « Ouvrir le webmail OVH » (QYRIS) ;
@@ -651,7 +651,7 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
   - section en erreur : son message (`CONTENU.md`), les autres s'affichent normalement ; compte non enregistré : « Pas encore connecté », avec un lien vers Réglages (texte nouveau).
 - **Ouverture** (choix de Claude) : on ouvre **la boîte**, pas le mail précis, car iOS ne permet pas d'ouvrir un mail donné dans l'app Gmail ou Mail de façon fiable. Gmail : `googlegmail://`, repli sur `https://mail.google.com/` ; iCloud : `https://www.icloud.com/mail/` ; OVH : le webmail OVH. Pour Gmail, le lien web du mail (`X-GM-MSGID`) est gardé dans `lien` et utilisé si le builder constate qu'il s'ouvre bien sur l'iPhone.
 - **Bloc Mails d'Aujourd'hui** : « 3 non lus · UTC 2 · QYRIS 1 » (sections à 0 omises), « Boîtes à jour. » s'il n'y en a aucun. Un toucher ouvre l'onglet Mails.
-- **Réglages, partie Comptes mail** : une ligne par compte avec son état (« Connecté, vérifié à 14:32 », « Mot de passe refusé », « Pas encore connecté »), le champ identifiant pré-rempli, un champ mot de passe (vide, jamais rempli par l'app), « Enregistrer » (qui teste avant de garder), « Tester la connexion » et « Supprimer ». Un court mode d'emploi par compte dit où créer le mot de passe d'application (Google, Apple).
+- **Réglages, partie Comptes mail** : une ligne par compte avec son état (« Connecté, vérifié à 14 h 32 », « Mot de passe refusé », « Pas encore connecté »), le champ identifiant pré-rempli, un champ mot de passe (vide, jamais rempli par l'app), « Enregistrer » (qui teste avant de garder), « Tester la connexion » et « Supprimer ». Un court mode d'emploi par compte dit où créer le mot de passe d'application (Google, Apple).
 - **Hors ligne** : la copie locale s'affiche avec « à jour il y a 12 min », comme les autres écrans.
 - **Barre d'onglets** : Aujourd'hui · Agenda · Tâches · Mails · Moi, et le +.
 
@@ -681,7 +681,7 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 
 ### 16.11 Textes nouveaux, à valider par Colin
 
-« + 48 pubs » · « Toujours afficher » · « C'est une pub » · « Ce n'est pas une pub » · « Pas encore connecté » · « Connecté, vérifié à 14:32 » · « Mot de passe refusé » · « 3 mails non lus. » (brief).
+« + 48 pubs » · « Toujours afficher » · « C'est une pub » · « Ce n'est pas une pub » · « Pas encore connecté » · « Connecté, vérifié à 14 h 32 » · « Mot de passe refusé » · « 3 mails non lus. » (brief).
 
 ### 16.12 Préparatifs de Colin
 
