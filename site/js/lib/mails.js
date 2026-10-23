@@ -4,8 +4,8 @@ import { T } from './textes.js';
 import { dateCourte, heureParis, heureTexte, joursEntre, jourParis } from './temps.js';
 
 const SECTIONS = ['utc', 'qyris', 'gmail', 'icloud'];
-// Les comptes dont dépend l'état de chaque section : UTC suit Gmail, QYRIS en réunit deux
-const COMPTES_DE = { utc: ['gmail'], gmail: ['gmail'], icloud: ['icloud'], qyris: ['colin', 'contact'] };
+// Les comptes dont dépend l'état de chaque section : UTC a son compte, QYRIS en réunit deux
+const COMPTES_DE = { utc: ['utc'], gmail: ['gmail'], icloud: ['icloud'], qyris: ['colin', 'contact'] };
 
 // « 14 h 32 » aujourd'hui, « hier », « lun. 19/10 » cette année, « 19/10/2025 » avant. iso : UTC avec Z.
 export function heureMail(iso, maintenant) {

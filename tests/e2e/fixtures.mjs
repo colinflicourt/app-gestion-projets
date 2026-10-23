@@ -107,14 +107,14 @@ export function cartes() {
     carte(6, 'etudes', 'a_faire', 'TN01 : rendre le TP', { echeance: '2026-10-14T18:00:00+02:00', etiquettes: ['TN01'] }),
     carte(7, 'perso', 'a_faire', 'LinkedIn : mettre à jour mon profil', { echeance: '2026-10-05T18:00:00+02:00' }),
     carte(8, 'perso', 'en_cours', "Jarvis Jr. : construire mon app d'organisation", {
-      checklists: [etapes(8, ['Choisir le nom', 'Créer un compte cron-job.org', 'Rediriger la boîte UTC'], [0])],
+      checklists: [etapes(8, ['Choisir le nom', 'Créer un compte cron-job.org', 'Brancher la boîte UTC'], [0])],
     }),
     carte(9, 'perso', 'en_attente', 'Supprimer les anciens sites Netlify'),
   ];
 }
 
 const mail = (compte, uid, de_nom, de_adresse, objet, extrait, date, non_lu, autres = {}) => ({
-  uid, message_id: `<${compte}-${uid}@exemple.fr>`, date, de_nom, de_adresse, objet, extrait, non_lu, utc: false, signes_pub: [], lien: null, compte, ...autres,
+  uid, message_id: `<${compte}-${uid}@exemple.fr>`, date, de_nom, de_adresse, objet, extrait, non_lu, signes_pub: [], lien: null, compte, ...autres,
 });
 
 // Ce que rend GET mails le 14 octobre 2026 à 15 h 45 : 4 non lus (UTC 2, QYRIS 1, Gmail 1), 48 pubs dans Gmail,
@@ -126,9 +126,9 @@ export function mailsDeBase() {
       {
         section: 'utc', non_lus: 2, pubs_total: 0, pubs: [],
         mails: [
-          mail('gmail', 101, 'Secrétariat GI', 'secretariat-gi@utc.fr', 'Inscription aux UV de A27', 'Les inscriptions ouvrent lundi, pense à vérifier ton dossier.', '2026-10-14T12:32:00Z', true, { utc: true }),
-          mail('gmail', 102, 'Prof. Durand', 'durand@utc.fr', 'TD de jeudi déplacé', 'Le TD de jeudi se tiendra en salle FA420.', '2026-10-13T09:10:00Z', true, { utc: true }),
-          mail('gmail', 103, 'BDE', 'bde@utc.fr', 'Compte rendu de la réunion', 'Voici le compte rendu de la réunion de vendredi.', '2026-10-09T15:00:00Z', false, { utc: true }),
+          mail('utc', 101, 'Secrétariat GI', 'secretariat-gi@utc.fr', 'Inscription aux UV de A27', 'Les inscriptions ouvrent lundi, pense à vérifier ton dossier.', '2026-10-14T12:32:00Z', true),
+          mail('utc', 102, 'Prof. Durand', 'durand@utc.fr', 'TD de jeudi déplacé', 'Le TD de jeudi se tiendra en salle FA420.', '2026-10-13T09:10:00Z', true),
+          mail('utc', 103, 'BDE', 'bde@utc.fr', 'Compte rendu de la réunion', 'Voici le compte rendu de la réunion de vendredi.', '2026-10-09T15:00:00Z', false),
         ],
       },
       {
@@ -151,7 +151,7 @@ export function mailsDeBase() {
         mails: [mail('icloud', 401, 'Maman', 'maman@exemple.fr', 'Dimanche midi', 'On mange à 12 h 30, tu viens ?', '2025-12-24T10:00:00Z', false)],
       },
     ],
-    comptes: Object.fromEntries(['gmail', 'icloud', 'colin', 'contact'].map((c) => [c, { recupere_le: releve, erreur: null }])),
+    comptes: Object.fromEntries(['utc', 'gmail', 'icloud', 'colin', 'contact'].map((c) => [c, { recupere_le: releve, erreur: null }])),
   };
 }
 
@@ -187,11 +187,12 @@ export function reglagesDeBase() {
   };
 }
 
-// Ce que rend GET comptes-mail : jamais de mot de passe. Gmail vérifié à 14 h 32, iCloud pas encore saisi,
+// Ce que rend GET comptes-mail : jamais de mot de passe. UTC et iCloud pas encore saisis, Gmail vérifié à 14 h 32,
 // colin@ refusé, contact@ injoignable.
 export function comptesMailDeBase() {
   const compte = (identifiant, enregistre, dernier_succes, derniere_erreur) => ({ identifiant, enregistre, dernier_succes, derniere_erreur });
   return {
+    utc: compte('cflicour', false, null, null),
     gmail: compte('colin.flicourt@gmail.com', true, '2026-10-14T12:32:00Z', null),
     icloud: compte('colin.flicourt@icloud.com', false, null, null),
     colin: compte('colin@qyris.fr', true, '2026-10-13T08:00:00Z', 'refus'),

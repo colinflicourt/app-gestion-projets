@@ -15,7 +15,7 @@ const JR_MAILS_AGE_ROUTE = 300;   // une copie de plus de 5 min est relue quand 
 const JR_MAILS_AGE_CRON = 900;    // et de plus de 15 min par le planificateur
 const JR_MAILS_LIMITE_ROUTE = 25; // secondes de lecture IMAP au plus pour une requête (set_time_limit(30) dans la route)
 const JR_MAILS_RESTE_CRON = 12;   // le planificateur ne lance une lecture que s'il lui reste ce temps
-const JR_MAILS_SECTIONS_DU_COMPTE = ['gmail' => ['utc', 'gmail'], 'icloud' => ['icloud'], 'colin' => ['qyris'], 'contact' => ['qyris']];
+const JR_MAILS_SECTIONS_DU_COMPTE = ['utc' => ['utc'], 'gmail' => ['gmail'], 'icloud' => ['icloud'], 'colin' => ['qyris'], 'contact' => ['qyris']];
 const JR_MAILS_MESSAGES = [
     'refus' => 'Mot de passe refusé',
     'injoignable' => "Boîte injoignable pour l'instant.",
@@ -23,6 +23,7 @@ const JR_MAILS_MESSAGES = [
 ];
 
 const JR_MAILS_IDENTIFIANTS = [
+    'utc' => 'cflicour',
     'gmail' => 'colin.flicourt@gmail.com',
     'icloud' => 'colin.flicourt@icloud.com',
     'colin' => 'colin@qyris.fr',
@@ -158,35 +159,6 @@ function mails_rafraichir(string $compte, int $age, float $limite): array
         $resultat['erreur'] = 'delai';
     }
     return $resultat;
-}
-
-// Diagnostic de la règle UTC (SPEC § 16.6, outils/test-serveur/diagnostic.php) : en-têtes utiles des 5 derniers mails de
-// INBOX de Gmail, lus par imap_lire_boite() (lecture seule), et le verdict de mail_est_utc(). Ni objet, ni extrait, ni mot
-// de passe ; ne touche ni la copie ni l'état du compte. Toujours un tableau : {etat: non_connecte | erreur | ok}.
-function mails_entetes_diagnostic(float $limite): array
-{
-    $acces = compte_mail_acces('gmail');
-    if ($acces === null) {
-        return ['etat' => 'non_connecte'];
-    }
-    try {
-        $brut = ($GLOBALS['JR_LECTEUR_IMAP'] ?? 'imap_lire_boite')('gmail', $acces['identifiant'], $acces['mot_de_passe'], $limite);
-    } catch (ErreurSource $e) {
-        return ['etat' => 'erreur', 'code' => $e->codeErreur];
-    } catch (Throwable) {
-        return ['etat' => 'erreur', 'code' => 'inattendue'];
-    }
-    $mails = [];
-    foreach (array_slice($brut['mails'], 0, 5) as $m) {
-        $e = (array) ($m['entetes'] ?? []);
-        $ligne = ['uid' => (int) $m['uid'], 'from' => (string) $m['de_adresse']];
-        foreach (['to', 'cc', 'delivered-to', 'x-forwarded-to', 'received', 'list-id'] as $nom) {
-            $ligne[$nom] = array_map(fn($v): string => mb_substr((string) $v, 0, 300), array_slice(mail_valeurs_entete($e, $nom), 0, 8));
-        }
-        $ligne['utc'] = mail_est_utc($e);
-        $mails[] = $ligne;
-    }
-    return ['etat' => 'ok', 'mails' => $mails];
 }
 
 // compte => ['contenu', 'recupere_le'] ou null (compte non enregistré ou jamais lu)

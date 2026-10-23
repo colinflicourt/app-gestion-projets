@@ -30,7 +30,7 @@ Jarvis Jr. réunit dans une seule app installée sur l'iPhone :
 - **l'emploi du temps** : Google Agenda, avec l'agenda principal et « UTC · Emploi du temps A26 » ;
 - **la to-do** : les 4 tableaux Trello Jarvis (QYRIS, Asso, Études, Perso) ;
 - **les rappels par notification** : avant les cours, la veille des échéances, à J-7, J-3 et J-1 des médians, et un brief du matin ;
-- **les mails, en lecture seule** : UTC (via Gmail), Gmail, iCloud, colin@ et contact@qyris.fr.
+- **les mails, en lecture seule** : UTC (en direct), Gmail, iCloud, colin@ et contact@qyris.fr.
 
 Il ajoute de quoi donner envie d'avancer :
 - « Je fais quoi maintenant ? » ;
@@ -82,7 +82,7 @@ C'est le petit frère de Jarvis, l'assistant Claude Code de Colin. Quatre choses
 
 **Accès et sécurité** :
 - Mails en lecture seule : l'app ne marque jamais un mail comme lu.
-- Le mot de passe UTC n'est jamais stocké : la boîte UTC sera redirigée vers Gmail depuis le webmail UTC.
+- Le mot de passe UTC (CAS) est saisi par Colin dans Réglages et chiffré en base, comme les autres comptes mail : le webmail UTC ne permet pas de transfert vers Gmail (risque accepté le 23/10/2026).
 - L'app ne touche qu'aux 4 tableaux Trello Jarvis, jamais à Courses ni à Repas étudiant.
 - Les mots de passe d'application sont saisis par Colin dans Réglages et chiffrés. Aucun secret dans le code ni dans git.
 - Un seul compte, une session de 90 jours, 10 essais de mot de passe par 15 min.

@@ -15,24 +15,11 @@ function mail_test(int $uid, array $surcharges = []): array
     return array_replace(mail_pour_copie(brut_test($uid), 'icloud'), $surcharges);
 }
 
-test('tri mails : UTC par To, Cc, Delivered-To, X-Forwarded-To et Received', function () {
-    foreach (['to', 'cc', 'delivered-to', 'x-forwarded-to'] as $nom) {
-        vrai(mail_est_utc([$nom => ['Colin <colin@etu.utc.fr>']]), $nom);
+test("tri mails : un mail de la copie n'a plus de champ utc, Gmail avec utc.fr reste Gmail", function () {
+    $brut = brut_test(1, ['entetes' => ['to' => ['colin@etu.utc.fr'], 'received' => ['from mx.utc.fr by mx.google.com']]]);
+    foreach (['gmail', 'icloud', 'colin', 'utc'] as $compte) {
+        vrai(!array_key_exists('utc', mail_pour_copie($brut, $compte)), $compte);
     }
-    vrai(mail_est_utc(['received' => ['from mx.utc.fr by mx.google.com']]), 'received');
-    vrai(mail_est_utc(['to' => ['x@etu.utc.fr']]), 'etu.utc.fr');
-    vrai(mail_est_utc(['to' => ['x@utc.fr.exemple.com']]), 'règle large');
-    vrai(mail_est_utc(['to' => ['x@UTC.FR']]), 'casse');
-    vrai(!mail_est_utc(['to' => ['colin@gmail.com'], 'received' => ['from smtp.exemple.com']]), 'autre');
-    vrai(!mail_est_utc([]), 'sans en-têtes');
-    vrai(!mail_est_utc(['to' => ['']]), 'en-tête vide');
-});
-
-test("tri mails : un mail d'iCloud ou de QYRIS n'est jamais utc, un mail de Gmail oui", function () {
-    $brut = brut_test(1, ['entetes' => ['to' => ['colin@etu.utc.fr']]]);
-    egal(false, mail_pour_copie($brut, 'icloud')['utc']);
-    egal(false, mail_pour_copie($brut, 'colin')['utc']);
-    egal(true, mail_pour_copie($brut, 'gmail')['utc']);
 });
 
 test('tri mails : signes de pub, Precedence bulk et list mais pas junk', function () {
@@ -45,7 +32,7 @@ test('tri mails : signes de pub, Precedence bulk et list mais pas junk', functio
 test("tri mails : forme d'un mail de copie et lien Gmail en hexadécimal minuscule", function () {
     $brut = brut_test(7, ['gm_msgid' => '1234567890123456789', 'non_lu' => true]);
     $mail = mail_pour_copie($brut, 'gmail');
-    egal(['uid', 'message_id', 'date', 'de_nom', 'de_adresse', 'objet', 'extrait', 'non_lu', 'utc', 'signes_pub', 'lien'], array_keys($mail));
+    egal(['uid', 'message_id', 'date', 'de_nom', 'de_adresse', 'objet', 'extrait', 'non_lu', 'signes_pub', 'lien'], array_keys($mail));
     egal('2026-10-23T07:00:00Z', $mail['date']);
     egal('https://mail.google.com/mail/u/0/#all/112210f47de98115', $mail['lien']);
     egal('https://mail.google.com/mail/u/0/#all/ffffffffffffffff', mail_pour_copie(brut_test(1, ['gm_msgid' => '18446744073709551615']), 'gmail')['lien']);
@@ -60,8 +47,8 @@ test('tri mails : pub, UTC jamais pub, correction pub ou afficher', function () 
     vrai(!mail_est_pub(mail_test(1), []), 'rien');
     vrai(!mail_est_pub(mail_test(1, $news), ['news@exemple.fr' => 'afficher']), 'afficher sur newsletter');
     vrai(mail_est_pub(mail_test(1, ['de_adresse' => 'alice@exemple.fr']), ['alice@exemple.fr' => 'pub']), 'pub sur mail propre');
-    vrai(!mail_est_pub(mail_test(1, ['utc' => true, 'signes_pub' => ['list-id']]), []), 'utc avec signes');
-    vrai(!mail_est_pub(mail_test(1, ['utc' => true]), ['alice@exemple.fr' => 'pub']), 'correction pub sans effet sur utc');
+    vrai(!mail_est_pub(mail_test(1, ['compte' => 'utc', 'signes_pub' => ['list-id']]), []), 'utc avec signes');
+    vrai(!mail_est_pub(mail_test(1, ['compte' => 'utc']), ['alice@exemple.fr' => 'pub']), 'correction pub sans effet sur utc');
 });
 
 function copie_test(array $mails): array
@@ -71,9 +58,9 @@ function copie_test(array $mails): array
 
 test('tri mails : sections dans l ordre, utc séparé de gmail, QYRIS réunit colin et contact', function () {
     $s = mails_sections([
+        'utc' => copie_test([mail_test(1, ['non_lu' => true, 'signes_pub' => ['list-id']])]),
         'gmail' => copie_test([
-            mail_test(1, ['utc' => true, 'non_lu' => true]),
-            mail_test(2, ['utc' => false, 'non_lu' => true]),
+            mail_test(2, ['non_lu' => true, 'de_adresse' => 'x@utc.fr']),
         ]),
         'icloud' => copie_test([mail_test(3, ['non_lu' => true])]),
         'colin' => copie_test([mail_test(4, ['non_lu' => true])]),
