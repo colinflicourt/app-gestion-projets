@@ -125,7 +125,7 @@ test("Notifications : l'état connu s'affiche tout de suite, même si le service
   await page.getByText('Actives sur cet iPhone').waitFor({ timeout: 1500 });
 });
 
-const ordre = ['Notifications', 'Brief du matin', 'Rappels', 'Siri', 'Session'];
+const ordre = ['Notifications', 'Brief du matin', 'Rappels', 'Comptes mail', 'Siri', 'Session'];
 const corpsRappels = (serveur) => serveur.appels('reglages/rappels').at(-1).corps;
 
 test('Réglages : les parties dans l\'ordre, valeurs lues dans GET reglages', async ({ page, contexte, serveur }) => {
@@ -291,4 +291,161 @@ test('Siri hors ligne : bouton désactivé, texte du hors ligne', async ({ page,
   await contexte.setOffline(true);
   await page.getByText('Pas de réseau. Réessaie quand ça revient.').waitFor();
   assert.equal(await page.getByRole('button', { name: 'Créer le jeton Siri' }).isDisabled(), true);
+});
+
+// Réglages > Comptes mail (SPEC § 16.8)
+const compteMail = (page, nom) => page.getByRole('region', { name: nom });
+const envois = (serveur, route) => serveur.appels(route).filter((a) => a.methode === 'POST');
+const corpsMail = (serveur, route) => envois(serveur, route).map((a) => a.corps);
+
+const stockageMotDePasse = (page, secret) => page.evaluate(async (valeur) => {
+  const trouve = [];
+  for (const [nom, magasin] of [['local', localStorage], ['session', sessionStorage]]) {
+    for (let i = 0; i < magasin.length; i++) if ((magasin.getItem(magasin.key(i)) ?? '').includes(valeur) || magasin.key(i).includes(valeur)) trouve.push(nom);
+  }
+  for (const { name } of await indexedDB.databases()) {
+    const base = await new Promise((ok) => { const r = indexedDB.open(name); r.onsuccess = () => ok(r.result); });
+    for (const magasin of base.objectStoreNames) {
+      const tout = await new Promise((ok) => { const r = base.transaction(magasin).objectStore(magasin).getAll(); r.onsuccess = () => ok(r.result); });
+      if (JSON.stringify(tout).includes(valeur)) trouve.push(`${name}/${magasin}`);
+    }
+    base.close();
+  }
+  return trouve;
+}, secret);
+
+test('Comptes mail : un état par compte, identifiants pré-remplis, champ mot de passe masqué et vide, modes d\'emploi', async ({ page, contexte, serveur }) => {
+  await preparer(page, contexte, serveur);
+  await ouvrir(page, '/#/reglages');
+  await page.getByRole('heading', { name: 'Comptes mail' }).waitFor();
+  await compteMail(page, 'Gmail').getByText('Connecté, vérifié à 14 h 32', { exact: true }).waitFor();
+  await compteMail(page, 'iCloud').getByText('Pas encore connecté', { exact: true }).waitFor();
+  await compteMail(page, 'colin@qyris.fr').getByText('Mot de passe refusé', { exact: true }).waitFor();
+  await compteMail(page, 'contact@qyris.fr').getByText("Boîte injoignable pour l'instant.", { exact: true }).waitFor();
+  for (const [nom, id] of [['Gmail', 'colin.flicourt@gmail.com'], ['iCloud', 'colin.flicourt@icloud.com'], ['colin@qyris.fr', 'colin@qyris.fr'], ['contact@qyris.fr', 'contact@qyris.fr']]) {
+    const c = compteMail(page, nom);
+    assert.equal(await c.getByLabel('Identifiant').inputValue(), id);
+    const mdp = c.getByLabel('Mot de passe');
+    assert.equal(await mdp.inputValue(), '');
+    assert.equal(await mdp.getAttribute('type'), 'password');
+    assert.equal(await mdp.getAttribute('autocomplete'), 'off');
+  }
+  await compteMail(page, 'Gmail').getByText('Compte Google > Sécurité > Validation en deux étapes, puis Mots de passe des applications. Colle ici le mot de passe de 16 lettres.').waitFor();
+  await compteMail(page, 'iCloud').getByText('Compte Apple > Connexion et sécurité > Mots de passe pour app. Colle ici le mot de passe créé.').waitFor();
+  await compteMail(page, 'colin@qyris.fr').getByText('Le mot de passe de la boîte, celui du webmail OVH.').waitFor();
+  // Pas encore connecté : ni « Tester » ni « Supprimer »
+  assert.equal(await compteMail(page, 'iCloud').getByRole('button', { name: 'Tester la connexion' }).count(), 0);
+  assert.equal(await compteMail(page, 'iCloud').getByRole('button', { name: 'Supprimer' }).count(), 0);
+  assert.equal(await compteMail(page, 'Gmail').getByRole('button', { name: 'Tester la connexion' }).count(), 1);
+  assert.equal(await page.getByText('Connecté, vérifié', { exact: false }).count(), 1);
+});
+
+test('Comptes mail : « trop de temps », vérifié hier ou plus tôt (forme des heures de mail)', async ({ page, contexte, serveur }) => {
+  const { comptesMail } = serveur.etat;
+  comptesMail.colin.derniere_erreur = 'delai';
+  comptesMail.contact.derniere_erreur = null;
+  comptesMail.contact.dernier_succes = '2026-10-13T08:05:00Z';
+  Object.assign(comptesMail.icloud, { enregistre: true, dernier_succes: '2026-10-09T08:05:00Z' });
+  await preparer(page, contexte, serveur);
+  await ouvrir(page, '/#/reglages');
+  await compteMail(page, 'contact@qyris.fr').getByText('Connecté, vérifié hier', { exact: true }).waitFor();
+  await compteMail(page, 'iCloud').getByText('Connecté, vérifié ven. 09/10', { exact: true }).waitFor();
+  await compteMail(page, 'colin@qyris.fr').getByText('La boîte a mis trop de temps à répondre.', { exact: true }).waitFor();
+});
+
+test('Enregistrer : le mot de passe part en direct (pas dans la file), le champ se vide, « Compte enregistré. », état à jour', async ({ page, contexte, serveur }) => {
+  await preparer(page, contexte, serveur);
+  await ouvrir(page, '/#/reglages');
+  const c = compteMail(page, 'iCloud');
+  const bouton = c.getByRole('button', { name: 'Enregistrer' });
+  await c.getByText('Pas encore connecté').waitFor();
+  assert.equal(await bouton.isDisabled(), true);
+  await c.getByLabel('Mot de passe').fill('abcd-efgh-ijkl-mnop');
+  assert.equal(await bouton.isDisabled(), false);
+  await bouton.click();
+  await page.getByText('Compte enregistré.').waitFor();
+  await c.getByText('Connecté, vérifié à 15 h 45', { exact: true }).waitFor();
+  assert.deepEqual(corpsMail(serveur, 'comptes-mail'), [{ compte: 'icloud', identifiant: 'colin.flicourt@icloud.com', mot_de_passe: 'abcd-efgh-ijkl-mnop' }]);
+  assert.equal(await c.getByLabel('Mot de passe').inputValue(), '');
+  assert.equal(await c.getByRole('button', { name: 'Enregistrer' }).isDisabled(), true);
+  await c.getByRole('button', { name: 'Tester la connexion' }).waitFor();
+  assert.equal(serveur.etat.vus.size, 0);
+  assert.deepEqual(await stockageMotDePasse(page, 'abcd-efgh-ijkl-mnop'), []);
+  assert.equal(await page.evaluate(() => document.body.innerHTML.includes('abcd-efgh-ijkl-mnop')), false);
+});
+
+test('Enregistrer avec un autre identifiant : l\'identifiant modifié part, le mot de passe reste à saisir', async ({ page, contexte, serveur }) => {
+  await preparer(page, contexte, serveur);
+  await ouvrir(page, '/#/reglages');
+  const c = compteMail(page, 'Gmail');
+  await c.getByLabel('Identifiant').fill('autre@gmail.com');
+  await c.getByLabel('Mot de passe').fill('mdp-d-appli');
+  await c.getByRole('button', { name: 'Enregistrer' }).click();
+  await page.getByText('Compte enregistré.').waitFor();
+  assert.equal(corpsMail(serveur, 'comptes-mail')[0].identifiant, 'autre@gmail.com');
+  assert.equal(await c.getByLabel('Identifiant').inputValue(), 'autre@gmail.com');
+});
+
+test('Enregistrer refusé : « Mot de passe refusé » par le code, champ vidé, rien d\'enregistré', async ({ page, contexte, serveur }) => {
+  serveur.etat.essaisMail.icloud = 'refus';
+  await preparer(page, contexte, serveur);
+  await ouvrir(page, '/#/reglages');
+  const c = compteMail(page, 'iCloud');
+  await c.getByLabel('Mot de passe').fill('mauvais-mdp');
+  await c.getByRole('button', { name: 'Enregistrer' }).click();
+  await c.getByRole('alert').getByText('Mot de passe refusé', { exact: true }).waitFor();
+  assert.equal(await page.getByText('Message du serveur pour refus').count(), 0);
+  assert.equal(await c.getByLabel('Mot de passe').inputValue(), '');
+  await c.getByText('Pas encore connecté', { exact: true }).waitFor();
+  assert.equal(serveur.etat.comptesMail.icloud.enregistre, false);
+  assert.equal(await page.getByText('Compte enregistré.').count(), 0);
+  assert.deepEqual(await stockageMotDePasse(page, 'mauvais-mdp'), []);
+  // un échec de délai se dit aussi
+  serveur.etat.essaisMail.icloud = 'delai';
+  await c.getByLabel('Mot de passe').fill('encore-un');
+  await c.getByRole('button', { name: 'Enregistrer' }).click();
+  await c.getByRole('alert').getByText('La boîte a mis trop de temps à répondre.', { exact: true }).waitFor();
+});
+
+test('Tester la connexion : appel direct, « Connexion réussie. », et un échec met l\'état à jour', async ({ page, contexte, serveur }) => {
+  await preparer(page, contexte, serveur);
+  await ouvrir(page, '/#/reglages');
+  const c = compteMail(page, 'colin@qyris.fr');
+  await c.getByText('Mot de passe refusé', { exact: true }).waitFor();
+  await c.getByRole('button', { name: 'Tester la connexion' }).click();
+  await page.getByText('Connexion réussie.').waitFor();
+  await c.getByText('Connecté, vérifié à 15 h 45', { exact: true }).waitFor();
+  assert.deepEqual(corpsMail(serveur, 'comptes-mail/tester'), [{ compte: 'colin' }]);
+  assert.equal(serveur.etat.vus.size, 0);
+  serveur.etat.essaisMail.colin = 'injoignable';
+  await c.getByRole('button', { name: 'Tester la connexion' }).click();
+  await c.getByRole('alert').getByText("Boîte injoignable pour l'instant.", { exact: true }).waitFor();
+  assert.equal(serveur.appels('comptes-mail/tester').length, 2);
+});
+
+test('Supprimer : par la file, « Compte supprimé. », le compte repasse à « Pas encore connecté »', async ({ page, contexte, serveur }) => {
+  await preparer(page, contexte, serveur);
+  await ouvrir(page, '/#/reglages');
+  const c = compteMail(page, 'Gmail');
+  await c.getByRole('button', { name: 'Supprimer' }).click();
+  await page.getByText('Compte supprimé.').waitFor();
+  await c.getByText('Pas encore connecté', { exact: true }).waitFor();
+  await attendre(() => serveur.appels('comptes-mail/supprimer').length === 1, 'suppression');
+  const e = serveur.appels('comptes-mail/supprimer')[0].corps;
+  assert.equal(e.compte, 'gmail');
+  assert.ok(e.id_client);
+  assert.equal(serveur.etat.comptesMail.gmail.enregistre, false);
+  assert.equal(await c.getByRole('button', { name: 'Supprimer' }).count(), 0);
+});
+
+test('Comptes mail hors ligne : « Il faut du réseau pour tester une boîte. », Enregistrer et Tester éteints, rien n\'est envoyé', async ({ page, contexte, serveur }) => {
+  await preparer(page, contexte, serveur);
+  await ouvrir(page, '/#/reglages');
+  const c = compteMail(page, 'Gmail');
+  await c.getByLabel('Mot de passe').fill('saisi-avant-la-coupure');
+  await contexte.setOffline(true);
+  await c.getByText('Il faut du réseau pour tester une boîte.').waitFor();
+  assert.equal(await c.getByRole('button', { name: 'Enregistrer' }).isDisabled(), true);
+  assert.equal(await c.getByRole('button', { name: 'Tester la connexion' }).isDisabled(), true);
+  assert.equal(envois(serveur, 'comptes-mail').length + envois(serveur, 'comptes-mail/tester').length, 0);
 });

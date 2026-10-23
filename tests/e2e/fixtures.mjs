@@ -187,4 +187,16 @@ export function reglagesDeBase() {
   };
 }
 
+// Ce que rend GET comptes-mail : jamais de mot de passe. Gmail vérifié à 14 h 32, iCloud pas encore saisi,
+// colin@ refusé, contact@ injoignable.
+export function comptesMailDeBase() {
+  const compte = (identifiant, enregistre, dernier_succes, derniere_erreur) => ({ identifiant, enregistre, dernier_succes, derniere_erreur });
+  return {
+    gmail: compte('colin.flicourt@gmail.com', true, '2026-10-14T12:32:00Z', null),
+    icloud: compte('colin.flicourt@icloud.com', false, null, null),
+    colin: compte('colin@qyris.fr', true, '2026-10-13T08:00:00Z', 'refus'),
+    contact: compte('contact@qyris.fr', true, '2026-10-14T12:00:00Z', 'injoignable'),
+  };
+}
+
 export const JETON_SIRI = 'Zm9vYmFyLWpldG9uLWRlLXRlc3QtMDEyMzQ1Njc4OWFi';

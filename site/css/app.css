@@ -323,6 +323,14 @@ ul { padding: 0; list-style: none; }
 .reglage-aide { margin-top: 10px; color: var(--texte-2); font-size: calc(14 * var(--px)); }
 .moi .bouton-large + .bouton-large { margin-top: 8px; }
 .lien { text-decoration: underline; text-underline-offset: 3px; }
+.compte-mail { padding: 12px 0; border-bottom: 1px solid var(--panneau); }
+.compte-mail h3 { font-size: calc(15 * var(--px)); font-weight: 600; }
+.compte-mail .reglage-ligne { min-height: 32px; border-bottom: 0; font-weight: 400; color: var(--texte-2); }
+.compte-mail .erreur { margin-top: 0; }
+.compte-mail label { display: block; margin-top: 10px; }
+.compte-mail label > span { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--texte-2); }
+.compte-mail-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.compte-mail-actions .bouton { flex: 1 1 auto; margin-top: 0; }
 
 /* Page publique (confidentialité) */
 .page-publique { max-width: 640px; margin: 0 auto; padding: max(env(safe-area-inset-top), 24px) 20px 40px; font-size: calc(16 * var(--px)); line-height: 1.55; }

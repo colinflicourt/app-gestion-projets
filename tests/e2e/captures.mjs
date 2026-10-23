@@ -27,6 +27,10 @@ const blocMails = async (p) => {
   await p.locator('.mails-resume').scrollIntoViewIfNeeded();
   await p.waitForTimeout(300);
 };
+const comptesMail = async (p) => {
+  await p.getByRole('heading', { name: 'Comptes mail' }).evaluate((el) => el.scrollIntoView({ block: 'start' }));
+  await p.waitForTimeout(300);
+};
 const noter = async (p) => {
   await p.getByRole('button', { name: 'Noter quelque chose' }).click();
   await p.getByRole('dialog').waitFor();
@@ -48,6 +52,7 @@ const PLANCHES = [
   ['12-mails', MERCREDI, '/#/mails', true, null],
   ['13-mails-pubs', MERCREDI, '/#/mails', true, pubs],
   ['14-aujourdhui-mails', MERCREDI, '/#/aujourdhui', true, blocMails],
+  ['15-reglages-comptes-mail', MERCREDI, '/#/reglages', true, comptesMail],
 ];
 
 mkdirSync(DOSSIER, { recursive: true });
