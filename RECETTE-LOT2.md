@@ -161,11 +161,11 @@ Si ton offre ne propose pas les tâches planifiées, ou refuse cette fréquence,
 2. **Réglages**, **Notifications** : touche **Activer les notifications** et accepte la demande d'iOS. L'état passe à « Actives sur cet iPhone ».
 3. Touche **Envoyer une notification de test**. Elle arrive en quelques secondes.
 4. **Réglages**, **Siri** : touche **Créer le jeton Siri**. Touche **Copier** tout de suite (il ne sera plus affiché).
-5. Ouvre le **mode d'emploi** juste en dessous dans Réglages et suis les sept étapes pour créer le raccourci « Note pour Jarvis » dans l'app Raccourcis. Pour la valeur de l'en-tête, tape `Bearer`, une espace, puis colle le jeton.
+5. Ouvre le **mode d'emploi** juste en dessous dans Réglages et suis les sept étapes pour créer le raccourci « Retiens pour Jarvis » dans l'app Raccourcis. Pour la valeur de l'en-tête, tape `Bearer`, une espace, puis colle le jeton.
 
 - [ ] L'état des notifications indique « Actives sur cet iPhone ».
 - [ ] La notification de test est arrivée (écran verrouillé aussi).
-- [ ] Le raccourci « Note pour Jarvis » est créé.
+- [ ] Le raccourci « Retiens pour Jarvis » est créé.
 
 ## 8. Recette du lot 2 (SPEC § 15.9)
 
@@ -175,7 +175,7 @@ Le lot 2 est fini quand toutes ces cases sont cochées.
 - [ ] **Un rappel manuel « Dans 1 h » arrive à l'heure.** Dans la capture, choisis « Rappel », écris « Test rappel », touche « Dans 1 h ». Le bloc « Rappels du jour » de l'écran Aujourd'hui l'affiche avec son heure. À l'heure dite, la notification arrive (tolérance : 1 à 2 minutes). Tu peux aussi essayer d'annuler un rappel dans le bloc : il disparaît.
 - [ ] **Le rappel d'un vrai cours arrive 15 minutes avant.** Le prochain jour de cours, vérifie que la notification arrive 15 minutes avant le début (le délai se règle dans Réglages, Rappels, Avant les cours). Compare avec l'heure du cours dans l'onglet Agenda.
 - [ ] **Le brief du lendemain arrive à 7 h 30.** Le lendemain matin, la notification du brief arrive à 7 h 30 (heure réglable dans Réglages, Brief du matin, et jours choisis).
-- [ ] **Une dictée Siri crée une carte une seule fois.** Dis « Dis Siri, note pour Jarvis », dicte une phrase courte. Siri répond. Vérifie dans l'onglet Tâches (ou dans Trello) qu'il y a une seule nouvelle carte avec cette phrase, pas deux. Refais l'essai une fois pour être sûr.
+- [ ] **Une dictée Siri crée une carte une seule fois.** Dis « Dis Siri, retiens pour Jarvis », dicte une phrase courte. Siri répond. Vérifie dans l'onglet Tâches (ou dans Trello) qu'il y a une seule nouvelle carte avec cette phrase, pas deux. Refais l'essai une fois pour être sûr.
 - [ ] **Aucun doublon dans `envois` après 24 h de planificateur.** Pendant la journée, tu ne dois jamais recevoir deux fois la même notification. Le lendemain, demande à Claude de contrôler la table `envois` (il le fait sans toucher à tes secrets) : aucune ligne en double.
 - [ ] **Le planificateur reste vivant.** Réglages affiche « Dernier passage il y a 1 min. » à n'importe quel moment de la journée, sans alerte rouge.
 

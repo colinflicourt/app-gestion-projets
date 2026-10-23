@@ -1,42 +1,48 @@
-# Passation · Jarvis Jr. · 2026-10-22 16:40
+# Passation · Jarvis Jr. · 2026-10-23 11:10
 
 ## Objectif
-Jarvis Jr. (jr.qyris.fr), l'app perso d'organisation de Colin sur iPhone. Lot 2 (rappels) : finir la recette du SPEC § 15.9, puis clore le lot.
+Jarvis Jr. (jr.qyris.fr), l'app perso d'organisation de Colin sur iPhone. Finir la recette du lot 2 (rappels), puis démarrer le **lot 3 (Mails)** en mode chef d'orchestre. Le lot 4 (le fun) viendra après.
 
 ## Où on en est
-- **Fait et vérifié** (22/10, avec Colin) :
-  - Mise en ligne de `main` (`8479456`) : `/api/sante` répond `version_app 0.2.0`, `version_base 5`, `base_ok true` (migrations 003 à 005 appliquées).
-  - Diagnostic `--lot2` : `TOUT_EST_BON` (PHP 8.4.27 fpm, vecteur RFC 8291, ES256, `fastcgi_finish_request`), puis nettoyé.
-  - `verifier-cron-en-ligne.sh` : 200 / 404 / 404, Apache transmet `Authorization`.
-  - cron-job.org : tâche « Jarvis Jr. planificateur », POST chaque minute, passages en 200. Alertes : échec après 3, retour à la normale, désactivation, TLS 7 jours.
-  - Cron OVH de secours créé : `jr.qyris.fr/serveur/cron-ovh.php`, PHP 8.4, toutes les heures, activé.
-  - Siri : raccourci renommé **« Retiens pour Jarvis »** (« Note pour… » est intercepté par l'app Notes). Il crée bien une carte dans Perso. Les 3 cartes de test ont été archivées.
-- **Fait, pas encore vérifié** :
-  - Notifications activées sur l'iPhone et notification de test : Colin ne l'a pas confirmé explicitement.
-  - Rappel manuel « Dans 1 h » : proposé, pas confirmé.
+- **Fait et vérifié** (23/10) :
+  - Colin confirme : notification de test reçue (écran verrouillé aussi), brief du 23/10 reçu, Siri OK.
+  - Table `envois` contrôlée en ligne par une nouvelle section en lecture seule de `outils/test-serveur/diagnostic.php` (`$r['envois']`, testée en local puis en ligne) : `AUCUN_DOUBLON true`, aucun envoi rejoué, retard d'envoi de 35 s au plus. Seul le type `brief` figure dans la table (pas de cours avant novembre).
+- **Anomalies relevées, non résolues** :
+  1. **Brief à 10h30 de Paris au lieu de 7h30** : `brief:2026-10-23` prévu `08:30 UTC`, envoyé `08:30:35 UTC`, et `brief:2026-10-24` aussi à `08:30 UTC`. Le brief du 22/10 était bien prévu à `05:30 UTC`. **Question posée à Colin, sans réponse** : a-t-il réglé le brief sur 10h30 dans Réglages ? Si non, c'est un bug (voir `serveur/lib/rappels.php`, `brief.php`, `reglages.php`).
+  2. **Table `rappels` vide** : aucun rappel manuel n'a été créé en ligne, alors que Colin dit avoir reçu le « Dans 1 h ». Il a probablement confondu avec la notification de test. Il doit refaire un rappel « Dans 1 h », puis on relit la table.
+- **Fait en local, pas commité, pas en ligne** : renommage « Retiens pour Jarvis » (`textes.js`, `SPEC.md`, `RECETTE-LOT2.md`, `PLAN.md`, `CONTENU.md`, `VERSION` de `sw.js`) et nouvelle section de `diagnostic.php`.
+- **Diagnostic encore en ligne** si Colin n'a pas lancé `outils/test-serveur/nettoyer.sh`.
 - **En cours chez un sous-agent** : rien.
 
 ## Décisions prises
-- Celles de la passation précédente restent valables : les sous-agents ne commitent pas ; Colin lance tout envoi vers OVH.
-- Nom du raccourci Siri : « Retiens pour Jarvis ».
-- Le cron OVH n'envoie pas de mail de log (24 par jour). C'est cron-job.org qui prévient en cas de panne.
+- Rappel de cours : pas de faux cours, on attend les vrais cours de novembre (choix de Colin).
+- Celles des passations précédentes restent valables : les sous-agents ne commitent pas, Colin lance tout envoi vers OVH, le raccourci Siri s'appelle « Retiens pour Jarvis ».
+- Lot 3 à mener en mode chef d'orchestre (`guides/CHEF-D-ORCHESTRE.md`).
 
 ## Prochaine étape
-1. Demander à Colin : notification de test reçue (aussi écran verrouillé) ? Rappel « Dans 1 h » arrivé à l'heure ? Brief du vendredi 23/10 arrivé à 7h30 ?
-2. Contrôler la table `envois` sur OVH (pas de doublon, une seule carte par dictée Siri), à travers le filtre, sans afficher de secret.
-3. Rappel de cours : pas de cours avant novembre (examens jusqu'au 24/10, vacances du 26 au 30/10). Claude a proposé un faux cours « Test Jarvis » dans l'agenda « UTC · Emploi du temps A26 », que Colin supprimerait ensuite. **Colin n'a pas encore répondu.** `rappels_cours` prend tout événement non « journée » de cet agenda.
-4. Remplacer « Note pour Jarvis » par « Retiens pour Jarvis » dans `site/js/lib/textes.js` (`siriEtapes`), `RECETTE-LOT2.md` et `SPEC.md`, puis mettre à jour `VERSION` dans `site/sw.js`. Mise en ligne par Colin, à grouper avec la suivante.
-5. Quand tout est coché : clore le lot 2 (README, HISTORY, Trello) et envoyer `main` sur GitHub.
+1. Demander à Colin la réponse sur le brief de 10h30 et s'il a lancé `nettoyer.sh`. Si c'est un bug, le corriger en premier (test qui reproduit, puis correctif).
+2. Commiter les changements locaux (renommage, diagnostic, éventuel correctif). Colin met en ligne, puis refait un rappel « Dans 1 h ».
+3. **Lot 3 (Mails)** : rédiger la spec, en suivant le skill brainstorming, sous forme d'un `SPEC.md` § 16 à faire valider par Colin. Elle couvre :
+   - les 5 boîtes en lecture seule (UTC via la redirection Tuttifruti, Gmail, iCloud, colin@ et contact@ OVH) ;
+   - la section UTC et le bloc d'Aujourd'hui ;
+   - les mails non lus dans le brief ;
+   - le chiffrement des mots de passe d'application (`SPEC.md` l. 89).
 
-Effort conseillé : **moyen**.
+   Ensuite, le plan de missions (`plans/AAAA-MM-JJ-lot3-1-...md`), puis l'exécution par les sous-agents.
+4. Clore le lot 2 (README, HISTORY, Trello, `main` sur GitHub). Seul le rappel des vrais cours resterait à vérifier en novembre.
+
+Effort conseillé : **moyen** (haut pour la spec du lot 3).
 
 ## Fichiers clés
-- `RECETTE-LOT2.md` § 8 : les cases de la recette
-- `serveur/lib/rappels.php` : règles des rappels (cours l. 108)
-- `site/js/lib/textes.js` l. 236 : mode d'emploi Siri à renommer
+- `RECETTE-LOT2.md` § 8 : cases de la recette du lot 2
+- `PLAN.md` l. 27-73 (fonctions de l'app, Mails) et l. 208-260 (lots, préparatifs avant le lot 3)
+- `SPEC.md` § 4 (l. 89, données du lot 3), § 8 (l. 274, onglet Mails), § 15 (lot 2, modèle à suivre pour le § 16)
+- `outils/test-serveur/diagnostic.php` : section `envois` réutilisable pour le prochain contrôle (`envoyer.sh --lot2`, puis curl de `https://jr.qyris.fr/diag-<jeton>.php`, jeton dans `outils/test-serveur/.jeton`)
 
 ## Pièges et points ouverts
-- Garde-fou : une commande qui cite `serveur/lib`, un `grep -r` ou un script de mise en ligne doit être entièrement dans `{ … ; } 2>&1 | ~/.claude/hooks/redact-secrets`. Un `cd` placé devant peut quand même être bloqué, utiliser des chemins absolus.
-- Dans cron-job.org, l'URL doit être en `https://` (en `http://`, on obtient un 301, déjà corrigé).
-- Passage à l'heure d'hiver dans la nuit du 24 au 25/10 : vérifier qu'aucun rappel n'est envoyé deux fois ni sauté.
-- Toujours à faire par Colin (README) : relire les textes (CONTENU.md § 5 et § 5.1) ; trancher le piège de « Terminer », les chiffres des codes d'UV et l'effacement de la copie de l'iPhone au premier 401.
+- **Aucun accès direct de Claude à la base OVH** : passer par le diagnostic, que Colin envoie et retire.
+- Garde-fou : toute commande qui cite `serveur/lib`, un `grep -r` ou un script de mise en ligne passe entièrement par `{ … ; } 2>&1 | ~/.claude/hooks/redact-secrets`.
+- Passage à l'heure d'hiver dans la nuit du 24 au 25/10 : vérifier le 25/10 que le brief n'est ni doublé ni sauté (relire `envois`).
+- **Préparatifs du lot 3 côté Colin, pas faits** : redirection UTC dans Tuttifruti, mots de passe d'application Gmail (validation en 2 étapes) et iCloud. Ils ne bloquent pas la spec, mais ils bloquent les tests réels.
+- Toujours à trancher par Colin : le piège de « Terminer », les chiffres des codes d'UV, l'effacement de la copie de l'iPhone au premier 401, la relecture de `CONTENU.md` § 5 et § 5.1.
+- Colin veut des passations plus fréquentes (économie de crédits) : en proposer une après chaque étape livrée.

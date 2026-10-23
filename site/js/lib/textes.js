@@ -240,7 +240,7 @@ export const T = {
       "Dans ses en-têtes, ajoute Authorization avec la valeur « Bearer », une espace, puis le jeton.",
       "Dans son corps de requête (JSON), ajoute un champ texte qui vaut « Texte dicté ».",
       "Ajoute l'action « Énoncer le texte » avec le « Contenu de l'URL ».",
-      "Nomme le raccourci « Note pour Jarvis ». Ensuite : « Dis Siri, note pour Jarvis ».",
+      "Nomme le raccourci « Retiens pour Jarvis ». Ensuite : « Dis Siri, retiens pour Jarvis ».",
     ],
     testPersonne: "Aucun appareil n'est abonné. Réactive les notifications sur cet iPhone.",
     reseau: 'Pas de réseau. Réessaie quand ça revient.',

@@ -136,6 +136,42 @@ $r['lot2'] = essai(function () {
     ];
 });
 
+// --- Lot 2 : contrôle de la table envois (lecture seule) ----------------------------------------
+// Recette du SPEC § 15.9 : aucun doublon après 24 h de planificateur. Lit la vraie base par serveur/lib/base.php.
+// N'affiche ni titre ni texte (contenu personnel) : clés, types, heures et statuts seulement.
+
+$r['envois'] = essai(function () {
+    $base = null;
+    foreach ([dirname(__DIR__) . '/serveur/lib/base.php', dirname(__DIR__, 2) . '/serveur/lib/base.php'] as $c) {
+        if (is_file($c)) { $base = $c; break; }
+    }
+    if ($base === null) throw new RuntimeException('serveur/lib/base.php introuvable : mets d\'abord le lot 2 en ligne');
+    require_once $base;
+    $pdo = db();
+    $q = fn (string $sql) => $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    // Même notification sous deux clés différentes : même type, même heure prévue, même titre
+    $doublons = $q("SELECT type, prevu_pour, COUNT(*) n, GROUP_CONCAT(cle ORDER BY cle SEPARATOR ' | ') cles
+        FROM envois GROUP BY type, prevu_pour, titre HAVING n > 1 ORDER BY prevu_pour");
+    // Deux envois réussis du même type à moins de 2 minutes d'écart
+    $rapproches = $q("SELECT a.type, a.cle cle_a, b.cle cle_b, a.envoye_le a_le, b.envoye_le b_le FROM envois a
+        JOIN envois b ON a.type = b.type AND a.titre = b.titre AND a.cle < b.cle
+        WHERE a.statut = 'envoye' AND b.statut = 'envoye' AND ABS(TIMESTAMPDIFF(SECOND, a.envoye_le, b.envoye_le)) < 120");
+    return [
+        'heure_utc' => gmdate('Y-m-d H:i:s'),
+        'total' => (int) $pdo->query('SELECT COUNT(*) FROM envois')->fetchColumn(),
+        'par_type_et_statut' => $q('SELECT type, statut, COUNT(*) n FROM envois GROUP BY type, statut ORDER BY type, statut'),
+        'doublons_meme_heure' => $doublons,
+        'envoyes_a_moins_de_2_min' => $rapproches,
+        'plusieurs_essais' => $q("SELECT cle, type, statut, essais, prevu_pour FROM envois WHERE essais > 1 ORDER BY prevu_pour"),
+        'retard_envoi_max_s' => $q("SELECT type, MAX(TIMESTAMPDIFF(SECOND, prevu_pour, envoye_le)) s FROM envois
+            WHERE statut = 'envoye' GROUP BY type"),
+        'derniers_48h' => $q("SELECT cle, type, prevu_pour, statut, essais, envoye_le FROM envois
+            WHERE prevu_pour >= UTC_TIMESTAMP() - INTERVAL 48 HOUR ORDER BY prevu_pour"),
+        'rappels_manuels' => $q('SELECT COUNT(*) n, SUM(annule) annules, SUM(source = \'siri\') siri FROM rappels'),
+        'AUCUN_DOUBLON' => $doublons === [] && $rapproches === [],
+    ];
+});
+
 // --- Fichiers : dossier serveur/ hors du web ----------------------------------
 
 $serveur = dirname(__DIR__) . '/serveur';

@@ -41,7 +41,7 @@ On suit `guides/CREER-UN-SITE-WEB.md`, adapté à une app. On avance une étape 
   - une phrase, dictée ou tapée ;
   - c'est une tâche (domaine, urgent, échéance) envoyée dans « À faire » du bon tableau Trello, ou un rappel (« Dans 1 h », « Ce soir 20 h », « Demain 8 h », ou une date) ;
   - hors ligne, la capture attend et part au retour du réseau.
-- **Siri** : un raccourci iOS « Note pour Jarvis » envoie ta dictée dans la capture, avec un jeton qui ne sert qu'à cela.
+- **Siri** : un raccourci iOS « Retiens pour Jarvis » envoie ta dictée dans la capture, avec un jeton qui ne sert qu'à cela.
 - **Rappels automatiques** (tous réglables) :
   - 15 min avant chaque cours ou TD, avec la salle ;
   - la veille d'une échéance Trello à 20 h ;
@@ -172,7 +172,7 @@ projects/<nom>/
 | OVH MX (colin@ et contact@) | Inclus | Leurs mots de passe, que tu saisis toi-même |
 | Notifications web Apple | Gratuit | Installer l'app sur l'écran d'accueil, puis autoriser les notifications |
 | cron-job.org | Gratuit | Un compte et une tâche chaque minute (je te donne les réglages) |
-| Raccourcis iOS | Gratuit | Créer le raccourci « Note pour Jarvis » (instructions fournies) |
+| Raccourcis iOS | Gratuit | Créer le raccourci « Retiens pour Jarvis » (instructions fournies) |
 
 ### Écartés, et pourquoi
 

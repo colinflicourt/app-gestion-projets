@@ -134,7 +134,7 @@
 - **Journal** : rappel du soir (21 h 30), désactivable.
 - **Wrapped** : dimanche à 19 h.
 - **Comptes mail** : ajouter, modifier, tester la connexion.
-- **Siri** : « Créer le raccourci Note pour Jarvis », avec le mode d'emploi.
+- **Siri** : « Créer le raccourci Retiens pour Jarvis », avec le mode d'emploi.
 - **Session** : « Se déconnecter », « Déconnecter tous les appareils ».
 
 ---

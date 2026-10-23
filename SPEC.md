@@ -449,7 +449,7 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
   - rappels automatiques : avant les cours (15 min), échéances (la veille à 20 h), médians (J-7, J-3, J-1 à 9 h) ;
   - rappels manuels (choix « Rappel » de la capture) et bloc « Rappels du jour » d'Aujourd'hui ;
   - brief du matin (7 h 30, jours réglables) ;
-  - raccourci Siri « Note pour Jarvis » ;
+  - raccourci Siri « Retiens pour Jarvis » ;
   - écran **Réglages** (ouvert depuis Moi) avec les parties Notifications, Brief, Rappels, Siri, Session.
 - **Hors du lot 2** : mails non lus dans le brief (lot 3, la phrase est omise d'ici là), rappel du journal, Wrapped, fin de session focus, promotion, nouvelle carte (lot 4). Le planificateur est écrit pour les accueillir sans changer de structure.
 
