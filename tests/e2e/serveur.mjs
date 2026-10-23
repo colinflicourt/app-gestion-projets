@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { donneesDeBase, joursSemaine, reglagesDeBase, JETON_SIRI } from './fixtures.mjs';
+import { donneesDeBase, mailsDeBase, joursSemaine, reglagesDeBase, JETON_SIRI } from './fixtures.mjs';
 
 const SITE = fileURLToPath(new URL('../../site/', import.meta.url));
 const TYPES = {
@@ -30,7 +30,7 @@ export async function demarrer() {
       for (const cle of Object.keys(etat)) delete etat[cle];
       // horsService : le réseau manque (connexion coupée). perdre : la prochaine écriture de cette route est
       // faite, mais sa réponse se perd. pannes : route → { statut, code, message }.
-      Object.assign(etat, { donnees, appels: [], vus: new Map(), pannes: {}, horsService: false, perdre: null, testEnvoyes: 1, reglages: reglagesDeBase() });
+      Object.assign(etat, { donnees, appels: [], vus: new Map(), pannes: {}, horsService: false, perdre: null, testEnvoyes: 1, reglages: reglagesDeBase(), mails: mailsDeBase(), corrections: [] });
     },
     appels(route) {
       return etat.appels.filter((a) => a.route === route);
@@ -120,6 +120,15 @@ async function api(req, res, url, etat) {
     etat.donnees.agenda.erreur = null;
     return envoyer(res, 302, 'text/plain; charset=utf-8', '', { Location: '/#/moi?google=connecte' });
   }
+  if (req.method === 'GET' && route === 'mails') return json(res, 200, structuredClone(etat.mails));
+  if (req.method === 'POST' && route === 'mails/rafraichir') {
+    const parSection = { gmail: ['utc', 'gmail'], icloud: ['icloud'], colin: ['qyris'], contact: ['qyris'] }[corps.compte];
+    if (!parSection) return json(res, 400, { code: 'compte_invalide', message: 'Compte inconnu.' });
+    return json(res, 200, {
+      compte: corps.compte, sections: structuredClone(etat.mails.sections.filter((s) => parSection.includes(s.section))),
+      comptes: { [corps.compte]: structuredClone(etat.mails.comptes[corps.compte]) },
+    });
+  }
   if (req.method === 'GET' && route === 'reglages') return json(res, 200, structuredClone(etat.reglages));
   if (req.method === 'POST' && route === 'reglages/siri') {
     etat.reglages.siri.jeton_cree = true;
@@ -142,6 +151,9 @@ function ecrire(req, res, route, corps, etat) {
   if (route === 'reglages/rappels') {
     etat.reglages.rappels = corps.rappels;
     resultat = { rappels: corps.rappels };
+  } else if (route === 'mails/expediteur') {
+    resultat = { adresse: corps.adresse.trim().toLowerCase(), choix: corps.choix };
+    etat.corrections.push(resultat);
   } else if (route === 'rappels') {
     const rappel = { id: `rm${String(etat.vus.size + 1).padStart(6, '0')}`, texte: corps.texte, quand: corps.quand };
     if (rappel.quand.slice(0, 10) === etat.donnees.maintenant.slice(0, 10)) {

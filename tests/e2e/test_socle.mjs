@@ -12,11 +12,11 @@ test('socle : la page charge sa police et ses modules, sans erreur ni refus de l
 });
 
 // Connecté : à partir de la tâche 5, sans session, l'app affiche l'écran de connexion sans onglets
-test("socle : 4 onglets et « Noter quelque chose », cibles de 44 px au moins, navigation par #/", async ({ page, contexte, serveur }) => {
+test("socle : 5 onglets et « Noter quelque chose », cibles de 44 px au moins, navigation par #/", async ({ page, contexte, serveur }) => {
   await connecte(contexte, serveur);
   await ouvrir(page, '/');
   const cibles = page.locator('#onglets a, #onglets button');
-  assert.equal(await cibles.count(), 5);
+  assert.equal(await cibles.count(), 6);
   const tailles = await cibles.evaluateAll((els) => els.map((e) => {
     const r = e.getBoundingClientRect();
     return [r.width, r.height];

@@ -8,6 +8,7 @@ import { phraseDuJour, salutation } from '../lib/phrases.js';
 import { IMMINENT, PAS, RELANCES, candidats, etiquetteProposition, ligneAfficheur, replique, rouler, tempsLibre, texteProposition, tirer } from '../lib/tirage.js';
 import { dateCourte, dateLongue, dureeTexte, enParis, heureParis, heureTexte, jourParis } from '../lib/temps.js';
 import { regle, tampon, voyant } from './commun.js';
+import { resumeMails } from '../lib/mails.js';
 import { ligneCarte } from './taches.js';
 
 const A = T.aujourdhui;
@@ -248,7 +249,17 @@ function rappelsDuJour(app, rappels, jour, maintenant) {
   ];
 }
 
-function sousLePli(app, c, cartes, jours, rappels, maintenant) {
+function blocMails(app, resume) {
+  const texte = resumeMails(resume);
+  if (texte === null) return null;
+  return [
+    h('h2', { class: 'section-titre' }, A.mailsTitre), regle(),
+    h('button', { type: 'button', class: 'mails-resume', 'aria-label': A.mailsAria(texte), onclick: () => app.aller('#/mails') },
+      h('span', { class: 'mails-resume-texte' }, texte), icone('droite', 18)),
+  ];
+}
+
+function sousLePli(app, c, cartes, jours, rappels, mailsResume, maintenant) {
   const prochain = c.standby?.cours;
   const rangs = jourDe(jours, c.aujourdhui).evenements.map((e) => {
     const passe = !e.journee && new Date(e.fin) <= maintenant;
@@ -270,6 +281,7 @@ function sousLePli(app, c, cartes, jours, rappels, maintenant) {
     rangs.length > 0 ? rangs : h('p', { class: 'vide' }, A.rienDePrevu),
     h('h2', { class: 'section-titre' }, A.aFaireTitre), regle(),
     rien ? h('p', { class: 'vide' }, A.rienDUrgent) : [groupe('retard', g.retard), groupe('aujourdhui', g.aujourdhui), groupe('urgent', g.urgent)],
+    blocMails(app, mailsResume),
     rappelsDuJour(app, rappels, c.aujourdhui, maintenant));
 }
 
@@ -294,7 +306,7 @@ export function rendre(app) {
         talkback(c, cartes, jours, maintenant)),
       tranches(app, cartes, jours, maintenant),
       panneauGo(app, libre)),
-    sousLePli(app, c, cartes, jours, v?.rappels_du_jour ?? [], maintenant));
+    sousLePli(app, c, cartes, jours, v?.rappels_du_jour ?? [], v?.mails_resume ?? null, maintenant));
 }
 
 export function apres(app, route, ecran) {
