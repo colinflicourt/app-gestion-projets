@@ -2,7 +2,7 @@
 // Diagnostic de l'hébergement OVH pour Jarvis Jr. : PHP, extensions, crypto, base, réseau sortant.
 // Envoyé sous un nom aléatoire dans jr.qyris.fr/www/ le temps du test, puis supprimé.
 // Lit les accès à la base dans ../serveur/config-test.php (hors du web, généré depuis secrets/jarvis-jr.env).
-// N'affiche aucun secret : ni mot de passe, ni jeton, ni contenu personnel.
+// N'affiche aucun secret (ni mot de passe, ni jeton). Seule exception au contenu personnel : la section entetes_gmail (adresses et en-têtes de routage, sans objet ni extrait).
 
 declare(strict_types=1);
 
@@ -170,6 +170,21 @@ $r['envois'] = essai(function () {
         'rappels_manuels' => $q('SELECT COUNT(*) n, SUM(annule) annules, SUM(source = \'siri\') siri FROM rappels'),
         'AUCUN_DOUBLON' => $doublons === [] && $rapproches === [],
     ];
+});
+
+// --- Lot 3 : en-têtes des 5 derniers mails Gmail, pour régler la règle UTC (SPEC § 16.6) ------------------
+// Lecture seule, par serveur/lib/imap.php (liste blanche des commandes). Affiche expéditeur et en-têtes de routage,
+// jamais d'objet ni d'extrait ni de mot de passe. Compte non enregistré ou erreur : un état lisible.
+
+$r['entetes_gmail'] = essai(function () {
+    $mails = null;
+    foreach ([dirname(__DIR__) . '/serveur/lib/mails.php', dirname(__DIR__, 2) . '/serveur/lib/mails.php'] as $c) {
+        if (is_file($c)) { $mails = $c; break; }
+    }
+    if ($mails === null) throw new RuntimeException('serveur/lib/mails.php introuvable : mets d\'abord le lot 3 en ligne');
+    require_once $mails;
+    set_time_limit(30);
+    return mails_entetes_diagnostic(microtime(true) + 20);
 });
 
 // --- Fichiers : dossier serveur/ hors du web ----------------------------------

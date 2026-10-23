@@ -160,6 +160,35 @@ function mails_rafraichir(string $compte, int $age, float $limite): array
     return $resultat;
 }
 
+// Diagnostic de la règle UTC (SPEC § 16.6, outils/test-serveur/diagnostic.php) : en-têtes utiles des 5 derniers mails de
+// INBOX de Gmail, lus par imap_lire_boite() (lecture seule), et le verdict de mail_est_utc(). Ni objet, ni extrait, ni mot
+// de passe ; ne touche ni la copie ni l'état du compte. Toujours un tableau : {etat: non_connecte | erreur | ok}.
+function mails_entetes_diagnostic(float $limite): array
+{
+    $acces = compte_mail_acces('gmail');
+    if ($acces === null) {
+        return ['etat' => 'non_connecte'];
+    }
+    try {
+        $brut = ($GLOBALS['JR_LECTEUR_IMAP'] ?? 'imap_lire_boite')('gmail', $acces['identifiant'], $acces['mot_de_passe'], $limite);
+    } catch (ErreurSource $e) {
+        return ['etat' => 'erreur', 'code' => $e->codeErreur];
+    } catch (Throwable) {
+        return ['etat' => 'erreur', 'code' => 'inattendue'];
+    }
+    $mails = [];
+    foreach (array_slice($brut['mails'], 0, 5) as $m) {
+        $e = (array) ($m['entetes'] ?? []);
+        $ligne = ['uid' => (int) $m['uid'], 'from' => (string) $m['de_adresse']];
+        foreach (['to', 'cc', 'delivered-to', 'x-forwarded-to', 'received', 'list-id'] as $nom) {
+            $ligne[$nom] = array_map(fn($v): string => mb_substr((string) $v, 0, 300), array_slice(mail_valeurs_entete($e, $nom), 0, 8));
+        }
+        $ligne['utc'] = mail_est_utc($e);
+        $mails[] = $ligne;
+    }
+    return ['etat' => 'ok', 'mails' => $mails];
+}
+
 // compte => ['contenu', 'recupere_le'] ou null (compte non enregistré ou jamais lu)
 function mails_copies_datees(): array
 {
