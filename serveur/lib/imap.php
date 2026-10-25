@@ -1,5 +1,6 @@
 <?php
-// Client IMAP en lecture seule (SPEC § 16.5) : pas d'extension imap, une socket TLS, six commandes possibles.
+// Client IMAP (SPEC § 16.5 et § 17.5) : pas d'extension imap, une socket TLS, une liste blanche de commandes.
+// Usage « lecture » : lecture seule. Usage « ouverture » : la lecture, plus SELECT "INBOX" et un seul UID STORE ... +FLAGS.SILENT (\Seen).
 // Tout ce qui part vers le serveur passe par imap_envoyer(), qui refuse le reste avant d'écrire.
 
 declare(strict_types=1);
@@ -13,6 +14,7 @@ const JR_IMAP_NON_LUS_MAX = 200;
 const JR_IMAP_DERNIERS = 60;
 const JR_IMAP_LOT = 60;
 const JR_IMAP_OCTETS_EXTRAIT = 2000;
+const JR_IMAP_USAGES = ['lecture', 'ouverture'];
 
 // Éléments d'un UID FETCH permis : jamais BODY[ sans PEEK, jamais le message entier
 const JR_IMAP_ELEMENT_FETCH = 'UID|FLAGS|INTERNALDATE|ENVELOPE|BODYSTRUCTURE|X-GM-MSGID'
@@ -28,6 +30,8 @@ final class ConnexionImap
     public array $capacites = [];
     public int $uidvalidity = 0;
     public int $taille_lecture = 8192;
+    public string $usage = 'lecture';
+    public int $stores = 0;
 
     public function __construct(public $prise, public float $limite)
     {
@@ -37,10 +41,14 @@ final class ConnexionImap
 
 // --- Liste blanche ------------------------------------------------------------------------------
 
-// Une commande IMAP (sans étiquette) coupée aux littéraux {n}, ou null si elle n'est pas permise.
+// Une commande IMAP (sans étiquette) coupée aux littéraux {n}, ou null si elle n'est pas permise pour cet usage.
 // LOGIN seul peut contenir des littéraux : « LOGIN {5}\r\nalice "mot de passe" » → ['LOGIN {5}\r\n', 'alice "mot de passe"'].
-function imap_segments_commande(string $commande): ?array
+// Un usage inconnu refuse tout.
+function imap_segments_commande(string $commande, string $usage = 'lecture'): ?array
 {
+    if (!in_array($usage, JR_IMAP_USAGES, true)) {
+        return null;
+    }
     if (str_starts_with($commande, 'LOGIN ')) {
         return imap_segments_login($commande);
     }
@@ -49,6 +57,9 @@ function imap_segments_commande(string $commande): ?array
     }
     $element = JR_IMAP_ELEMENT_FETCH;
     if (preg_match("~\\AUID FETCH \\d+(?::\\d+)?(?:,\\d+(?::\\d+)?)* \\((?:$element)(?: (?:$element))*\\)\\z~", $commande)) {
+        return [$commande];
+    }
+    if ($usage === 'ouverture' && ($commande === 'SELECT "INBOX"' || preg_match('~\AUID STORE [1-9]\d{0,9} \+FLAGS\.SILENT \(\\\\Seen\)\z~', $commande))) {
         return [$commande];
     }
     return null;
@@ -87,9 +98,9 @@ function imap_segments_login(string $commande): ?array
     return $segments;
 }
 
-function imap_commande_autorisee(string $commande): bool
+function imap_commande_autorisee(string $commande, string $usage = 'lecture'): bool
 {
-    return imap_segments_commande($commande) !== null;
+    return imap_segments_commande($commande, $usage) !== null;
 }
 
 // --- Envoi et lecture ---------------------------------------------------------------------------
@@ -199,14 +210,18 @@ function imap_lire_reponse(ConnexionImap $c, string $etiquette, bool $continuati
     }
 }
 
-// Seul chemin des commandes vers le serveur. Une commande hors liste blanche lève LogicException AVANT
-// toute écriture ; le message ne cite que le verbe (une commande LOGIN contient le mot de passe).
+// Seul chemin des commandes vers le serveur. Une commande hors liste blanche de l'usage de la connexion, ou un
+// deuxième UID STORE, lève LogicException AVANT toute écriture ; le message ne cite que le verbe (une commande
+// LOGIN contient le mot de passe).
 function imap_envoyer(ConnexionImap $c, string $commande): array
 {
-    $segments = imap_segments_commande($commande);
-    if ($segments === null) {
+    $segments = imap_segments_commande($commande, $c->usage);
+    if ($segments === null || (str_starts_with($commande, 'UID STORE ') && $c->stores >= 1)) {
         $verbe = preg_match('/\A[A-Za-z]+/', $commande, $m) ? strtoupper(substr($m[0], 0, 12)) : '?';
         throw new LogicException("Commande IMAP interdite : $verbe");
+    }
+    if (str_starts_with($commande, 'UID STORE ')) {
+        $c->stores++;
     }
     $c->echeance = min(microtime(true) + JR_IMAP_DELAI, $c->limite);
     $etiquette = 'J' . ++$c->numero;
@@ -302,13 +317,29 @@ function imap_login(ConnexionImap $c, string $identifiant, #[\SensitiveParameter
     array_push($c->capacites, ...imap_capacites($reponse));
 }
 
-// Connexion, accueil, CAPABILITY, LOGIN, EXAMINE "INBOX" (lecture seule) ; $travail reçoit la connexion prête.
-// Toute erreur devient une ErreurSource (refus, injoignable, delai) sans texte venu du serveur.
-function imap_session(string $compte, string $identifiant, #[\SensitiveParameter] string $mot_de_passe, float $limite, callable $travail): mixed
+// UIDVALIDITY annoncée dans une réponse (SELECT, EXAMINE), ou null
+function imap_uidvalidity(array $reponse): ?int
 {
+    foreach ($reponse['non_sollicitees'] as $ligne) {
+        if (preg_match('/\[UIDVALIDITY (\d+)\]/i', $ligne, $m)) {
+            return (int) $m[1];
+        }
+    }
+    return null;
+}
+
+// Connexion, accueil, CAPABILITY, LOGIN, EXAMINE "INBOX" (lecture seule) ; $travail reçoit la connexion prête.
+// $usage est celui de la liste blanche (« lecture » ou « ouverture »), fixé avant toute commande.
+// Toute erreur devient une ErreurSource (refus, injoignable, delai) sans texte venu du serveur.
+function imap_session(string $compte, string $identifiant, #[\SensitiveParameter] string $mot_de_passe, float $limite, callable $travail, string $usage = 'lecture'): mixed
+{
+    if (!in_array($usage, JR_IMAP_USAGES, true)) {
+        throw new LogicException('Usage IMAP inconnu');
+    }
     $c = null;
     try {
         $c = imap_connecter($compte, $limite);
+        $c->usage = $usage;
         $c->echeance = min(microtime(true) + JR_IMAP_DELAI, $limite);
         if (!preg_match('/\A\* (?:OK|PREAUTH)\b/i', imap_ligne($c))) {
             throw new ErreurSource('injoignable', "IMAP : accueil inattendu");
@@ -319,11 +350,7 @@ function imap_session(string $compte, string $identifiant, #[\SensitiveParameter
         imap_login($c, $identifiant, $mot_de_passe);
         $reponse = imap_envoyer($c, 'EXAMINE "INBOX"');
         imap_exiger($reponse, 'EXAMINE');
-        foreach ($reponse['non_sollicitees'] as $ligne) {
-            if (preg_match('/\[UIDVALIDITY (\d+)\]/i', $ligne, $m)) {
-                $c->uidvalidity = (int) $m[1];
-            }
-        }
+        $c->uidvalidity = imap_uidvalidity($reponse) ?? 0;
         $resultat = $travail($c);
         try {
             imap_envoyer($c, 'LOGOUT');
@@ -434,4 +461,108 @@ function imap_lire_boite(string $compte, string $identifiant, #[\SensitiveParame
         usort($mails, fn(array $a, array $b): int => [$b['date'], $b['uid']] <=> [$a['date'], $a['uid']]);
         return ['uidvalidity' => $c->uidvalidity, 'mails' => array_values($mails)];
     });
+}
+
+// --- Ouverture d'un mail ------------------------------------------------------------------------
+
+// Les adresses d'une liste d'ENVELOPE → [{nom, adresse}] (les marqueurs de groupe et les adresses vides sont écartés)
+function imap_liste_adresses(mixed $adresses): array
+{
+    $liste = [];
+    foreach (is_array($adresses) ? $adresses : [] as $entree) {
+        if (!is_array($entree) || !is_string($entree[2] ?? null) || !is_string($entree[3] ?? null) || $entree[3] === '') {
+            continue;
+        }
+        [$nom, $adresse] = imap_expediteur([$entree]);
+        if ($adresse !== '') {
+            $liste[] = ['nom' => $nom, 'adresse' => $adresse];
+        }
+    }
+    return $liste;
+}
+
+// SELECT "INBOX" (lecture-écriture), UIDVALIDITY relue et comparée, puis le seul UID STORE ... +FLAGS.SILENT (\Seen).
+// Rend vrai si le mail est marqué lu. Un échec (NO, BAD, délai) rend faux et va au journal sans contenu du mail ;
+// une UIDVALIDITY différente lève ErreurSource('absent') sans aucun STORE.
+function imap_marquer_lu(ConnexionImap $c, int $uid, int $uidvalidity): bool
+{
+    try {
+        $reponse = imap_envoyer($c, 'SELECT "INBOX"');
+        imap_exiger($reponse, 'SELECT');
+        $lue = imap_uidvalidity($reponse);
+        if ($lue !== null && $lue !== $uidvalidity) {
+            throw new ErreurSource('absent', 'IMAP : mail absent');
+        }
+        if ($lue === null) {
+            throw new ErreurSource('injoignable', 'IMAP : UIDVALIDITY absente de la réponse');
+        }
+        $reponse = imap_envoyer($c, "UID STORE $uid +FLAGS.SILENT (\\Seen)");
+        imap_exiger($reponse, 'STORE');
+        return true;
+    } catch (ErreurSource $e) {
+        if ($e->codeErreur === 'absent') {
+            throw $e;
+        }
+        journal_erreur('mails/ouvrir', $e);
+        return false;
+    } catch (ErreurProtocoleImap $e) {
+        journal_erreur('mails/ouvrir', $e);
+        return false;
+    }
+}
+
+// Usage « ouverture » : EXAMINE, UID FETCH du mail, puis s'il n'est pas lu SELECT et UID STORE (jamais CLOSE ni EXPUNGE).
+// Rend l'ENVELOPE décodée, les en-têtes utiles, la BODYSTRUCTURE analysée et marque_lu ; ErreurSource('absent') si
+// l'UIDVALIDITY a changé (à l'EXAMINE ou au SELECT) ou si le mail n'existe plus.
+function imap_ouvrir_mail(string $compte, string $identifiant, #[\SensitiveParameter] string $mot_de_passe, float $limite, int $uid, int $uidvalidity): array
+{
+    $resultat = imap_session($compte, $identifiant, $mot_de_passe, $limite, function (ConnexionImap $c) use ($uid, $uidvalidity): ?array {
+        if ($c->uidvalidity === 0 || $c->uidvalidity !== $uidvalidity) {
+            return null;
+        }
+        $elements = 'UID FLAGS INTERNALDATE ENVELOPE BODYSTRUCTURE BODY.PEEK[HEADER.FIELDS ('
+            . implode(' ', array_map('strtoupper', JR_IMAP_ENTETES_UTILES)) . ')]';
+        $fetch = imap_fetch($c, [$uid], $elements)[$uid] ?? null;
+        if ($fetch === null || !is_array($fetch['ENVELOPE'] ?? null)) {
+            return null;
+        }
+        $construit = imap_brut_depuis_fetch($fetch);
+        if ($construit === null) {
+            return null;
+        }
+        [$brut] = $construit;
+        $enveloppe = array_pad($fetch['ENVELOPE'], 10, null);
+
+        $repondre_a = imap_liste_adresses($enveloppe[4])[0] ?? null;
+        if ($repondre_a !== null && $repondre_a['adresse'] === $brut['de_adresse']) {
+            $repondre_a = null;
+        }
+        $lu = !$brut['non_lu'];
+        try {
+            if (!$lu) {
+                $lu = imap_marquer_lu($c, $uid, $uidvalidity);
+            }
+        } catch (ErreurSource $e) {
+            if ($e->codeErreur !== 'absent') {
+                throw $e;
+            }
+            return null;
+        }
+        return [
+            'objet' => $brut['objet'],
+            'de_nom' => $brut['de_nom'],
+            'de_adresse' => $brut['de_adresse'],
+            'a' => imap_liste_adresses($enveloppe[5]),
+            'cc' => imap_liste_adresses($enveloppe[6]),
+            'repondre_a' => $repondre_a,
+            'date' => $brut['date'],
+            'entetes' => $brut['entetes'],
+            'structure' => is_array($fetch['BODYSTRUCTURE'] ?? null) ? $fetch['BODYSTRUCTURE'] : [],
+            'marque_lu' => $lu,
+        ];
+    }, 'ouverture');
+    if ($resultat === null) {
+        throw new ErreurSource('absent', 'IMAP : mail absent');
+    }
+    return $resultat;
 }

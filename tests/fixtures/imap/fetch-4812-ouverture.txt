@@ -1,0 +1,6 @@
+* 7 FETCH (UID 4812 FLAGS () INTERNALDATE "24-Oct-2026 09:15:42 +0200" ENVELOPE ("Sat, 24 Oct 2026 09:15:30 +0200" "=?UTF-8?Q?Invitation_=C3=A0_la_soir=C3=A9e_du_club?=" (("Léa Dupont" NIL "lea.dupont" "Club-Exemple.FR")) (("Léa Dupont" NIL "lea.dupont" "club-exemple.fr")) (("Bureau du club" NIL "bureau" "Club-Exemple.fr")) (("Colin" NIL "colin.test" "exemple.org")("Marc Petit" NIL "marc.petit" "exemple.net")) (("Compta" NIL "compta" "exemple.org")) NIL NIL "<soiree-4812@club-exemple.fr>") BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "utf-8") NIL NIL "QUOTED-PRINTABLE" 180 4 NIL NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "utf-8") NIL NIL "QUOTED-PRINTABLE" 420 9 NIL NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "b4812") NIL NIL NIL) BODY[HEADER.FIELDS (TO CC DELIVERED-TO X-FORWARDED-TO RECEIVED LIST-UNSUBSCRIBE LIST-ID PRECEDENCE)] <<<
+To: Colin <colin.test@exemple.org>, Marc Petit <marc.petit@exemple.net>
+Cc: Compta <compta@exemple.org>
+Received: from relais.exemple.net (relais.exemple.net [192.0.2.20])
+	by mx.exemple.org with ESMTPS id xyz4812
+>>>)
