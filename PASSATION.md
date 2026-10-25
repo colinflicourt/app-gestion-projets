@@ -1,41 +1,37 @@
-# Passation · Jarvis Jr. · 2026-10-25 12:16
+# Passation · Jarvis Jr. · 2026-10-25 12:35
 
 ## Objectif
-Jarvis Jr. (jr.qyris.fr), l'app perso d'organisation de Colin sur iPhone. Lot 3 (Mails) en ligne et en recette ; prochain chantier : le **lot 3.2**, lire un mail en entier depuis l'app.
+Jarvis Jr. (jr.qyris.fr), l'app perso d'organisation de Colin sur iPhone. Lot 3 (Mails) en ligne et en recette. Chantier en cours : le **lot 3.2**, lire un mail en entier depuis l'app. Sa spec est validée, il reste à écrire le plan de missions puis à l'exécuter.
 
 ## Où on en est
 - **Fait et vérifié** :
-  - Lot 3 en ligne le 25/10 (`/api/sante` : `version_base` 6). Comptes UTC (`imaps.utc.fr`, la redirection vers Gmail est abandonnée), Gmail et iCloud branchés par Colin : « Connecté, vérifié ».
-  - Commits du 25/10, sur `main` en local : `226c88f` (onglet Mails = liste des 4 boîtes, une boîte s'ouvre sur `#/mails/<boîte>` avec « Retour aux boîtes »), `19574f9` (non lu : pastille et trait ambre, gras ; lu : gris), `e73e7c9` (compte `contact` retiré : contact@ n'est qu'une redirection vers colin@ ; une ligne `contact` restée en base est ignorée, test ajouté), `b231629` (étiquette « contact@ » sur un mail adressé à contact@, via To/Cc/Delivered-To/X-Forwarded-To déjà lus, champ `pour_contact`). 349 tests PHP, 48 JS, 100 e2e, 0 échec ; captures vérifiées.
-- **Fait, pas encore vérifié** : ces 4 commits ne sont **pas en ligne** (Colin lance `outils/deploy-ovh.sh`). colin@qyris.fr pas encore branché. Recette `RECETTE-LOT3.md` § 5 et § 6 pas faite.
-- **En cours chez un sous-agent** : rien. Arbre git propre.
+  - Les commits du 25/10 jusqu'à `b231629` sont en ligne : le `mails.js` servi est identique au fichier local, et `/api/sante` donne `version_base` 6. colin@qyris.fr est branché d'après Colin. Les 4 boîtes sont connectées.
+  - Spec du lot 3.2 écrite (`SPEC.md` § 17), relue par un sous-agent « builder » (8 points, tous intégrés), **validée par Colin le 25/10**, textes nouveaux du § 17.11 compris. Commit `210b51a`. Arbre git propre.
+- **Fait, pas encore vérifié** : la recette `RECETTE-LOT3.md` § 5 et § 6 n'est pas faite.
+- **En cours chez un sous-agent** : rien.
 
-## Décisions prises
-- Lot 3.2, tranché par Colin le 25/10 :
-  1. Toucher un mail ouvre son **contenu complet**.
-  2. L'ouvrir le **marque comme lu dans la vraie boîte** : fin de la lecture seule stricte, ouverte au minimum (seul le drapeau `\Seen`, jamais `\Deleted` ni `EXPUNGE`). **Pas** de bouton « Marquer non lu ».
-  3. « Répondre » = version **simple** : ouvre Mail ou Gmail de l'iPhone (destinataire et « Re: objet » pré-remplis). Pas d'envoi SMTP depuis l'app (risque d'usurpation si la session est volée).
-  4. Mails HTML : affichés **nettoyés**, images distantes **bloquées** avec un bouton « Afficher les images ».
-- Sous-agents sans commit (Claude relit et commite). C'est Colin qui lance tout envoi vers OVH.
+## Décisions prises (détail dans `SPEC.md` § 17.2 à 17.8, à ne pas rediscuter)
+- Toucher un mail ouvre son contenu complet. `POST /api/mails/ouvrir` le marque lu : un seul `UID STORE <uid> +FLAGS.SILENT (\Seen)` après `SELECT`, jamais `CLOSE` ni `EXPUNGE`. La liste blanche IMAP a deux usages : la lecture et l'ouverture.
+- Le corps est servi par `GET /api/mails/corps`, une page HTML dans un `<iframe sandbox>` sans `allow-scripts`. Il a trois protections : le nettoyage `DOMDocument`, sa propre CSP et le sandbox. Les images `cid:` sont mises en `data:` dans la même session IMAP. Les liens sont interceptés par l'écran.
+- Les pièces jointes passent par `GET /api/mails/piece`. Elles sont lues par morceaux de 1 Mo, 20 Mo au plus, et leur type vient d'une liste blanche (HTML et SVG partent en `octet-stream`).
+- « Répondre » ouvre `googlegmail://` pour Gmail, `mailto:` pour iCloud et QYRIS, et Roundcube en rédaction pour l'UTC, qui n'est pas dans l'app Mail de l'iPhone. Pas de SMTP.
+- Rien du contenu des mails n'est gardé, ni sur le serveur ni sur l'iPhone. Les sous-agents ne commitent pas : Claude relit et commite. C'est Colin qui lance tout envoi vers OVH.
 
 ## Prochaine étape
-1. Demander à Colin si la mise en ligne de `b231629` est faite et si colin@ est branché ; sinon la lui faire lancer d'abord.
-2. Spec du lot 3.2 avec superpowers:brainstorming → `SPEC.md` § 17 : route de contenu (`BODY.PEEK[partie]` puis `UID STORE +FLAGS.SILENT (\Seen)`, donc `SELECT` au lieu d'`EXAMINE` pour cette route seulement), liste blanche IMAP élargie au strict nécessaire, nettoyage HTML (affichage isolé, CSP, pas de script), écran du mail, bouton Répondre (`mailto:`, `googlegmail://co?…` pour Gmail, cas UTC). Faire valider par Colin.
-3. Plan de missions (`plans/2026-10-25-lot3-2-contenu.md`), en mode chef d'orchestre, puis exécution par sous-agents.
-Effort conseillé pour la conversation suivante : **haut** (sécurité de l'écriture IMAP et du HTML).
+1. Écrire le plan de missions `plans/2026-10-25-lot3-2-contenu.md` avec superpowers:writing-plans, en mode chef d'orchestre (`guides/CHEF-D-ORCHESTRE.md`), sur le modèle de `plans/2026-10-23-lot3-1-mails.md`. Montrer le découpage à Colin en quelques lignes.
+2. Exécuter les missions par sous-agents. Le cœur sécurité passe en premier : usages IMAP, nettoyage HTML, en-têtes des réponses brutes et exception `.htaccess`. Puis vérification indépendante et commit.
+3. Mise en ligne par Colin, puis `curl -sI` sur une route normale et sur `/api/mails/corps` : une seule CSP chacune, la bonne.
+Effort conseillé pour la conversation suivante : **haut** (écriture IMAP et HTML de mails).
 
 ## Fichiers clés
-- `SPEC.md` § 16 (lot 3, décisions 16.1, révisions du 25/10) : base de la spec 3.2
-- `serveur/lib/imap.php` (`imap_segments_commande`, `JR_IMAP_ELEMENT_FETCH`, `imap_lire_boite`) et `serveur/lib/imap_decodage.php` (extraits par partie, en-têtes)
-- `site/js/ecrans/mails.js` : liste des boîtes, `rendreSection`, `carteMail`
-- `RECETTE-LOT3.md` : recette restante du lot 3
+- `SPEC.md` § 17 : la spec du lot 3.2, base unique du plan
+- `plans/2026-10-23-lot3-1-mails.md` : modèle de plan du lot 3
+- `serveur/lib/imap.php` (`imap_segments_commande`, `imap_session`), `serveur/lib/imap_decodage.php` (`imap_parties_texte`), `serveur/lib/reponse.php` (`entetes_securite`), `site/.htaccess` (l. 27 à 35), `site/js/ecrans/mails.js`
 
 ## Pièges et points ouverts
-- Garde-fou : toute commande citant `.env`, `config.php`, `secrets/`, un `grep -r` ou un script de mise en ligne passe entièrement par `{ … ; } 2>&1 | ~/.claude/hooks/redact-secrets`. Un heredoc Python long avec ces mots peut être bloqué : écrire le script dans le scratchpad. MySQL : `pgrep -fl mysqld`.
-- `site/sw.js` : `VERSION` = empreinte des fichiers, à refaire après tout changement dans `site/` (`php tests/run.php "service worker"` donne la valeur).
-- `outils/deploy-ovh.sh` dit « En ligne. » dès que `base_ok` est vrai, sans comparer `version_base` au nombre de migrations locales (au 25/10 il a affiché 5 alors que 006 était attendue ; un appel suivant a donné 6). À corriger.
-- `JR_VERSION` (`serveur/lib/amorce.php`) est resté à 0.2.0 depuis le lot 2.
-- `PLAN.md` cite encore contact@ et « 5 boîtes » (document d'origine, laissé tel quel).
-- Lot 2 encore ouvert : rappel « Dans 1 h » à recréer et contrôler ; vérifier que le brief du 25/10 (passage à l'heure d'hiver) n'a été ni doublé ni sauté.
-- Adresse du webmail OVH (`LIENS.qyris`) à confirmer par Colin.
-- Colin en Espagne du 26 au 30/10.
+- **Essais sur l'iPhone impossibles du 26 au 30/10** (Colin en Espagne). Deux mécanismes restent à trancher sur l'appareil : l'ouverture d'une pièce jointe depuis l'app installée, et l'ouverture d'un lien depuis le cadre (§ 17.6 et § 17.7). Le développement peut avancer avant.
+- `.htaccess` pose la CSP de l'app avec `Header always set` sur tout, `/api` compris. Il faut une condition sur `%{THE_REQUEST}`, car l'URI est réécrite vers `api/index.php`.
+- Garde-fou : toute commande citant `.env`, `config.php`, `secrets/`, un `grep -r` ou un script de mise en ligne passe entièrement par `{ … ; } 2>&1 | ~/.claude/hooks/redact-secrets`. Écrire les scripts Python longs dans le scratchpad.
+- `site/sw.js` : `VERSION` est à recalculer après tout changement dans `site/` (`php tests/run.php "service worker"`).
+- `outils/deploy-ovh.sh` affiche « En ligne. » sans comparer `version_base` aux migrations : à corriger. `JR_VERSION` passe à 0.3.2 avec ce lot.
+- Lot 2 encore ouvert : rappel « Dans 1 h » à recréer et contrôler, brief du 25/10 (heure d'hiver) à vérifier. Adresse du webmail OVH (`LIENS.qyris`) à confirmer par Colin.
