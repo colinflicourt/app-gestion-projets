@@ -6,7 +6,8 @@ declare(strict_types=1);
 
 function xpt_regles(): array
 {
-    return ['carte' => 30, 'bonus_urgent' => 20, 'bonus_echeance' => 10, 'carte_eclair' => 5, 'eclair_secondes' => 600, 'etape' => 5, 'pas_niveau' => 100,
+    return ['carte' => 30, 'bonus_urgent' => 20, 'bonus_echeance' => 10, 'carte_eclair' => 5, 'eclair_secondes' => 600,
+        'plafond_eclairs' => 1000, 'etape' => 5, 'plafond_etapes' => 1000, 'pas_niveau' => 100,
         'grades' => ['stagiaire' => 0, 'assistant' => 1000, 'bras_droit' => 4000, 'majordome' => 10000]];
 }
 
@@ -418,7 +419,7 @@ test("xp : l'objet public (grade, domaines, série, événements) et le filtre d
     egal(['joker:2026-08-04', 'joker:2026-10-20'], array_column(xpt_evenements($rejeu, 'joker'), 'cle'));
 
     $objet = xp_objet($rejeu, xpt_regles());
-    egal(array_keys($objet), ['total', 'grade', 'seuil_grade', 'grade_suivant', 'seuil_suivant', 'domaines', 'serie', 'evenements']);
+    egal(array_keys($objet), ['total', 'grade', 'seuil_grade', 'grade_suivant', 'seuil_suivant', 'domaines', 'serie', 'evenements', 'aujourdhui_paye']);
     egal(95 + 30 + 60, $objet['total']);
     egal('stagiaire', $objet['grade']);
     egal(0, $objet['seuil_grade']);
@@ -428,6 +429,7 @@ test("xp : l'objet public (grade, domaines, série, événements) et le filtre d
     egal(['xp' => 60, 'niveau' => 1, 'dans_niveau' => 60, 'taille_niveau' => 100], $objet['domaines']['asso']);
     egal(['xp' => 0, 'niveau' => 1, 'dans_niveau' => 0, 'taille_niveau' => 100], $objet['domaines']['qyris']);
     egal($rejeu['serie'], $objet['serie']);
+    egal(['etapes' => 0, 'eclairs' => 0], $objet['aujourdhui_paye']);
     $cles = array_column($objet['evenements'], 'cle');
     vrai(in_array('niveau:etudes:2', $cles, true), 'niveau conservé');
     vrai(in_array('joker:2026-10-20', $cles, true), 'joker récent conservé');
@@ -455,15 +457,170 @@ test('xp : 3 000 actions rejouées en moins de 50 ms', function () {
     vrai($ms < 50, sprintf('trop lent : %.1f ms', $ms));
 });
 
-test('xp : JR_XP_REGLES vaut exactement la table du § 7 (à modifier avec le barème validé)', function () {
-    egal(['carte' => 30, 'bonus_urgent' => 20, 'bonus_echeance' => 10, 'carte_eclair' => 5, 'eclair_secondes' => 600, 'etape' => 5, 'pas_niveau' => 100,
-        'grades' => ['stagiaire' => 0, 'assistant' => 1000, 'bras_droit' => 4000, 'majordome' => 10000]], JR_XP_REGLES);
+test('xp : JR_XP_REGLES vaut exactement le barème C (REGULATION-XP.md § 5)', function () {
+    egal(['carte' => 30, 'bonus_urgent' => 20, 'bonus_echeance' => 10, 'carte_eclair' => 5, 'eclair_secondes' => 600, 'plafond_eclairs' => 2, 'etape' => 5,
+        'plafond_etapes' => 10, 'pas_niveau' => 160, 'grades' => ['stagiaire' => 0, 'assistant' => 1500, 'bras_droit' => 6000, 'majordome' => 22000]], JR_XP_REGLES);
+});
+
+test('xp : seuils de niveau et de grade du barème C', function () {
+    egal(0, xp_seuil_niveau(1));
+    egal(160, xp_seuil_niveau(2));
+    egal(12480, xp_seuil_niveau(13));
+    egal(2, xp_progression(160)['niveau']);
+    egal(1, xp_progression(159)['niveau']);
+    egal(13, xp_progression(12480)['niveau']);
+    egal(12, xp_progression(12479)['niveau']);
+    egal('stagiaire', xp_grade(1499)['grade']);
+    egal('assistant', xp_grade(1500)['grade']);
+    egal('assistant', xp_grade(5999)['grade']);
+    egal('bras_droit', xp_grade(6000)['grade']);
+    egal('bras_droit', xp_grade(21999)['grade']);
+    egal('majordome', xp_grade(22000)['grade']);
 });
 
 test('xp : sans table passée en paramètre, les fonctions utilisent JR_XP_REGLES', function () {
     egal(30, xp_gain_carte(xpt_carte(), [], xpt_paris('2026-10-20 10:00:00')));
-    egal(300, xp_seuil_niveau(3));
-    egal('assistant', xp_grade(1000)['grade']);
-    egal(3, xp_progression(420)['niveau']);
+    egal(480, xp_seuil_niveau(3));
+    egal('assistant', xp_grade(1500)['grade']);
+    egal(2, xp_progression(420)['niveau']);
     egal(0, xp_rejouer([], xpt_paris('2026-10-20 10:00:00'))['total']);
+});
+
+// Plafonds par jour : table de test à plafonds 2 (éclairs) et 10 (étapes)
+function xpt_plafonds(): array
+{
+    return ['plafond_eclairs' => 2, 'plafond_etapes' => 10] + xpt_regles();
+}
+
+// $n étapes e1..en cochées sur une carte, une par minute à partir de $heure, ids à partir de $premier_id
+function xpt_cochees(int $n, string $jour, int $premier_id = 1, string $carte = 'a'): array
+{
+    $actions = [];
+    for ($i = 1; $i <= $n; $i++) {
+        $actions[] = xpt_action($premier_id + $i - 1, 'etape_cochee', 'perso', xpt_carte($carte), "e$i", xpt_paris("$jour 08:00:00")->modify("+$i minutes"));
+    }
+    return $actions;
+}
+
+test('xp : plafond des étapes, la 11e du jour rapporte 0 et le total reste 50', function () {
+    $rejeu = xp_rejouer(xpt_cochees(11, '2026-10-20'), xpt_paris('2026-10-20 12:00:00'), xpt_plafonds());
+    egal(5, $rejeu['gains'][10]);
+    egal(0, $rejeu['gains'][11]);
+    egal(50, $rejeu['total']);
+    egal(50, $rejeu['domaines']['perso']);
+    egal(['etapes' => 10, 'eclairs' => 0], $rejeu['paye_aujourdhui']);
+});
+
+test('xp : plafond des étapes, tous domaines confondus', function () {
+    $actions = [];
+    for ($i = 1; $i <= 11; $i++) {
+        $actions[] = xpt_action($i, 'etape_cochee', JR_DOMAINES[$i % 4], xpt_carte(), "e$i", xpt_paris('2026-10-20 08:00:00')->modify("+$i minutes"));
+    }
+    $rejeu = xp_rejouer($actions, xpt_paris('2026-10-20 12:00:00'), xpt_plafonds());
+    egal(50, $rejeu['total']);
+    egal(0, $rejeu['gains'][11]);
+});
+
+test('xp : 10 cochées, une décochée (-5), une autre cochée rapporte 5 à nouveau', function () {
+    $actions = xpt_cochees(10, '2026-10-20');
+    $actions[] = xpt_action(11, 'etape_decochee', 'perso', xpt_carte(), 'e1', xpt_paris('2026-10-20 09:00:00'));
+    $actions[] = xpt_action(12, 'etape_cochee', 'perso', xpt_carte(), 'e11', xpt_paris('2026-10-20 09:01:00'));
+    $actions[] = xpt_action(13, 'etape_cochee', 'perso', xpt_carte(), 'e12', xpt_paris('2026-10-20 09:02:00'));
+    $rejeu = xp_rejouer($actions, xpt_paris('2026-10-20 12:00:00'), xpt_plafonds());
+    egal(-5, $rejeu['gains'][11]);
+    egal(5, $rejeu['gains'][12]);
+    egal(0, $rejeu['gains'][13]);
+    egal(50, $rejeu['total']);
+    egal(10, $rejeu['paye_aujourdhui']['etapes']);
+});
+
+test('xp : le plafond est par jour de Paris, 10 lundi puis 1 mardi rapporte 5 mardi', function () {
+    $actions = xpt_cochees(10, '2026-10-19');
+    $actions[] = xpt_action(11, 'etape_cochee', 'perso', xpt_carte(), 'e11', xpt_paris('2026-10-20 00:05:00'));
+    $actions[] = xpt_action(12, 'etape_cochee', 'perso', xpt_carte(), 'e12', xpt_paris('2026-10-19 23:59:30'));
+    $rejeu = xp_rejouer($actions, xpt_paris('2026-10-20 12:00:00'), xpt_plafonds());
+    egal(5, $rejeu['gains'][11]);
+    egal(0, $rejeu['gains'][12]);
+    egal(55, $rejeu['total']);
+    egal(['etapes' => 1, 'eclairs' => 0], $rejeu['paye_aujourdhui']);
+});
+
+test('xp : une étape à 0 XP décochée retire 0, recochée plafond plein rapporte 0, et ne compte pas pour la série', function () {
+    $actions = xpt_cochees(10, '2026-10-20');
+    $actions[] = xpt_action(11, 'etape_cochee', 'perso', xpt_carte(), 'e11', xpt_paris('2026-10-20 09:00:00'));
+    $actions[] = xpt_action(12, 'etape_decochee', 'perso', xpt_carte(), 'e11', xpt_paris('2026-10-20 09:01:00'));
+    $actions[] = xpt_action(13, 'etape_cochee', 'perso', xpt_carte(), 'e11', xpt_paris('2026-10-20 09:02:00'));
+    $actions[] = xpt_action(14, 'etape_cochee', 'perso', xpt_carte(), 'e11', xpt_paris('2026-10-20 09:03:00'));
+    $rejeu = xp_rejouer($actions, xpt_paris('2026-10-20 12:00:00'), xpt_plafonds());
+    egal([11 => 0, 12 => 0, 13 => 0, 14 => 0], array_slice($rejeu['gains'], 10, 4, true));
+    egal(50, $rejeu['total']);
+    // une seule étape payée un jour, puis un jour de 0 XP : le jour à 0 XP n'est pas compté
+    $a = xp_rejouer(array_merge(xpt_cochees(11, '2026-10-19'), [xpt_action(50, 'etape_cochee', 'perso', xpt_carte('b'), 'x', xpt_paris('2026-10-19 20:00:00'))]),
+        xpt_paris('2026-10-19 22:00:00'), xpt_plafonds());
+    egal(['2026-10-19'], $a['jours']);
+});
+
+test('xp : plafond des cartes éclair, 3 le même jour donnent 5, 5, 0', function () {
+    $actions = [];
+    foreach ([1, 2, 3] as $i) {
+        $creation = xpt_paris('2026-10-20 10:00:00')->getTimestamp() - 60;
+        $actions[] = xpt_action($i, 'carte_terminee', 'perso', xpt_carte(chr(96 + $i), $creation), null, xpt_paris('2026-10-20 10:00:00')->modify("+$i minutes"));
+    }
+    $rejeu = xp_rejouer($actions, xpt_paris('2026-10-20 12:00:00'), xpt_plafonds());
+    egal([1 => 5, 2 => 5, 3 => 0], $rejeu['gains']);
+    egal(10, $rejeu['total']);
+    egal(['etapes' => 0, 'eclairs' => 2], $rejeu['paye_aujourdhui']);
+});
+
+test('xp : une carte ordinaire après 2 éclairs rapporte 30, et la carte éclair au-delà du plafond reste terminée', function () {
+    $creation = xpt_paris('2026-10-20 10:00:00')->getTimestamp() - 60;
+    $actions = [
+        xpt_action(1, 'carte_terminee', 'perso', xpt_carte('a', $creation), null, xpt_paris('2026-10-20 10:00:00')),
+        xpt_action(2, 'carte_terminee', 'perso', xpt_carte('b', $creation), null, xpt_paris('2026-10-20 10:01:00')),
+        xpt_action(3, 'carte_terminee', 'perso', xpt_carte('c', $creation), null, xpt_paris('2026-10-20 10:02:00')),
+        xpt_action(4, 'carte_terminee', 'perso', xpt_carte('d'), null, xpt_paris('2026-10-20 10:03:00')),
+        xpt_action(5, 'carte_terminee', 'perso', xpt_carte('c', $creation), null, xpt_paris('2026-10-20 10:04:00')),
+        xpt_action(6, 'carte_rouverte', 'perso', xpt_carte('c', $creation), null, xpt_paris('2026-10-20 10:05:00')),
+    ];
+    $rejeu = xp_rejouer($actions, xpt_paris('2026-10-20 12:00:00'), xpt_plafonds());
+    egal([1 => 5, 2 => 5, 3 => 0, 4 => 30, 5 => 0, 6 => 0], $rejeu['gains']);
+    egal(40, $rejeu['total']);
+});
+
+test('xp : retirer un geste payé libère la place du jour où il avait payé, pas celle du jour du retrait', function () {
+    $actions = xpt_cochees(10, '2026-10-19');
+    // mardi : décocher une étape de lundi (-5, libère lundi), puis 10 cochées mardi (plafond de mardi intact)
+    $actions[] = xpt_action(11, 'etape_decochee', 'perso', xpt_carte(), 'e1', xpt_paris('2026-10-20 08:00:00'));
+    foreach (range(1, 11) as $i) {
+        $actions[] = xpt_action(11 + $i, 'etape_cochee', 'perso', xpt_carte('b'), "m$i", xpt_paris('2026-10-20 08:00:00')->modify("+$i minutes"));
+    }
+    // lundi à nouveau (geste daté lundi, rejoué après dans l'ordre fourni) : la place de lundi est libre
+    $rejeu = xp_rejouer($actions, xpt_paris('2026-10-20 12:00:00'), xpt_plafonds());
+    egal(-5, $rejeu['gains'][11]);
+    egal(5, $rejeu['gains'][12]);
+    egal(5, $rejeu['gains'][21]);
+    egal(0, $rejeu['gains'][22]);
+    egal(45 + 50, $rejeu['total']);
+    egal(['etapes' => 10, 'eclairs' => 0], $rejeu['paye_aujourdhui']);
+});
+
+test('xp : une étape de lundi décochée mardi libère lundi, un geste daté lundi rejoué ensuite est payé', function () {
+    $actions = xpt_cochees(10, '2026-10-19');
+    $actions[] = xpt_action(11, 'etape_decochee', 'perso', xpt_carte(), 'e1', xpt_paris('2026-10-20 08:00:00'));
+    $actions[] = xpt_action(12, 'etape_cochee', 'perso', xpt_carte(), 'z', xpt_paris('2026-10-19 23:00:00'));
+    $rejeu = xp_rejouer($actions, xpt_paris('2026-10-20 12:00:00'), xpt_plafonds());
+    egal(5, $rejeu['gains'][12]);
+    egal(['etapes' => 0, 'eclairs' => 0], $rejeu['paye_aujourdhui']);
+});
+
+test('xp : aujourdhui_paye de l\'objet public est net des retraits', function () {
+    $creation = xpt_paris('2026-10-20 10:00:00')->getTimestamp() - 60;
+    $actions = array_merge(xpt_cochees(11, '2026-10-20'), [
+        xpt_action(20, 'etape_decochee', 'perso', xpt_carte(), 'e2', xpt_paris('2026-10-20 09:00:00')),
+        xpt_action(21, 'carte_terminee', 'perso', xpt_carte('e', $creation), null, xpt_paris('2026-10-20 10:00:00')),
+        xpt_action(22, 'carte_terminee', 'perso', xpt_carte('f', $creation), null, xpt_paris('2026-10-20 10:01:00')),
+        xpt_action(23, 'carte_rouverte', 'perso', xpt_carte('e', $creation), null, xpt_paris('2026-10-20 10:02:00')),
+    ]);
+    $objet = xp_objet(xp_rejouer($actions, xpt_paris('2026-10-20 12:00:00'), xpt_plafonds()), xpt_plafonds());
+    egal(['etapes' => 9, 'eclairs' => 1], $objet['aujourdhui_paye']);
 });

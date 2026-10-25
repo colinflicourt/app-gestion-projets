@@ -6,16 +6,18 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/amorce.php';
 
-// Barème de CONTENU.md § 7. Le miroir côté iPhone est REGLES dans site/js/lib/xp.js.
+// Barème C de REGULATION-XP.md § 5. Le miroir côté iPhone est REGLES dans site/js/lib/xp.js.
 const JR_XP_REGLES = [
     'carte' => 30,
     'bonus_urgent' => 20,
     'bonus_echeance' => 10,
     'carte_eclair' => 5,
     'eclair_secondes' => 600,
+    'plafond_eclairs' => 2,
     'etape' => 5,
-    'pas_niveau' => 100,
-    'grades' => ['stagiaire' => 0, 'assistant' => 1000, 'bras_droit' => 4000, 'majordome' => 10000],
+    'plafond_etapes' => 10,
+    'pas_niveau' => 160,
+    'grades' => ['stagiaire' => 0, 'assistant' => 1500, 'bras_droit' => 6000, 'majordome' => 22000],
 ];
 
 // Les 8 premiers caractères hexadécimaux d'un identifiant Trello sont l'horodatage Unix de création
@@ -44,11 +46,17 @@ function xp_echeance_tenue(mixed $echeance, DateTimeImmutable $quand): bool
     return intdiv($quand->getTimestamp(), 60) <= intdiv($limite->getTimestamp(), 60);
 }
 
+// Carte éclair : terminée moins de eclair_secondes après sa création (durée négative comprise)
+function xp_est_eclair(string $carte_id, DateTimeImmutable $quand, array $regles = JR_XP_REGLES): bool
+{
+    $creation = xp_creation_carte($carte_id);
+    return $creation !== null && $quand->getTimestamp() - $creation->getTimestamp() < $regles['eclair_secondes'];
+}
+
 // Gain d'une carte terminée à $quand. Une carte éclair (durée négative comprise) rapporte la somme fixe, sans bonus.
 function xp_gain_carte(string $carte_id, array $donnees, DateTimeImmutable $quand, array $regles = JR_XP_REGLES): int
 {
-    $creation = xp_creation_carte($carte_id);
-    if ($creation !== null && $quand->getTimestamp() - $creation->getTimestamp() < $regles['eclair_secondes']) {
+    if (xp_est_eclair($carte_id, $quand, $regles)) {
         return $regles['carte_eclair'];
     }
     $gain = $regles['carte'];
@@ -105,6 +113,7 @@ function xp_rejouer(array $actions, DateTimeImmutable $maintenant, array $regles
     $gains = [];
     $en_cours = [];
     $jours = [];
+    $payes = [];
     $evenements = [];
     $rang_grade_max = 0;
     asort($regles['grades']);
@@ -122,13 +131,21 @@ function xp_rejouer(array $actions, DateTimeImmutable $maintenant, array $regles
         $gain = 0;
         if ($action['type'] === 'carte_terminee' || $action['type'] === 'etape_cochee') {
             if (!isset($en_cours[$cle])) {
-                $gain = $action['type'] === 'carte_terminee'
-                    ? xp_gain_carte($action['carte_id'], $action['donnees'], $quand, $regles)
-                    : $regles['etape'];
-                $en_cours[$cle] = ['gain' => $gain, 'domaine' => $action['domaine'], 'id' => $id, 'jour' => $jour];
-                $domaines[$action['domaine']] += $gain;
-                $total += $gain;
-                $jours[$jour][$id] = $quand;
+                $genre = $action['type'] === 'etape_cochee' ? 'etapes' : (xp_est_eclair($action['carte_id'], $quand, $regles) ? 'eclairs' : null);
+                $plafond = $genre === null ? null : $regles['plafond_' . $genre];
+                $paye = $plafond === null || ($payes[$jour][$genre] ?? 0) < $plafond;
+                if ($paye) {
+                    $gain = $action['type'] === 'carte_terminee'
+                        ? xp_gain_carte($action['carte_id'], $action['donnees'], $quand, $regles)
+                        : $regles['etape'];
+                    if ($genre !== null) {
+                        $payes[$jour][$genre] = ($payes[$jour][$genre] ?? 0) + 1;
+                    }
+                    $domaines[$action['domaine']] += $gain;
+                    $total += $gain;
+                    $jours[$jour][$id] = $quand;
+                }
+                $en_cours[$cle] = ['gain' => $gain, 'domaine' => $action['domaine'], 'id' => $id, 'jour' => $jour, 'genre' => $paye ? $genre : null];
             }
         } elseif ($cle !== null && isset($en_cours[$cle])) {
             $acquis = $en_cours[$cle];
@@ -136,7 +153,10 @@ function xp_rejouer(array $actions, DateTimeImmutable $maintenant, array $regles
             $domaines[$acquis['domaine']] -= $acquis['gain'];
             $total -= $acquis['gain'];
             unset($en_cours[$cle]);
-            if ($acquis['jour'] === $jour) {
+            if ($acquis['genre'] !== null) {
+                $payes[$acquis['jour']][$acquis['genre']]--;
+            }
+            if ($acquis['jour'] === $jour && isset($jours[$jour])) {
                 unset($jours[$jour][$acquis['id']]);
                 if ($jours[$jour] === []) {
                     unset($jours[$jour]);
@@ -177,6 +197,7 @@ function xp_rejouer(array $actions, DateTimeImmutable $maintenant, array $regles
         'evenements' => array_column($evenements, 1),
         'serie' => $serie['serie'],
         'aujourdhui' => $aujourdhui,
+        'paye_aujourdhui' => ['etapes' => $payes[$aujourdhui]['etapes'] ?? 0, 'eclairs' => $payes[$aujourdhui]['eclairs'] ?? 0],
     ];
 }
 
@@ -244,5 +265,6 @@ function xp_objet(array $rejeu, array $regles = JR_XP_REGLES): array
         'domaines' => $domaines,
         'serie' => $rejeu['serie'],
         'evenements' => array_values(array_filter($rejeu['evenements'], fn(array $e): bool => $e['type'] !== 'joker' || $e['date'] >= $depuis)),
+        'aujourdhui_paye' => $rejeu['paye_aujourdhui'],
     ];
 }
