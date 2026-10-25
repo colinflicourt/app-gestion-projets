@@ -574,8 +574,8 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
   - tri des pubs et corrections par expéditeur ;
   - onglet **Mails** (5e onglet de la barre, § 8.1), bloc **Mails** d'Aujourd'hui, non lus dans le brief ;
   - partie **Comptes mail** de Réglages (saisir, tester, supprimer).
-- **Hors du lot 3** : notifications de mails, réponse, suppression, archivage, marquage comme lu, lecture du mail entier dans l'app, ménage de la boîte iCloud.
-- **Anti-objectif** : Junior modifie quoi que ce soit dans une boîte. Un mail passé « lu » par Junior est un défaut bloquant.
+- **Hors du lot 3** : notifications de mails, réponse, suppression, archivage, marquage comme lu, lecture du mail entier dans l'app, ménage de la boîte iCloud. (Révisé le 2026-10-25 : réponse simple, marquage lu à l'ouverture et lecture du mail entier passent au lot 3.2, § 17.)
+- **Anti-objectif** : Junior modifie quoi que ce soit dans une boîte. Un mail passé « lu » par Junior est un défaut bloquant. (Révisé le 2026-10-25 : sauf le mail que Colin ouvre, § 17.3.)
 
 ### 16.3 Comptes et secrets
 
@@ -690,3 +690,137 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 - **iCloud** : un mot de passe d'application (compte Apple > Connexion et sécurité).
 - **colin@** : avoir son mot de passe OVH (contact@ n'est qu'une redirection vers colin@, rien à brancher).
 - Ces préparatifs bloquent les tests réels, pas le développement (boîtes simulées et faux serveur IMAP).
+
+## 17. Lot 3.2 : lire un mail en entier
+
+> Rédigé le 2026-10-25 avec superpowers:brainstorming, à partir des décisions de Colin du 25/10 (`PASSATION.md`), de la conversation du même jour et du code du lot 3. Relu par un sous-agent « builder » le même jour (8 points : en-têtes `.htaccess` vérifiés dans le code, les autres tranchés et marqués « choix de Claude »). **Statut : validé par Colin le 2026-10-25**, textes nouveaux du § 17.11 compris.
+
+### 17.1 Pourquoi
+
+Colin veut lire un mail en entier depuis l'iPhone, sans changer d'app : un mail perso, ou un mail de l'UTC qui donne le détail d'un cours (lien Moodle, PDF de TD joint). Aujourd'hui la liste n'en montre qu'un extrait de 200 caractères.
+
+### 17.2 Décisions de Colin (2026-10-25)
+
+| # | Sujet | Décision |
+|---|---|---|
+| 1 | Ouvrir | Toucher un mail de la liste ouvre son **contenu complet** dans Junior |
+| 2 | Lu | L'ouvrir le **marque comme lu dans la vraie boîte** : seul le drapeau `\Seen` de ce mail, jamais `\Deleted` ni `EXPUNGE`. **Pas** de bouton « Marquer non lu » |
+| 3 | Répondre | Version **simple** : ouvre l'app de la boîte avec le destinataire et « Re: objet » pré-remplis. **Pas d'envoi depuis Junior** (pas de SMTP : une session volée ne doit pas pouvoir écrire en son nom) |
+| 4 | HTML | Mails HTML **nettoyés**, images distantes **bloquées**, bouton « Afficher les images » |
+| 5 | Pièces jointes | **Ouvrables depuis Junior** (pas seulement listées) |
+| 6 | Apps de l'iPhone | L'app Mail contient iCloud, Gmail et colin@qyris.fr, **pas l'UTC**. Gmail a son app |
+
+### 17.3 Portée
+
+- **Dans le lot 3.2** : écran d'un mail, marquage lu à l'ouverture, affichage HTML protégé, pièces jointes, bouton Répondre.
+- **Hors du lot** : envoi depuis Junior, « Marquer non lu », supprimer, archiver, déplacer, transférer, contenu disponible hors ligne, recherche, mails absents des copies (plus anciens que ceux lus au § 16.5).
+- **Anti-objectifs** (chacun est un défaut bloquant) :
+  - Junior change dans une boîte autre chose que le `\Seen` du mail que Colin vient d'ouvrir : `\Deleted`, `EXPUNGE`, `CLOSE`, un déplacement, ou un `\Seen` posé sur un autre mail, ou par la liste, un rafraîchissement, le planificateur, le test de connexion ou le brief ;
+  - un mail exécute du code, ou charge quoi que ce soit hors de jr.qyris.fr avant que Colin touche « Afficher les images » ;
+  - une pièce jointe s'affiche comme une page de jr.qyris.fr (HTML, SVG) capable d'agir avec la session.
+- **Révision du § 16.2** : l'anti-objectif du lot 3 (« Junior ne modifie rien ») reste vrai pour tout, sauf l'ouverture d'un mail (§ 17.5). La mention « Lecture seule : Junior ne marque rien comme lu. » du § 16.8 devient « Junior marque comme lu seulement les mails que tu ouvres. » (texte nouveau).
+
+### 17.4 Sur l'iPhone : l'écran d'un mail
+
+- **Adresse propre** à un mail, sous `#/mails/<boîte>/…` (forme exacte laissée au builder, elle porte le compte et l'UID). Un toucher sur un mail de la liste l'ouvre ; les gestes « C'est une pub » et les autres restent sur leur bouton discret.
+- **De haut en bas** : « Retour à la boîte » et « Répondre » ; l'objet ; l'expéditeur (nom et adresse) ; la date complète (« lun. 19/10 à 14 h 32 ») ; « À » et « Cc » sur une ligne discrète (choix de Claude) ; l'étiquette « contact@ » si besoin (§ 16.8) ; le corps ; les pièces jointes.
+- **Corps** : affiché dans un cadre isolé (§ 17.6), sur fond clair même en thème sombre pour un mail HTML (choix de Claude : la plupart des mails HTML supposent un fond blanc). Un mail en texte simple suit le thème de l'app, ses adresses web et ses adresses mail deviennent des liens.
+- **Images distantes** : bloquées. S'il y en a, une ligne « Images masquées. » avec le bouton « Afficher les images » (textes nouveaux). Le choix vaut pour ce mail, cette fois-ci, sans être retenu (choix de Claude).
+- **Liens** du mail : s'ouvrent hors de Junior (Safari), jamais dans le cadre.
+- **Pièces jointes** : une ligne par pièce avec son nom, son type (icône) et sa taille (« 1,2 Mo »). Un toucher l'ouvre (§ 17.7). Les images insérées dans le texte (`cid:`) s'affichent dans le corps (§ 17.6) et ne sont pas listées.
+- **Attente** : « Ouverture du mail… ». **Erreurs** (textes nouveaux) : « Ce mail ne s'ouvre pas pour l'instant. » avec le bouton d'ouverture de la boîte (§ 16.8) ; « Ce mail n'est plus dans la boîte. » s'il a été supprimé ou déplacé ailleurs.
+- **Au retour** à la boîte, le mail apparaît lu sans relire la boîte (copie locale et copie serveur mises à jour), et les compteurs (onglet, bloc d'Aujourd'hui) baissent.
+- **Hors ligne** : le mail ne s'ouvre pas (rien du contenu n'est gardé dans l'iPhone, choix de Claude validé par Colin) ; message « Ce mail ne s'ouvre pas pour l'instant. ».
+
+### 17.5 Serveur : ouvrir un mail et le marquer lu
+
+`POST /api/mails/ouvrir` {`compte`, `uid`}. **POST** parce qu'il écrit dans la boîte (§ 5.2 : les GET restent en lecture seule), avec les protections du § 5.3.
+
+1. L'`uid` doit figurer dans la copie `mail:<compte>` (Junior ne marque lu qu'un mail que Colin a vu dans sa liste) ; sinon 404 `hors_copie`, affiché « Ce mail est trop ancien pour Junior : ouvre-le dans <boîte>. » (texte nouveau ; cas d'un écran resté ouvert longtemps, le mail existe encore).
+2. Session IMAP : `EXAMINE "INBOX"`, puis l'`UIDVALIDITY` doit être celle de la copie ; sinon `absent`.
+3. `UID FETCH <uid>` des `FLAGS`, de l'`ENVELOPE` (dont `Reply-To`), de la `BODYSTRUCTURE` et des en-têtes déjà lus (§ 16.5). Le mail n'existe plus : `absent`.
+4. **Si le mail n'a pas `\Seen`** : `SELECT "INBOX"`, nouvelle vérification de l'`UIDVALIDITY`, puis **`UID STORE <uid> +FLAGS.SILENT (\Seen)`**, puis `LOGOUT`. **Jamais `CLOSE`** (en lecture-écriture, il efface les mails marqués `\Deleted` : RFC 3501 § 6.4.2), jamais `EXPUNGE`, `-FLAGS`, `FLAGS` sans `+`, ni un autre drapeau. Si le `STORE` échoue, la réponse part quand même avec `marque_lu: false`, et l'erreur va au journal.
+5. La copie `mail:<compte>` passe ce mail à `non_lu: false` (réécrite sous son verrou, § 16.4 ; si un rafraîchissement l'écrase entre-temps, il lit de toute façon l'état réel de la boîte).
+6. **Réponse** : `{objet, de_nom, de_adresse, a, cc, date, pour_contact, pieces: [{partie, nom, type, taille, trop_lourde}], repondre_url, marque_lu}`. Le corps n'y est pas : il vient de la route du § 17.6, appelée en parallèle par l'iPhone.
+
+- **Deux usages de la liste blanche IMAP** (une fonction centrale, comme au § 16.5) :
+  - **lecture** (tout le reste, y compris § 17.6 et § 17.7) : la liste actuelle, inchangée. `BODY.PEEK[n]<début.longueur>` y est déjà permis ;
+  - **ouverture** (cette route seulement) : la lecture, plus `SELECT "INBOX"` et `UID STORE <un seul UID> +FLAGS.SILENT (\Seen)`, rien d'autre.
+- Une commande hors de l'usage en cours est refusée **avant l'envoi** (testé sur le faux serveur IMAP).
+- `imap_session` reçoit l'usage en paramètre (choix de Claude) : `EXAMINE` reste la première commande dans les deux cas ; seul l'usage « ouverture » permet ensuite `SELECT` et le `STORE`. Une connexion sert à un seul mail.
+
+### 17.6 Serveur : le corps, affiché à part
+
+`GET /api/mails/corps?compte=…&uid=…[&images=1]` : **lecture seule** (usage lecture, `EXAMINE`, `BODY.PEEK`), rend une **page HTML** affichée dans un `<iframe>` de l'écran du mail.
+
+- **Choix de la partie** (choix de Claude) : dans un `multipart/alternative`, le `text/html` s'il existe, sinon le `text/plain`. Plusieurs parties texte dans un `multipart/mixed` : mises bout à bout dans l'ordre. Au-delà de **1 Mo** décodé, le corps est coupé avec « Mail coupé : la suite est dans <boîte>. » (texte nouveau).
+- **Texte simple** : échappé, retours à la ligne gardés, liens `http(s)` et adresses mail rendus cliquables, feuille de style minimale qui suit `prefers-color-scheme`.
+- **HTML : trois protections indépendantes**
+  1. **Nettoyage côté serveur** (fonctions pures testées, `DOMDocument`, sans Composer) par liste blanche de balises et d'attributs. Retirés : `script`, `iframe`, `frame`, `object`, `embed`, `form` et ses champs, `link`, `meta`, `base`, `svg`, `math`, `template`, tous les attributs `on*`, `formaction`, et tout lien dont le schéma n'est pas `http`, `https`, `mailto` ou `tel`. Les `<style>` et les attributs `style` restent (sinon la mise en page des mails casse), sans `@import`. Chaque lien reçoit `target="_blank" rel="noopener noreferrer"`. Les `cid:` deviennent des images `data:` (voir plus bas).
+  2. **En-têtes de la réponse** : `Content-Security-Policy: default-src 'none'; img-src 'self' data:` (plus ` https:` avec `images=1`) `; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; sandbox allow-same-origin allow-popups allow-popups-to-escape-sandbox`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`.
+  3. **`<iframe sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox">`**, donc **sans `allow-scripts`** : aucun script du mail ne peut tourner, même si le nettoyage en laisse passer un. `allow-same-origin` sert seulement à ce que l'écran mesure la hauteur du cadre (pas de défilement dans le défilement) ; il est sans risque tant que les scripts sont interdits.
+- La page indique à l'écran s'il y a des images distantes bloquées (forme laissée au builder, par exemple un attribut sur `<body>`), pour afficher ou non « Afficher les images ». Le bouton recharge le cadre avec `images=1`.
+- **En-têtes, piège vérifié dans le code (relecture du 25/10)** : `site/.htaccess` pose la CSP de l'app (`frame-ancestors 'none'`, `style-src 'self'`) avec `Header always set` sur **toutes** les réponses, `/api` compris, et `reponse_json` / `reponse_texte` y ajoutent `entetes_securite()` par `+` (les clés de gauche gagnent). Sans changement, la page du corps serait refusée dans le cadre ou perdrait ses styles. Donc :
+  - un nouveau type de réponse brute dont les en-têtes **remplacent** ceux de `entetes_securite()` (pour § 17.6 et § 17.7 seulement) ;
+  - `.htaccess` ne pose plus ses en-têtes de sécurité sur ces deux routes (condition sur la requête d'origine, par exemple `expr=` avec `%{THE_REQUEST}`, car l'URI est réécrite vers `api/index.php`) ; les autres réponses gardent exactement les mêmes en-têtes ;
+  - **vérifié sur OVH** après mise en ligne (`curl -sI` sur une route normale et sur `/api/mails/corps` : une seule CSP chacune, la bonne), et `tests/test_htaccess.php` complété.
+- La CSP de l'app, côté écran, n'a pas à changer : `default-src 'self'` permet un cadre de jr.qyris.fr.
+- **Jeu de caractères** : la partie est convertie en UTF-8 d'après le `charset` de son en-tête MIME, avant `DOMDocument` (qui supposerait du Latin-1). La page rendue est **reconstruite** (`<head>` neuf avec `<meta charset="utf-8">`), en reprenant les `<style>` du `<head>` d'origine.
+- **Coupe à 1 Mo** : faite sur la partie décodée, **avant** le nettoyage ; le bandeau « Mail coupé… » se place en haut (choix de Claude).
+- **Images insérées (`cid:`)** : lues **dans la même session IMAP** que le corps et insérées en `data:` (permis par `img-src data:`), jusqu'à 5 Mo au total ; au-delà, elles sont remplacées par un cadre vide (choix de Claude : une newsletter à 30 images ne doit pas ouvrir 30 connexions, Gmail et l'UTC limitent les connexions simultanées).
+- **Erreurs** : la route rend une petite page HTML neutre (« Ce mail ne s'ouvre pas pour l'instant. »), jamais du JSON ; l'écran masque le cadre si `POST ouvrir` a échoué.
+- **Liens dans le cadre** : l'écran (même origine grâce à `allow-same-origin`) intercepte les clics sur les liens du cadre et les ouvre lui-même hors de Junior (`window.open`, ou navigation pour `mailto:` et `tel:`). `target="_blank"` reste en filet. **Critère, vérifié sur l'iPhone** : le lien s'ouvre hors du cadre, et Colin revient dans Junior sans le relancer.
+
+### 17.7 Serveur et iPhone : les pièces jointes
+
+`GET /api/mails/piece?compte=…&uid=…&partie=…` : **lecture seule** (usage lecture).
+
+- La `partie` doit être une pièce jointe de la `BODYSTRUCTURE` du mail, et l'`uid` doit figurer dans la copie.
+- **Taille** : au plus **20 Mo** décodés (estimés depuis la taille de la `BODYSTRUCTURE`) ; au-delà, `trop_lourde: true` dans la liste, et un toucher affiche « Trop lourde pour Junior : ouvre-la dans <boîte>. » (texte nouveau).
+- **Lecture par morceaux** de 1 Mo au plus (`BODY.PEEK[n]<début.longueur>`), décodés (base64, quoted-printable) et envoyés au fur et à mesure : la mémoire reste bornée, `JR_IMAP_LITTERAL_MAX` (5 Mo) ne change pas. `set_time_limit` adapté à 20 Mo.
+- **En-têtes** :
+  - `Content-Type` pris dans une **liste blanche** : PDF, JPEG, PNG, GIF, WebP, HEIC, Word, Excel, PowerPoint (anciens et nouveaux formats), `text/plain`, `text/csv`, `text/calendar`. Tout le reste, et en particulier `text/html`, `image/svg+xml`, XML et JavaScript, part en `application/octet-stream` ;
+  - `Content-Disposition` : `inline` pour PDF, images et texte, `attachment` pour le reste, avec le nom en `filename*=UTF-8''…` ;
+  - `Content-Security-Policy: default-src 'none'; sandbox`, `X-Content-Type-Options: nosniff`, `Cache-Control: no-store`.
+- **Nom** : décodé (RFC 2231 et RFC 2047), sans `/`, `\` ni caractère de contrôle ; sans nom, « piece-jointe-<partie>.<extension du type> ».
+- Un mail joint (`message/rfc822`) est une pièce comme les autres (« mail-joint.eml »), Junior ne l'ouvre pas en détail (choix de Claude).
+- **Ouverture sur l'iPhone** : **à trancher par le builder sur un vrai iPhone**, l'app étant installée sur l'écran d'accueil (mode standalone, qui n'a pas de bouton retour et ne partage pas toujours les cookies avec Safari). Pistes : un lien `target="_blank"` vers la route ; `fetch` puis `navigator.share({files})` (feuille de partage avec aperçu et « Enregistrer dans Fichiers ») ; un visualiseur dans l'app à partir d'un `Blob` pour les PDF et les images. **Critère** : un PDF et une photo s'affichent en plein écran, et Colin revient dans Junior sans le relancer ; un fichier Word ou Excel au moins s'ouvre ou s'enregistre dans Fichiers.
+
+### 17.8 Répondre
+
+- **Destinataire** : `Reply-To` s'il existe, sinon l'expéditeur. **Objet** : « Re: » + objet, sauf s'il commence déjà par « Re: » (casse ignorée, sans doubler). Pas de texte cité : un lien ne le permet pas.
+- **Lien calculé par le serveur** (`repondre_url`, fonction pure testée, valeurs encodées) :
+  - **Gmail** : `googlegmail://co?to=…&subject=…`, repli `https://mail.google.com/mail/?view=cm&to=…&su=…` (même mécanique de repli qu'au § 16.8) ;
+  - **iCloud et QYRIS** : `mailto:…?subject=…`, qui ouvre l'app Mail. **Limite connue** : Mail choisit son compte par défaut, Colin change « De » si besoin (un lien ne peut pas imposer l'expéditeur) ;
+  - **UTC** (absente de l'app Mail) : le webmail Roundcube en rédaction, `https://webmail.utc.fr/?_task=mail&_action=compose&_to=…&_subject=…` ; si le pré-remplissage ne marche pas à la recette, simple ouverture de `https://webmail.utc.fr`.
+
+### 17.9 Données, versions, en marge
+
+- **Aucune table nouvelle, aucune migration.** Aucun contenu de mail gardé, ni sur le serveur, ni dans IndexedDB, ni par le service worker (l'API est déjà en `no-store`). Seul `non_lu` change dans la copie.
+- Le routeur doit pouvoir rendre une réponse qui n'est pas du JSON (pages des § 17.6 et § 17.7) : à ajouter sans changer les routes existantes.
+- `JR_VERSION` (`amorce.php`) passe à `0.3.2` (choix de Claude : il était resté à 0.2.0).
+- `site/sw.js` : `VERSION` recalculée (piège connu de la passation).
+
+### 17.10 Tests et fin du lot 3.2
+
+- **Tests PHP** :
+  - faux serveur IMAP : l'ouverture d'un mail non lu envoie exactement un `UID STORE <cet uid> +FLAGS.SILENT (\Seen)` après un `SELECT` ; un mail déjà lu, aucun `SELECT` ni `STORE` ; une `UIDVALIDITY` changée, aucun `STORE` ; `CLOSE`, `EXPUNGE`, `-FLAGS`, `\Deleted` et un `STORE` sur deux UID sont refusés avant l'envoi ; le rafraîchissement, le planificateur, le test de connexion, le corps et les pièces n'envoient jamais `SELECT` ni `STORE` ;
+  - nettoyage HTML sur des mails pièges (`script`, `onerror`, `javascript:`, SVG, formulaire, `meta refresh`, `base`, `@import`, `iframe`, `cid:`, liens rendus `_blank`) ;
+  - en-têtes CSP du corps, avec et sans `images=1`, et des pièces ; une pièce HTML ou SVG part en `application/octet-stream` et en `attachment` ;
+  - noms de pièces RFC 2231 et RFC 2047 ; décodage par morceaux égal au décodage d'un bloc ; refus au-delà de 20 Mo ; `uid` absent de la copie donne 404 ;
+  - `repondre_url` pour chaque compte (`Reply-To`, « Re: » non doublé, encodage des caractères spéciaux).
+- **Tests JS** : date complète de l'écran, taille des pièces (« 1,2 Mo »).
+- **Playwright** (boîtes simulées) : ouvrir un mail depuis la liste, retour avec le mail passé lu et les compteurs à jour ; un mail HTML avec images bloquées puis affichées ; un mail texte avec liens (le clic est intercepté par l'écran) ; la liste des pièces ; un mail avec images `cid:` ; une erreur d'ouverture ; aucun script du mail ne s'exécute dans le cadre.
+- **Le lot 3.2 est fini quand** (vérifié à la main par Colin sur l'iPhone) :
+  - un mail non lu ouvert dans Junior apparaît lu dans Gmail, iCloud, le webmail UTC et le webmail OVH, **et les autres non lus restent non lus** ;
+  - le PDF d'un mail de l'UTC s'ouvre, et Colin revient dans Junior ;
+  - une newsletter est lisible, sans images distantes jusqu'au bouton ;
+  - « Répondre » ouvre la bonne app, pré-remplie, pour chacune des 4 boîtes.
+
+### 17.11 Textes nouveaux (à valider par Colin)
+
+« Répondre » · « Images masquées. » · « Afficher les images » · « Ouverture du mail… » · « Ce mail ne s'ouvre pas pour l'instant. » · « Ce mail n'est plus dans la boîte. » · « Mail coupé : la suite est dans <boîte>. » · « Ce mail est trop ancien pour Junior : ouvre-le dans <boîte>. » · « Trop lourde pour Junior : ouvre-la dans <boîte>. » · « Junior marque comme lu seulement les mails que tu ouvres. »
+
+### 17.12 Laissé au builder
+
+Forme de l'adresse de l'écran ; forme exacte de la condition `.htaccess` (§ 17.6) ; découpe des fonctions et des fichiers ; mise en page exacte (dans le style de la maquette v28) ; mesure de la hauteur du cadre ; mécanisme d'ouverture des pièces sur l'iPhone (§ 17.7, à vérifier sur l'appareil) ; mise à jour de la copie locale IndexedDB après ouverture.
