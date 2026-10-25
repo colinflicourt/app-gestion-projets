@@ -6,6 +6,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/imap_decodage.php';
+require_once __DIR__ . '/mail_contenu.php';
 
 const JR_IMAP_SERVEURS = ['utc' => 'imaps.utc.fr', 'gmail' => 'imap.gmail.com', 'icloud' => 'imap.mail.me.com', 'colin' => 'ssl0.ovh.net'];
 const JR_IMAP_PORT = 993;
@@ -15,6 +16,7 @@ const JR_IMAP_DERNIERS = 60;
 const JR_IMAP_LOT = 60;
 const JR_IMAP_OCTETS_EXTRAIT = 2000;
 const JR_IMAP_USAGES = ['lecture', 'ouverture'];
+const JR_IMAP_MORCEAU = 1048576;
 
 // Éléments d'un UID FETCH permis : jamais BODY[ sans PEEK, jamais le message entier
 const JR_IMAP_ELEMENT_FETCH = 'UID|FLAGS|INTERNALDATE|ENVELOPE|BODYSTRUCTURE|X-GM-MSGID'
@@ -565,4 +567,143 @@ function imap_ouvrir_mail(string $compte, string $identifiant, #[\SensitiveParam
         throw new ErreurSource('absent', 'IMAP : mail absent');
     }
     return $resultat;
+}
+
+// --- Contenu d'un mail --------------------------------------------------------------------------
+
+// Usage « lecture » : UID FETCH <uid> (UID BODYSTRUCTURE), après avoir vérifié l'UIDVALIDITY de l'EXAMINE.
+// Rend la structure analysée, ou null si le mail n'existe plus (UIDVALIDITY différente, UID introuvable).
+function imap_structure_mail(ConnexionImap $c, int $uid, int $uidvalidity): ?array
+{
+    if ($c->uidvalidity === 0 || $c->uidvalidity !== $uidvalidity) {
+        return null;
+    }
+    $structure = imap_fetch($c, [$uid], 'UID BODYSTRUCTURE')[$uid]['BODYSTRUCTURE'] ?? null;
+    return is_array($structure) && $structure !== [] ? $structure : null;
+}
+
+// Lit une partie par tranches de 1 Mo encodé (BODY.PEEK[section]<début.1048576>), la décode au fur et à mesure et
+// passe chaque morceau décodé à $recevoir. S'arrête et rend faux dès que le décodé total dépasserait $max_decode
+// (seul ce qui tient est transmis) ; vrai si la partie est lue en entier. Rien n'est gardé entre deux tranches.
+function imap_lire_partie(ConnexionImap $c, int $uid, string $section, string $encodage, int $max_decode, callable $recevoir): bool
+{
+    $decodeur = new DecodeurMorceaux($encodage);
+    $total = 0;
+    for ($debut = 0, $fini = false; !$fini; $debut += JR_IMAP_MORCEAU) {
+        $tranche = imap_fetch($c, [$uid], "UID BODY.PEEK[$section]<$debut." . JR_IMAP_MORCEAU . '>')[$uid]["CORPS:$section"] ?? null;
+        $fini = !is_string($tranche) || strlen($tranche) < JR_IMAP_MORCEAU;
+        $decode = is_string($tranche) && $tranche !== '' ? $decodeur->ajouter($tranche) : '';
+        unset($tranche);
+        if ($fini) {
+            $decode .= $decodeur->finir();
+        }
+        if ($decode === '') {
+            continue;
+        }
+        $reste = $max_decode - $total;
+        if (strlen($decode) > $reste) {
+            if ($reste > 0) {
+                $recevoir(substr($decode, 0, $reste));
+            }
+            return false;
+        }
+        $total += strlen($decode);
+        $recevoir($decode);
+    }
+    return true;
+}
+
+// Usage « lecture » : le texte du mail (parties text/html ou text/plain choisies par mail_parties_corps, 1 Mo décodé
+// au plus en tout, UTF-8 valide) puis, dans la même session, ses images « cid: » (png, jpeg, gif, webp ; 5 Mo décodés
+// au plus en tout) en URL data: ; une image trop lourde, d'un autre type ou illisible vaut null.
+// Rend ['parties' => [{sous_type, texte}], 'coupe' => bool, 'images_cid' => cid => ?url]. ErreurSource('absent') si le mail n'existe plus.
+function imap_lire_corps(string $compte, string $identifiant, #[\SensitiveParameter] string $mot_de_passe, float $limite, int $uid, int $uidvalidity): array
+{
+    $resultat = imap_session($compte, $identifiant, $mot_de_passe, $limite, function (ConnexionImap $c) use ($uid, $uidvalidity): ?array {
+        $structure = imap_structure_mail($c, $uid, $uidvalidity);
+        if ($structure === null) {
+            return null;
+        }
+        $parties = [];
+        $coupe = false;
+        $reste = JR_MAIL_CORPS_MAX;
+        foreach (mail_parties_corps($structure) as $partie) {
+            if ($reste <= 0) {
+                $coupe = true;
+                break;
+            }
+            $octets = '';
+            $entiere = imap_lire_partie($c, $uid, $partie['section'], $partie['encodage'], $reste, function (string $decode) use (&$octets): void {
+                $octets .= $decode;
+            });
+            $reste -= strlen($octets);
+            $texte = mail_texte_utf8($octets, $partie['jeu'], !$entiere);
+            unset($octets);
+            if ($texte !== '') {
+                $parties[] = ['sous_type' => $partie['sous_type'], 'texte' => $texte];
+            }
+            if (!$entiere) {
+                $coupe = true;
+                break;
+            }
+        }
+
+        $cids = mail_images_cid($structure);
+        $images = array_fill_keys(array_keys($cids), null);
+        $reste = JR_MAIL_IMAGES_MAX;
+        foreach ($cids as $cid => $image) {
+            if (!in_array($image['type'], JR_MAIL_TYPES_IMAGE_CID, true) || $image['taille'] > $reste) {
+                continue;
+            }
+            $octets = '';
+            try {
+                $entiere = imap_lire_partie($c, $uid, $image['partie'], $image['encodage'], $reste, function (string $decode) use (&$octets): void {
+                    $octets .= $decode;
+                });
+            } catch (ErreurSource) {
+                break;
+            }
+            $reste -= strlen($octets);
+            if ($entiere && $octets !== '') {
+                $images[$cid] = 'data:' . $image['type'] . ';base64,' . base64_encode($octets);
+            }
+            unset($octets);
+        }
+        return ['parties' => $parties, 'coupe' => $coupe, 'images_cid' => $images];
+    });
+    if ($resultat === null) {
+        throw new ErreurSource('absent', 'IMAP : mail absent');
+    }
+    return $resultat;
+}
+
+// Usage « lecture » : envoie une pièce jointe à $ecrire, morceau par morceau (jamais entière en mémoire).
+// $avant reçoit la pièce (un élément de mail_pieces) juste avant le premier octet. Lève ErreurSource('absent'),
+// ('partie_inconnue'), ('trop_lourde') : les deux dernières avant tout octet, sauf si la pièce dépasse 20 Mo en cours de lecture.
+function imap_lire_piece(string $compte, string $identifiant, #[\SensitiveParameter] string $mot_de_passe, float $limite, int $uid, int $uidvalidity, string $partie, callable $avant, callable $ecrire): void
+{
+    $erreur = imap_session($compte, $identifiant, $mot_de_passe, $limite, function (ConnexionImap $c) use ($uid, $uidvalidity, $partie, $avant, $ecrire): ?string {
+        $structure = imap_structure_mail($c, $uid, $uidvalidity);
+        if ($structure === null) {
+            return 'absent';
+        }
+        $piece = null;
+        foreach (mail_pieces($structure) as $candidate) {
+            if ($candidate['partie'] === $partie) {
+                $piece = $candidate;
+                break;
+            }
+        }
+        if ($piece === null) {
+            return 'partie_inconnue';
+        }
+        if ($piece['trop_lourde']) {
+            return 'trop_lourde';
+        }
+        $avant($piece);
+        return imap_lire_partie($c, $uid, $piece['partie'], $piece['encodage'], JR_MAIL_PIECE_MAX, $ecrire) ? null : 'trop_lourde';
+    });
+    if ($erreur !== null) {
+        throw new ErreurSource($erreur, 'IMAP : ' . $erreur);
+    }
 }
