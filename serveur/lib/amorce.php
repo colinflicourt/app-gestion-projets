@@ -3,7 +3,7 @@
 
 declare(strict_types=1);
 
-const JR_VERSION = '0.3.2';
+const JR_VERSION = '0.4.1';
 const JR_DOMAINES = ['qyris', 'asso', 'etudes', 'perso'];
 const JR_JOURNAL_MAX = 1048576;
 const JR_FUSEAU = 'Europe/Paris';
