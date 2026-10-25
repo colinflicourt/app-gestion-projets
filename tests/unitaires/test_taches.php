@@ -25,7 +25,7 @@ test("tâches : cocher envoie l'état à Trello, corrige la copie et note etape_
     faux_http([CHECK_ITEM => ['json' => ['id' => id_test('element', 11)]]]);
     $r = cocher(1);
     egal(200, $r['statut']);
-    egal(['ok' => true, 'carte' => id_test('carte', 1), 'element' => id_test('element', 11), 'coche' => true], corps($r));
+    egal(['ok' => true, 'carte' => id_test('carte', 1), 'element' => id_test('element', 11), 'coche' => true, 'xp_gagnee' => 5, 'domaine' => 'qyris'], array_diff_key(corps($r), ['xp' => 1]));
     egal(['PUT https://api.trello.com/1/cards/' . id_test('carte', 1) . '/checkItem/' . id_test('element', 11)], appels_http());
     egal(['state' => 'complete'], json_decode((string) $GLOBALS['JR_APPELS_HTTP'][0]['corps'], true));
     egal(true, copie_lire('trello')['contenu']['cartes'][0]['checklists'][0]['elements'][0]['coche']);
@@ -154,4 +154,18 @@ test("tirage : une étape qui n'appartient pas à la carte donne 404 element_int
     $r = appeler('POST', 'tirage/parti', ['id_client' => uuid_test(1), 'carte' => id_test('carte', 1), 'element' => id_test('element', 99)]);
     egal([404, 'element_introuvable'], [$r['statut'], corps($r)['erreur']['code']]);
     egal(0, nombre_actions());
+});
+
+test("tâches : cocher rend xp_gagnee 5, décocher −5, une étape déjà dans l'état demandé 0 sans action notée", function () {
+    base_de_test();
+    fixer_heure('2026-10-09 10:00:00');
+    copie_trello([carte_a_cocher()]);
+    faux_http([CHECK_ITEM => ['json' => []]]);
+    $r = corps(cocher(1));
+    egal([5, 'qyris', 5], [$r['xp_gagnee'], $r['domaine'], $r['xp']['total']]);
+    $r = corps(cocher(2, ['coche' => false]));
+    egal([-5, 'qyris', 0], [$r['xp_gagnee'], $r['domaine'], $r['xp']['total']]);
+    $r = corps(cocher(3, ['element' => id_test('element', 12)]));
+    egal([0, 'qyris', 0], [$r['xp_gagnee'], $r['domaine'], $r['xp']['total']]);
+    egal(2, nombre_actions());
 });

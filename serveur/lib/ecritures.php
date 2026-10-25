@@ -56,13 +56,16 @@ function ecriture_trouver(string $id_client): ?array
 
 // Route d'écriture : session exigée (par défaut), id_client exigé, action exécutée une seule fois.
 // $action reçoit le corps JSON et rend le résultat à renvoyer (et à rejouer).
-function route_ecriture(string $route, callable $action): array
+// $completer(array $resultat): array s'applique à chaque réponse, renvoi compris, sans être gardé : il porte ce
+// qui doit rester à jour (l'objet xp).
+function route_ecriture(string $route, callable $action, ?callable $completer = null): array
 {
-    return ['publique' => false, 'action' => function (array $requete, ?array $session) use ($route, $action): array {
+    return ['publique' => false, 'action' => function (array $requete, ?array $session) use ($route, $action, $completer): array {
         $id_client = $requete['corps']['id_client'] ?? null;
         if (!is_string($id_client)) {
             throw new ErreurApi('id_client_invalide', 400, 'Requête illisible.');
         }
-        return reponse_json(ecriture_unique($id_client, $route, fn(): array => $action($requete['corps'])));
+        $resultat = ecriture_unique($id_client, $route, fn(): array => $action($requete['corps']));
+        return reponse_json($completer === null ? $resultat : $completer($resultat));
     }];
 }

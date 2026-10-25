@@ -64,3 +64,27 @@ test("écritures : un identifiant déjà utilisé par une autre route est refus�
     egal('id_client_reutilise', $e->codeErreur);
     egal(0, $appels);
 });
+
+test("écritures : route_ecriture applique le compléteur à chaque réponse, renvoi compris, sans le garder", function () {
+    base_de_test();
+    $faits = 0;
+    $completes = 0;
+    $route = route_ecriture(
+        'essai/ecrire',
+        function (array $corps) use (&$faits): array {
+            $faits++;
+            return ['n' => $faits];
+        },
+        function (array $resultat) use (&$completes): array {
+            $completes++;
+            return $resultat + ['vu' => $completes];
+        }
+    );
+    $appeler = fn(): array => json_decode(($route['action'])(['corps' => ['id_client' => UUID_TEST]], null)['corps'], true);
+    egal(['ok' => true, 'n' => 1, 'vu' => 1], $appeler());
+    egal(['ok' => true, 'n' => 1, 'vu' => 2], $appeler());
+    egal(1, $faits);
+    egal(['n' => 1], ecriture_trouver(UUID_TEST)['resultat']);
+    $sans = route_ecriture('essai/ecrire2', fn(array $corps): array => ['a' => 1]);
+    egal(['ok' => true, 'a' => 1], json_decode(($sans['action'])(['corps' => ['id_client' => UUID_TEST_2]], null)['corps'], true));
+});

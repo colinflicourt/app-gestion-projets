@@ -84,7 +84,7 @@ test('déplacer : vers une autre colonne en haut ; même colonne sans appel ; so
     base_de_test();
     copie_trello(deux_cartes_etudes());
     faux_http([PUT_CARTE => ['json' => []]]);
-    egal(['carte' => id_test('carte', 1), 'colonne' => 'en_attente'], array_diff_key(corps(appeler('POST', 'taches/deplacer', ['id_client' => uuid_test(1), 'carte' => id_test('carte', 1), 'colonne' => 'en_attente'])), ['ok' => 1]));
+    egal(['carte' => id_test('carte', 1), 'colonne' => 'en_attente', 'xp_gagnee' => 0, 'domaine' => 'etudes'], array_diff_key(corps(appeler('POST', 'taches/deplacer', ['id_client' => uuid_test(1), 'carte' => id_test('carte', 1), 'colonne' => 'en_attente'])), ['ok' => 1, 'xp' => 1]));
     egal(['idList' => fabrique_trello_ids()['tableaux']['etudes']['colonnes']['En attente'], 'pos' => 'top'], json_decode((string) $GLOBALS['JR_APPELS_HTTP'][0]['corps'], true));
     egal('en_attente', carte_de_la_copie(id_test('carte', 1))['colonne']);
     appeler('POST', 'taches/deplacer', ['id_client' => uuid_test(2), 'carte' => id_test('carte', 1), 'colonne' => 'en_attente']);

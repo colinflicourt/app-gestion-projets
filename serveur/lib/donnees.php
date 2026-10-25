@@ -12,6 +12,7 @@ require_once __DIR__ . '/rafraichir.php';
 require_once __DIR__ . '/rappels_manuels.php';
 require_once __DIR__ . '/reglages.php';
 require_once __DIR__ . '/trello.php';
+require_once __DIR__ . '/xp_donnees.php';
 
 const JR_AGE_TRELLO = 60;
 const JR_AGE_AGENDA = 600;
@@ -96,6 +97,13 @@ function donnees_reponse(bool $force): array
         journal_erreur('donnees/mails', $e);
         $mails_resume = mails_resume([]);
     }
+    // Calculé à chaque requête depuis les actions. Une panne du calcul ne retient pas le reste : xp nul
+    try {
+        $xp = xp_etat();
+    } catch (Throwable $e) {
+        journal_erreur('donnees/xp', $e);
+        $xp = null;
+    }
     return [
         'maintenant' => iso_paris(maintenant()),
         'trello' => [
@@ -107,6 +115,7 @@ function donnees_reponse(bool $force): array
         'rappels_du_jour' => rappels_du_jour_lire(),
         'mails_resume' => $mails_resume,
         'notifications' => ['cle' => config('vapid')['publique']],
+        'xp' => $xp,
     ];
 }
 

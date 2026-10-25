@@ -10,6 +10,7 @@ require_once __DIR__ . '/ecritures.php';
 require_once __DIR__ . '/rafraichir.php';
 require_once __DIR__ . '/reponse.php';
 require_once __DIR__ . '/trello.php';
+require_once __DIR__ . '/xp_donnees.php';
 
 function copie_modifier_carte(string $carte_id, callable $modifier): void
 {
@@ -57,7 +58,7 @@ function trello_ecrire_carte(string $carte_id, string $chemin, array $corps, str
     }
 }
 
-function tache_cocher(mixed $carte_id, mixed $element_id, mixed $coche): array
+function tache_cocher(mixed $carte_id, mixed $element_id, mixed $coche, mixed $fait_le = null): array
 {
     if (!is_bool($coche) || !is_string($element_id) || !preg_match(JR_REGEX_ID_TRELLO, $element_id)) {
         throw new ErreurApi('requete_invalide', 400, 'Requête illisible.');
@@ -74,7 +75,7 @@ function tache_cocher(mixed $carte_id, mixed $element_id, mixed $coche): array
     if ($avant === null) {
         throw new ErreurApi('element_introuvable', 404, JR_MESSAGES_INTROUVABLE['element_introuvable']);
     }
-    sous_verrou_trello(function () use ($carte, $element_id, $coche, $avant): void {
+    $action = sous_verrou_trello(function () use ($carte, $element_id, $coche, $avant, $fait_le): ?int {
         trello_ecrire_carte($carte['id'], "/cards/{$carte['id']}/checkItem/$element_id", ['state' => $coche ? 'complete' : 'incomplete'], 'element_introuvable');
         copie_modifier_carte($carte['id'], function (array $c) use ($element_id, $coche): array {
             foreach ($c['checklists'] as $l => $liste) {
@@ -88,15 +89,13 @@ function tache_cocher(mixed $carte_id, mixed $element_id, mixed $coche): array
             return $c;
         });
         // Pas d'action pour une étape déjà dans cet état : pas d'XP pour rien
-        if ($avant !== $coche) {
-            action_noter($coche ? 'etape_cochee' : 'etape_decochee', $carte['domaine'], $carte['id'], $element_id, maintenant(), 'app', 'exacte');
-        }
+        return $avant === $coche ? null : action_noter($coche ? 'etape_cochee' : 'etape_decochee', $carte['domaine'], $carte['id'], $element_id, heure_du_geste($fait_le), 'app', 'exacte');
     });
-    return ['carte' => $carte['id'], 'element' => $element_id, 'coche' => $coche];
+    return ['carte' => $carte['id'], 'element' => $element_id, 'coche' => $coche, 'xp_gagnee' => $action === null ? 0 : xp_gain_action($action), 'domaine' => $carte['domaine']];
 }
 
 // « C'est parti » après un tirage, pour le badge « Machine à sous » du lot 4. Carte entière : élément nul.
-function tache_tirage_parti(mixed $carte_id, mixed $element_id): array
+function tache_tirage_parti(mixed $carte_id, mixed $element_id, mixed $fait_le = null): array
 {
     if ($element_id !== null && (!is_string($element_id) || !preg_match(JR_REGEX_ID_TRELLO, $element_id))) {
         throw new ErreurApi('requete_invalide', 400, 'Requête illisible.');
@@ -106,7 +105,7 @@ function tache_tirage_parti(mixed $carte_id, mixed $element_id): array
     if ($element_id !== null && !in_array($element_id, $etapes, true)) {
         throw new ErreurApi('element_introuvable', 404, JR_MESSAGES_INTROUVABLE['element_introuvable']);
     }
-    action_noter('tirage_parti', $carte['domaine'], $carte['id'], $element_id, maintenant(), 'app', 'exacte');
+    action_noter('tirage_parti', $carte['domaine'], $carte['id'], $element_id, heure_du_geste($fait_le), 'app', 'exacte');
     return ['carte' => $carte['id'], 'element' => $element_id];
 }
 
@@ -147,7 +146,7 @@ function deplacer_dans_la_copie(string $carte_id, string $colonne, bool $echeanc
 
 // En haut de Fait, échéance marquée faite (comme trello.py terminer). Ce qu'il faut pour annuler est rendu,
 // donc gardé dans ecritures.resultat.
-function tache_terminer(mixed $carte_id): array
+function tache_terminer(mixed $carte_id, mixed $fait_le = null): array
 {
     $carte = trello_carte_autorisee($carte_id);
     if ($carte['colonne'] === 'fait') {
@@ -157,10 +156,10 @@ function tache_terminer(mixed $carte_id): array
     if ($carte['echeance'] !== null) {
         $corps['dueComplete'] = true;
     }
-    $action = sous_verrou_trello(function () use ($carte, $corps): int {
+    $action = sous_verrou_trello(function () use ($carte, $corps, $fait_le): int {
         trello_ecrire_carte($carte['id'], "/cards/{$carte['id']}", $corps);
         deplacer_dans_la_copie($carte['id'], 'fait', $carte['echeance'] !== null || $carte['echeance_faite']);
-        return action_noter('carte_terminee', $carte['domaine'], $carte['id'], null, maintenant(), 'app', 'exacte', ['urgent' => $carte['urgent'], 'echeance' => $carte['echeance']]);
+        return action_noter('carte_terminee', $carte['domaine'], $carte['id'], null, heure_du_geste($fait_le), 'app', 'exacte', ['urgent' => $carte['urgent'], 'echeance' => $carte['echeance']]);
     });
     return [
         'carte' => $carte['id'],
@@ -169,6 +168,8 @@ function tache_terminer(mixed $carte_id): array
         'position_avant' => (float) $carte['position'],
         'echeance_faite_avant' => $carte['echeance_faite'],
         'action' => $action,
+        'xp_gagnee' => xp_gain_action($action),
+        'domaine' => $carte['domaine'],
     ];
 }
 
@@ -186,29 +187,32 @@ function tache_annuler(mixed $id_client_origine): array
     }
     $r = $origine['resultat'];
     $carte = trello_carte_autorisee($r['carte']);
-    sous_verrou_trello(function () use ($carte, $r): void {
+    // Ce que l'action annulée avait rapporté, lu dans le rejeu juste avant de l'annuler (0 si déjà annulée)
+    $gain = sous_verrou_trello(function () use ($carte, $r): int {
         trello_ecrire_carte($carte['id'], "/cards/{$carte['id']}", [
             'idList' => trello_id_colonne($carte['domaine'], $r['colonne_avant']),
             'pos' => (float) $r['position_avant'],
             'dueComplete' => (bool) $r['echeance_faite_avant'],
         ]);
         deplacer_dans_la_copie($carte['id'], $r['colonne_avant'], (bool) $r['echeance_faite_avant'], (float) $r['position_avant']);
+        $gain = xp_gain_action((int) $r['action']);
         action_annuler((int) $r['action']);
+        return $gain;
     });
-    return ['carte' => $carte['id'], 'colonne' => $r['colonne_avant']];
+    return ['carte' => $carte['id'], 'colonne' => $r['colonne_avant'], 'xp_gagnee' => -$gain, 'domaine' => $carte['domaine']];
 }
 
 // Vers Fait, c'est « Terminer ». Sortir de Fait rouvre la carte.
-function tache_deplacer(mixed $carte_id, mixed $colonne): array
+function tache_deplacer(mixed $carte_id, mixed $colonne, mixed $fait_le = null): array
 {
     if (!in_array($colonne, ['a_faire', 'en_cours', 'en_attente'], true)) {
         throw new ErreurApi('requete_invalide', 400, 'Requête illisible.');
     }
     $carte = trello_carte_autorisee($carte_id);
     if ($carte['colonne'] === $colonne) {
-        return ['carte' => $carte['id'], 'colonne' => $colonne];
+        return ['carte' => $carte['id'], 'colonne' => $colonne, 'xp_gagnee' => 0, 'domaine' => $carte['domaine']];
     }
-    sous_verrou_trello(function () use ($carte, $colonne): void {
+    $action = sous_verrou_trello(function () use ($carte, $colonne, $fait_le): ?int {
         $corps = ['idList' => trello_id_colonne($carte['domaine'], $colonne), 'pos' => 'top'];
         $echeance_faite = $carte['echeance_faite'];
         // Une carte rouverte redevient à faire : son échéance n'est plus marquée faite (elle peut être en retard)
@@ -218,11 +222,9 @@ function tache_deplacer(mixed $carte_id, mixed $colonne): array
         }
         trello_ecrire_carte($carte['id'], "/cards/{$carte['id']}", $corps);
         deplacer_dans_la_copie($carte['id'], $colonne, $echeance_faite);
-        if ($carte['colonne'] === 'fait') {
-            action_noter('carte_rouverte', $carte['domaine'], $carte['id'], null, maintenant(), 'app', 'exacte');
-        }
+        return $carte['colonne'] === 'fait' ? action_noter('carte_rouverte', $carte['domaine'], $carte['id'], null, heure_du_geste($fait_le), 'app', 'exacte') : null;
     });
-    return ['carte' => $carte['id'], 'colonne' => $colonne];
+    return ['carte' => $carte['id'], 'colonne' => $colonne, 'xp_gagnee' => $action === null ? 0 : xp_gain_action($action), 'domaine' => $carte['domaine']];
 }
 
 const JR_TITRE_MAX = 300;
