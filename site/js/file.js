@@ -13,7 +13,7 @@ export async function charger() {
 }
 
 export function nouvelleEcriture(route, corps, local = {}) {
-  return { id_client: crypto.randomUUID(), route, corps, local, ordre: suivant++, essais: 0 };
+  return { id_client: crypto.randomUUID(), route, corps, local, fait_le: new Date().toISOString(), ordre: suivant++, essais: 0 };
 }
 
 export async function garder(e) {
@@ -50,7 +50,7 @@ export function envoyer(r) {
           let reponse = null;
           let erreur = null;
           try {
-            reponse = await appeler('POST', e.route, { corps: { ...e.corps, id_client: e.id_client } });
+            reponse = await appeler('POST', e.route, { corps: { ...e.corps, id_client: e.id_client, fait_le: e.fait_le } });
           } catch (err) {
             erreur = err;
           }

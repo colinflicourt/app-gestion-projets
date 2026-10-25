@@ -191,3 +191,29 @@ test("données : une panne imprévue de Trello ne fait pas tomber la réponse : 
     egal([id_test('carte', 1)], array_column($d['trello']['cartes'], 'id'));
     egal(['recupere_le' => null, 'erreur' => null, 'google_connecte' => false, 'jours' => []], $d['agenda']);
 });
+
+test("données : l'objet xp est présent sans aucune action (4 domaines à 0), puis suit les actions", function () {
+    base_de_test();
+    fixer_heure('2026-10-09 10:00:00');
+    faux_http([BATCH => ['json' => batch_trello([])]]);
+    $xp = corps(appeler('GET', 'donnees'))['xp'];
+    egal(JR_DOMAINES, array_keys($xp['domaines']));
+    egal([0, 'stagiaire', [], ['jours' => 0, 'joker_libre' => true, 'dernier_joker' => null, 'en_jeu' => false]], [$xp['total'], $xp['grade'], $xp['evenements'], $xp['serie']]);
+    egal(['xp' => 0, 'niveau' => 1, 'dans_niveau' => 0, 'taille_niveau' => 160], $xp['domaines']['etudes']);
+    action_noter('carte_terminee', 'etudes', sprintf('%08x', 1780000000) . str_repeat('a', 16), null, utc_test('2026-10-09 09:00:00'), 'app', 'exacte');
+    $xp = corps(appeler('GET', 'donnees'))['xp'];
+    egal([30, 30, 1], [$xp['total'], $xp['domaines']['etudes']['xp'], $xp['serie']['jours']]);
+});
+
+test("données : une panne du calcul de l'XP ne fait pas tomber la réponse : xp nul, le reste intact, une ligne de journal", function () {
+    base_de_test();
+    $GLOBALS['JR_CONFIG'] = config_de_test(['trello' => ['ecritures' => 'simulees']]);
+    fixer_heure('2026-10-09 10:00:00');
+    faux_http([BATCH => ['json' => batch_trello(['perso' => [carte_trello('perso', 'À faire', 1)]])]]);
+    db()->exec('DROP TABLE actions');
+    $r = appeler('GET', 'donnees');
+    egal(200, $r['statut']);
+    $d = corps($r);
+    egal([null, [id_test('carte', 1)]], [$d['xp'], array_column($d['trello']['cartes'], 'id')]);
+    vrai(str_contains((string) file_get_contents(dossier_data() . '/erreurs.log'), 'donnees/xp'), 'une ligne de journal attendue');
+});

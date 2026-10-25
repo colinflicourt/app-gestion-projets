@@ -186,7 +186,7 @@
 | Médian à J-1 | Médian MT23 demain | 19 h 15. Dors bien ce soir. |
 | Brief du matin | Mercredi 14 octobre · 2 cours | Premier à 8 h en FA400 (NF93 TD). 1 tâche du jour, 3 mails non lus. Médian MT23 dans 7 jours. |
 | Rappel manuel | (ton texte) | Rappel que tu t'es mis hier à 22 h. |
-| Fin de session focus | K.O. en 45 min | Le Poly est vaincu. +14 XP Études. |
+| Fin de session focus | K.O. en 45 min | Le Poly est vaincu. +55 XP Études. |
 | Journal, 21 h 30 | Une ligne sur ta journée ? | Ça prend 10 secondes. |
 | Wrapped, dimanche 19 h | Ton Wrapped est prêt | Ta semaine du 12 au 18 octobre, en 7 écrans. |
 | Test | Notification de test | Si tu lis ça, tes rappels arriveront bien. |
@@ -297,10 +297,10 @@ Une phrase est tirée chaque matin en haut d'Aujourd'hui. Certaines ne sortent q
   - « Fuite détectée. Le Bug raconte déjà partout qu'il t'a battu. »
   - « Le 99+ est remonté à 100 %. Toi, tu étais sur quelle app ? »
   - « La Flemme gagne ce round. Elle gagne souvent, remarque. »
-- Victoire : « K.O. Le Poly est vaincu. 45 min de concentration, +14 XP Études. »
-- Bouton pour arrêter : « Déclarer forfait ». Message : « Forfait à 18 min. +3 XP, par charité. »
+- Victoire : « K.O. Le Poly est vaincu. 45 min de concentration, +55 XP Études. »
+- Bouton pour arrêter : « Déclarer forfait ». Message : « Forfait à 18 min. +18 XP, par charité. »
 - **« J'ai fini la tâche »** (ajouté le 2026-10-08) : un bouton de console sous le boss, au-dessus de « Déclarer forfait », pas allumé (pendant le combat, seul l'afficheur l'est).
-  - Le boss passe aussitôt en pose K.O., puis le tampon K.O. frappe : « K.O. en 18 min. Tâche finie avant la cloche. +13 XP Études. » (3 tranches de 5 min, +5 pour le boss, +5 pour l'étape cochée)
+  - Le boss passe aussitôt en pose K.O., puis le tampon K.O. frappe : « K.O. en 18 min. Tâche finie avant la cloche. +33 XP Études. » (18 min à 1 XP, +10 pour le boss, +5 pour l'étape cochée)
   - Dans Trello, selon la suggestion du tirage : une étape de checklist est cochée, une carte passe dans Fait.
   - Si c'était la dernière étape non cochée de la carte : « C'était la dernière étape. Je termine la carte ? », avec « Terminer » et « Pas maintenant ».
   - « Annuler » pendant 5 secondes ramène au combat là où il en était, le chrono ayant continué. Trello et l'XP reviennent comme avant.
@@ -309,32 +309,38 @@ Une phrase est tirée chaque matin en haut d'Aujourd'hui. Certaines ne sortent q
 
 ---
 
-## 7. XP, niveaux et grades de Junior (règles proposées)
+## 7. XP, niveaux et grades de Junior (barème réglé le 2026-10-25)
+
+> Barème recalé par la régulation du 25/10 (`REGULATION-XP.md`, barème C), validé par Colin le 2026-10-25. Il remplace celui du 07/10. Valeurs appliquées dans une seule table : `JR_XP_REGLES` (`serveur/lib/xp.php`) et son miroir `site/js/lib/xp.js`.
 
 **Ce qui rapporte de l'XP** :
 
 | Action | XP |
 |---|---|
 | Carte terminée | 30 (+20 si Urgent, +10 si finie avant l'échéance) |
-| Élément de checklist coché | 5 |
-| Session focus | 1 par tranche de 5 min, +5 si le boss est battu |
-| « J'ai fini la tâche » pendant le combat | Les minutes faites (1 par tranche de 5 min), +5 pour le boss battu si le combat a duré au moins 5 min, plus l'XP de la tâche (5 pour une étape, 30 et ses bonus pour une carte) |
-| Ligne de journal | 5 |
+| Carte éclair (terminée moins de 10 min après sa création) | 5, sans bonus, **au plus 2 par jour** |
+| Élément de checklist coché | 5, **au plus 10 par jour** |
+| Session focus | 1 par minute, +10 si le boss est battu |
+| « J'ai fini la tâche » pendant le combat | Les minutes faites (1 par minute), +10 pour le boss battu si le combat a duré au moins 5 min, plus l'XP de la tâche (5 pour une étape, 30 et ses bonus pour une carte) |
+| Forfait | 1 par minute faite, sans bonus |
+| Ligne de journal | 3, **au plus 2 par jour** |
+
+Au-delà d'un plafond, le geste reste valide mais rapporte 0 XP. Défaire un geste qui avait rapporté libère sa place.
 
 Une carte finie ailleurs (par Jarvis ou dans l'app Trello) compte pareil : Junior la repère dans la colonne Fait.
 
-**Niveau par domaine** : chaque niveau demande 100 XP de plus que le précédent. Le niveau 2 s'atteint à 100 XP, le 3 à 300, le 4 à 600, le 5 à 1 000.
+**Niveau par domaine** : chaque niveau demande 160 XP de plus que le précédent (niveau n à 80 × n × (n − 1)). Le niveau 2 s'atteint à 160 XP, le 3 à 480, le 4 à 960, le 5 à 1 600, le 13 à 12 480.
 
 **Grades de Junior** (selon ton XP totale) :
 
 | Grade | XP totale | Estimation |
 |---|---|---|
 | Stagiaire | 0 | Dès l'installation |
-| Assistant | 1 000 | Environ 2 semaines |
-| Bras droit | 4 000 | Environ 2 mois |
-| Majordome | 10 000 | Vers la fin du semestre, aux finaux de janvier |
+| Assistant | 1 500 | Environ 3 semaines |
+| Bras droit | 6 000 | Environ 2 mois |
+| Majordome | 22 000 | Vers la fin mai |
 
-L'estimation suppose une semaine type à environ 475 XP : 8 cartes, 30 éléments cochés, 5 sessions focus, 7 lignes de journal. Elle sera recalée après deux semaines réelles.
+Les estimations viennent de la simulation de l'année (`REGULATION-XP.md`, semaine ordinaire d'environ 515 XP, combat compris). Les seuils seront revus après deux à trois semaines d'usage réel, **seulement à la baisse** : les monter ferait redescendre des niveaux déjà gagnés.
 
 **Série** : les jours d'affilée avec au moins une carte terminée, un élément coché ou une session focus. **Un joker par semaine** (du lundi au dimanche) : un jour sans action ne casse pas la série, une fois par semaine. Le joker s'utilise tout seul.
 
@@ -366,7 +372,7 @@ La récompense de chaque niveau gagné, et de certains exploits. Banque des 70 c
 **Les cartes** :
 - **52 cartes de niveau**, 13 par domaine : chacune met le boss du domaine dans un moment de ta vraie année (Le 99+ dans la régie du Cabaret, Le Poly à la BU), et les 13 racontent une petite histoire.
   - La n° 1 de chaque domaine est offerte à l'installation : l'album n'est jamais vide.
-  - Les n° 2 à 13 se gagnent aux niveaux 2 à 13 du domaine (le niveau 13 demande 7 800 XP dans le domaine, de quoi tenir l'année).
+  - Les n° 2 à 13 se gagnent aux niveaux 2 à 13 du domaine (le niveau 13 demande 12 480 XP dans le domaine, de quoi tenir l'année).
   - Au-delà du niveau 13 : « Album complet en Études. Le dessinateur est en vacances. » Jarvis peut ajouter des cartes hors série.
 - **18 cartes rares**, souvent avec plusieurs boss :
   - une par badge (12), gagnée en même temps que lui ;

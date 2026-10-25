@@ -91,7 +91,7 @@ test("GO : la proposition tombe, 3 relances avec leurs répliques, puis Junior c
   assert.ok(meilleures.includes(vues[0]), 'la première proposition est parmi les 5 meilleures');
   await page.getByRole('button', { name: "C'est parti" }).click();
   await page.getByText("C'est parti. Coche l'étape quand c'est fait, je note.").waitFor();
-  assert.match(new URL(page.url()).hash, /^#\/carte\/ca\d{22}/);
+  assert.match(new URL(page.url()).hash, /^#\/carte\/[0-9a-f]{24}/);
   await attendre(() => serveur.appels('tirage/parti').length === 1, 'tirage/parti envoyé');
 });
 
@@ -148,4 +148,25 @@ test('rappels du jour : un rappel passé pendant la session se barre ; vide : «
   await ouvrirAujourdhui(page, contexte, serveur, '2026-10-14T15:45:00+02:00', 'Entracte');
   await page.getByText("Aucun rappel aujourd'hui.").waitFor();
   assert.equal(await page.locator('.rappel-rang').count(), 0);
+});
+
+test("tranches : la poignée porte le niveau du domaine, sa position suit la progression, le libellé lit l'XP", async ({ page, contexte, serveur }) => {
+  await ouvrirAujourdhui(page, contexte, serveur, '2026-10-14T15:45:00+02:00', 'Entracte');
+  assert.deepEqual(await page.locator('.fader-poignee').allTextContents(), ['3', '2', '3', '3']);
+  // Junior se présente avec son grade
+  assert.equal(await page.locator('.talkback-qui span').textContent(), 'Junior · assistant');
+  // Études : 120 XP sur 480 dans le niveau
+  assert.equal(await page.locator('.tranche.d-etudes .fader').evaluate((e) => e.style.getPropertyValue('--progres')), '0.25');
+  assert.equal(await page.getByRole('button', { name: /Études, niveau 3, 120 XP sur 480/ }).count(), 1);
+  assert.equal(await page.getByRole('button', { name: /^QYRIS : 2 à faire, 1 en retard\./ }).count(), 1);
+  const bas = await page.locator('.fader-poignee').evaluateAll((l) => l.map((e) => e.getBoundingClientRect().bottom - e.parentElement.getBoundingClientRect().top));
+  assert.ok(bas.every((b) => b > 0), 'poignées dans leur fader');
+});
+
+test("tranches : sans XP, la poignée reste sans niveau et rien ne casse", async ({ page, contexte, serveur }) => {
+  serveur.etat.donnees.xp = null;
+  await ouvrirAujourdhui(page, contexte, serveur, '2026-10-14T15:45:00+02:00', 'Entracte');
+  assert.deepEqual(await page.locator('.fader-poignee').allTextContents(), ['', '', '', '']);
+  assert.equal(await page.locator('.talkback-qui span').textContent(), 'Junior · stagiaire');
+  assert.equal(await page.getByRole('button', { name: 'Études : 3 à faire, médian dans 7 jours' }).count(), 1);
 });

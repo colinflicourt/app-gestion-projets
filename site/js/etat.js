@@ -1,5 +1,7 @@
 // Les écritures en attente appliquées par-dessus la dernière copie du serveur (SPEC § 8.4) : l'écran montre
 // tout de suite ce que Colin vient de faire, marqué « attente » jusqu'à la réponse. Fonctions pures.
+import { jourParis } from './lib/temps.js';
+import { payeApres } from './lib/xp.js';
 
 const ORDRE = ['qyris', 'asso', 'etudes', 'perso'];
 
@@ -71,6 +73,7 @@ export function vue(donnees, file) {
   const v = structuredClone(donnees);
   for (const e of file) appliquerEcriture(v.trello.cartes, e);
   v.rappels_du_jour = file.reduce(appliquerRappel, v.rappels_du_jour ?? []);
+  v.xp_paye = payeApres(v.xp?.aujourdhui_paye, file, jourParis(new Date()));
   trierCartes(v.trello.cartes);
   return v;
 }
@@ -96,6 +99,7 @@ export function integrer(donnees, e, reponse) {
     for (const liste of carte.checklists) for (const element of liste.elements) delete element.attente;
   }
   trierCartes(d.trello.cartes);
+  if (reponse.xp) d.xp = reponse.xp;
   return d;
 }
 
@@ -103,6 +107,14 @@ export function integrer(donnees, e, reponse) {
 export function remplacerIdLocal(file, idLocal, idReel) {
   const remplacer = (o) => (o.carte === idLocal ? { ...o, carte: idReel } : o);
   return file.map((e) => ({ ...e, corps: remplacer(e.corps), local: remplacer(e.local) }));
+}
+
+// Ce que l'écriture « taches/annuler » garde en local. Annuler une carte éclair dont la réponse est arrivée rend
+// un éclair payé : l'estimation du plafond le retire tout de suite au lieu d'attendre la réponse de l'annulation.
+export function localAnnulation(e, repondue = true) {
+  const local = { carte: e.corps.carte, colonne_avant: e.local.colonne_avant, position_avant: e.local.position_avant, echeance_faite_avant: e.local.echeance_faite_avant };
+  if (repondue && e.local.xp?.genre === 'eclairs') local.xp = { genre: 'eclairs', n: -1 };
+  return local;
 }
 
 export const retirerEcriture = (file, id) => file.filter((e) => e.id_client !== id);

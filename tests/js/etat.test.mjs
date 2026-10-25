@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { decision, integrer, remplacerIdLocal, retirerEcriture, vue } from '../../site/js/etat.js';
+import { decision, integrer, localAnnulation, remplacerIdLocal, retirerEcriture, vue } from '../../site/js/etat.js';
 
 const carte = (id, domaine, colonne, position, autres = {}) => ({
   id, domaine, colonne, position, titre: id, description: '', url: '', echeance: null, echeance_faite: false, urgent: false,
@@ -82,4 +82,40 @@ test('rappels du jour : un rappel en attente s\'ajoute sans bouton, une annulati
   const apres = integrer(d, creation, { rappel: { id: 'r2', texte: 'Pain', quand: '2026-10-14T16:45:00+02:00' } });
   assert.deepEqual(apres.rappels_du_jour.map((r) => [r.id, r.annulable]), [['r2', true], ['r1', true]]);
   assert.deepEqual(integrer(apres, ecriture('rappels/annuler', { id: 'r2' }), { id: 'r2' }).rappels_du_jour.map((r) => r.id), ['r1']);
+});
+
+const xp = (total, paye = { etapes: 0, eclairs: 0 }) => ({ total, aujourdhui_paye: paye, domaines: {}, evenements: [] });
+
+test("integrer : reprend l'objet xp de la réponse ; sans xp (ou xp null) la dernière connue reste", () => {
+  const d = { ...donnees(), xp: xp(100) };
+  const terminer = ecriture('taches/terminer', { carte: 'q1' });
+  assert.equal(integrer(d, terminer, { xp: xp(130) }).xp.total, 130);
+  assert.equal(integrer(d, terminer, { xp: null }).xp.total, 100);
+  assert.equal(integrer(d, terminer, {}).xp.total, 100);
+  assert.equal(d.xp.total, 100);
+  const sansXp = integrer(donnees(), terminer, { xp: null });
+  assert.equal(sansXp.xp ?? null, null);
+  assert.equal(integrer(donnees(), terminer, { xp: xp(30) }).xp.total, 30);
+});
+
+test("vue : xp_paye = ce que le serveur a payé aujourd'hui plus les gestes de la file ; sans xp, zéro", () => {
+  const geste = (route, genre, n, faitLe) => ({ ...ecriture(route, { carte: 'q1', element: 'e1', coche: true }), fait_le: faitLe, local: { xp: { genre, n } } });
+  const maintenant = new Date().toISOString();
+  const d = { ...donnees(), xp: xp(100, { etapes: 4, eclairs: 1 }) };
+  const v = vue(d, [geste('taches/cocher', 'etapes', 1, maintenant), geste('taches/terminer', 'eclairs', 1, maintenant)]);
+  assert.deepEqual(v.xp_paye, { etapes: 5, eclairs: 2 });
+  assert.deepEqual(vue(donnees(), []).xp_paye, { etapes: 0, eclairs: 0 });
+});
+
+test("annuler une carte éclair déjà répondue : l'écriture d'annulation retire 1 aux éclairs payés estimés", () => {
+  const origine = { ...ecriture('taches/terminer', { carte: 'q1' }, { colonne_avant: 'a_faire', position_avant: 1000, echeance_faite_avant: false, xp: { genre: 'eclairs', n: 1 } }), fait_le: new Date().toISOString() };
+  const local = localAnnulation(origine);
+  assert.deepEqual(local.xp, { genre: 'eclairs', n: -1 });
+  assert.equal(local.carte, 'q1');
+  const annuler = { ...ecriture('taches/annuler', { id_client_origine: origine.id_client }, local), fait_le: new Date().toISOString() };
+  const d = { ...donnees(), xp: xp(130, { etapes: 0, eclairs: 2 }) };
+  assert.deepEqual(vue(d, [annuler]).xp_paye, { etapes: 0, eclairs: 1 });
+  // Une carte à 30 XP n'a rien payé de plafonné : rien à retirer
+  const normale = ecriture('taches/terminer', { carte: 'q1' }, { colonne_avant: 'a_faire', position_avant: 1000, echeance_faite_avant: false });
+  assert.equal(localAnnulation(normale).xp, undefined);
 });

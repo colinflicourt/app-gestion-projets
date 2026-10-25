@@ -5,7 +5,7 @@ import { T } from './lib/textes.js';
 import { appeler, ErreurApi, ErreurReseau } from './api.js';
 import * as stockage from './stockage.js';
 import * as file from './file.js';
-import { integrer, retirerEcriture, vue } from './etat.js';
+import { integrer, localAnnulation, retirerEcriture, vue } from './etat.js';
 import { rendreMessage, rendreStatut, tirerPourActualiser } from './ecrans/commun.js';
 import * as connexion from './ecrans/connexion.js';
 import * as taches from './ecrans/taches.js';
@@ -17,6 +17,7 @@ import * as mails from './ecrans/mails.js';
 import * as moi from './ecrans/moi.js';
 import * as reglages from './ecrans/reglages.js';
 import * as notifications from './notifications.js';
+import { verifier as verifierCelebrations } from './ecrans/celebration.js';
 
 const ECRANS = {
   aujourdhui,
@@ -138,6 +139,7 @@ async function actualiser(force = false) {
     } catch {
       // la copie reste en mémoire
     }
+    verifierCelebrations(app, d.xp);
     envoyerFile();
   } catch (e) {
     if (e instanceof ErreurApi && e.statut === 401) {
@@ -208,6 +210,7 @@ function envoyerFile() {
       if (etat.donnees) {
         etat.donnees = integrer(etat.donnees, e, reponse);
         stockage.ecrire('donnees', 'derniere', etat.donnees).catch(() => {});
+        verifierCelebrations(app, etat.donnees.xp);
       }
       rendre();
     },
@@ -239,9 +242,7 @@ async function annulerTerminer(e) {
       return;
     }
   }
-  await ecrire('taches/annuler', { id_client_origine: e.id_client }, {
-    carte: e.corps.carte, colonne_avant: e.local.colonne_avant, position_avant: e.local.position_avant, echeance_faite_avant: e.local.echeance_faite_avant,
-  });
+  await ecrire('taches/annuler', { id_client_origine: e.id_client }, localAnnulation(e, !enFile));
 }
 
 let minuteurMessage = null;
