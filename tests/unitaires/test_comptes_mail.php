@@ -4,10 +4,10 @@ declare(strict_types=1);
 test('comptes mail : les 4 comptes sont toujours présents, identifiants pré-remplis, rien d enregistré', function () {
     base_de_test();
     $c = comptes_mail_lire();
-    egal(['utc', 'gmail', 'icloud', 'colin', 'contact'], array_keys($c));
+    egal(['utc', 'gmail', 'icloud', 'colin'], array_keys($c));
     egal(['identifiant' => 'colin.flicourt@gmail.com', 'enregistre' => false, 'dernier_succes' => null, 'derniere_erreur' => null], $c['gmail']);
     egal(['identifiant' => 'cflicour', 'enregistre' => false, 'dernier_succes' => null, 'derniere_erreur' => null], $c['utc']);
-    egal('contact@qyris.fr', $c['contact']['identifiant']);
+    egal('colin@qyris.fr', $c['colin']['identifiant']);
     egal(null, compte_mail_acces('gmail'));
 });
 
@@ -86,4 +86,15 @@ test('corrections d expéditeur : minuscules, espaces retirés, auto efface, cho
     correction_ecrire('NEWS@exemple.fr', 'auto');
     egal([], corrections_lire());
     correction_ecrire('absent@exemple.fr', 'auto');
+});
+
+test('comptes mail : une ligne d un compte retiré (contact) restée en base est ignorée, et le compte est refusé', function () {
+    base_de_test();
+    compte_mail_enregistrer('colin', 'colin@qyris.fr', 'secret-colin');
+    $r = db()->prepare('INSERT INTO comptes_mail (compte, identifiant, mot_de_passe, modifie_le) VALUES (?, ?, ?, UTC_TIMESTAMP())');
+    $r->execute(['contact', 'contact@qyris.fr', 'x']);
+    egal(['utc', 'gmail', 'icloud', 'colin'], array_keys(comptes_mail_lire()));
+    egal(['utc', 'gmail', 'icloud', 'colin'], array_keys(corps(appeler('GET', 'mails'))['comptes']));
+    egal(['utc', 'gmail', 'icloud', 'colin'], array_keys(mails_copies_datees()));
+    egal(400, appeler('POST', 'comptes-mail', ['compte' => 'contact', 'identifiant' => 'contact@qyris.fr', 'mot_de_passe' => 'y'])['statut']);
 });

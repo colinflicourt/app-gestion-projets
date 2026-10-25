@@ -69,10 +69,11 @@ test('mails : un mail montre expéditeur, objet, extrait et heure (« 14 h 32 »
   assert.equal(await page.getByText('Une connexion depuis un nouvel appareil').count(), 1);
 });
 
-test('mails : QYRIS réunit colin@ et contact@, chaque mail porte l\'étiquette de son adresse', async ({ page, contexte, serveur }) => {
+test('mails : QYRIS montre les mails de colin@, sans aucune étiquette d\'adresse', async ({ page, contexte, serveur }) => {
   await ouvrirMails(page, contexte, serveur);
-  assert.deepEqual(await (await voir(page, 'qyris')).locator('.mail-etiquette').allTextContents(), ['colin@', 'contact@']);
-  assert.equal(await (await voir(page, 'gmail')).locator('.mail-etiquette').count(), 0);
+  const qyris = await voir(page, 'qyris');
+  assert.deepEqual(await qyris.locator('.mail-objet').allTextContents(), ['Devis du site', 'Question sur la formation']);
+  assert.equal(await page.locator('.mail-etiquette').count(), 0);
 });
 
 test('mails : pubs repliées sous « + 48 pubs », dépliées puis « Masquer les pubs »', async ({ page, contexte, serveur }) => {
@@ -121,20 +122,20 @@ test('mails : « Ce n\'est pas une pub » remet le mail dans la liste et compte 
 
 test('mails : chargement en trois temps, GET mails puis un POST mails/rafraichir par compte', async ({ page, contexte, serveur }) => {
   await ouvrirMails(page, contexte, serveur);
-  await attendre(() => serveur.appels('mails/rafraichir').length === 5, 'les 5 rafraîchissements');
-  assert.deepEqual(serveur.appels('mails/rafraichir').map((a) => a.corps.compte).sort(), ['colin', 'contact', 'gmail', 'icloud', 'utc']);
+  await attendre(() => serveur.appels('mails/rafraichir').length === 4, 'les 4 rafraîchissements');
+  assert.deepEqual(serveur.appels('mails/rafraichir').map((a) => a.corps.compte).sort(), ['colin', 'gmail', 'icloud', 'utc']);
   assert.equal(serveur.appels('mails').length, 1);
 });
 
 test('mails : une section en erreur affiche son message et les autres restent affichées', async ({ page, contexte, serveur }) => {
   serveur.etat.mails.comptes.icloud.erreur = 'refus';
-  serveur.etat.mails.comptes.contact.erreur = 'delai';
+  serveur.etat.mails.comptes.colin.erreur = 'delai';
   await ouvrirMails(page, contexte, serveur);
   assert.deepEqual(await boites(page), [['UTC', '2 non lus'], ['QYRIS', 'Ne répond pas'], ['Gmail', '1 non lu'], ['iCloud', 'Ne répond pas']]);
   assert.equal(await page.locator('.mails-boite.erreur').count(), 2);
   assert.equal(await texte(await voir(page, 'icloud'), '.mails-avis'), "iCloud ne répond pas. Vérifie le mot de passe d'application dans Réglages.");
   const qyris = await voir(page, 'qyris');
-  assert.equal(await texte(qyris, '.mails-avis'), 'La boîte contact@qyris.fr ne répond pas. Vérifie son mot de passe dans Réglages.');
+  assert.equal(await texte(qyris, '.mails-avis'), 'La boîte colin@qyris.fr ne répond pas. Vérifie son mot de passe dans Réglages.');
   assert.equal(await qyris.locator('.mail').count(), 2, 'la dernière copie reste affichée');
   assert.equal(await (await voir(page, 'gmail')).locator('.mails-avis').count(), 0);
   const utc = await voir(page, 'utc');
@@ -154,7 +155,7 @@ test('mails : une erreur de boîte rendue en 400 par le rafraîchissement marque
   serveur.etat.pannes['mails/rafraichir'] = { statut: 400, code: 'refus', message: 'Mot de passe refusé.' };
   await ouvrirMails(page, contexte, serveur);
   await (await voir(page, 'icloud')).locator('.mails-avis.erreur').waitFor();
-  assert.equal(await (await voir(page, 'qyris')).locator('.mails-avis.erreur').count(), 2);
+  assert.equal(await (await voir(page, 'qyris')).locator('.mails-avis.erreur').count(), 1);
   assert.equal(await (await voir(page, 'utc')).locator('.mail').count(), 3);
 });
 
@@ -170,9 +171,9 @@ test('mails : un compte non enregistré dit « Pas encore connecté » avec un l
   assert.equal(await texte(icloud, '.mails-avis p'), 'Pas encore connecté');
   assert.equal(await icloud.getByRole('link', { name: 'Ouvrir Réglages' }).getAttribute('href'), '#/reglages');
   assert.equal(await texte(await voir(page, 'qyris'), '.mails-avis p'), 'colin@qyris.fr : Pas encore connecté');
-  await attendre(() => serveur.appels('mails/rafraichir').length === 3, 'rafraîchissement de utc, gmail et contact seulement');
+  await attendre(() => serveur.appels('mails/rafraichir').length === 2, 'rafraîchissement de utc et gmail seulement');
   await page.waitForTimeout(200);
-  assert.deepEqual(serveur.appels('mails/rafraichir').map((a) => a.corps.compte).sort(), ['contact', 'gmail', 'utc']);
+  assert.deepEqual(serveur.appels('mails/rafraichir').map((a) => a.corps.compte).sort(), ['gmail', 'utc']);
 });
 
 test('mails : boutons d\'ouverture par section', async ({ page, contexte, serveur }) => {
@@ -187,7 +188,7 @@ test('mails : boutons d\'ouverture par section', async ({ page, contexte, serveu
 
 test('mails : hors ligne, la copie locale s\'affiche avec « à jour il y a 12 min »', async ({ page, contexte, serveur }) => {
   await ouvrirMails(page, contexte, serveur);
-  await attendre(() => serveur.appels('mails/rafraichir').length === 5, 'les 5 rafraîchissements');
+  await attendre(() => serveur.appels('mails/rafraichir').length === 4, 'les 4 rafraîchissements');
   await page.waitForTimeout(150);
   serveur.etat.horsService = true;
   await page.reload();

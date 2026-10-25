@@ -100,7 +100,7 @@
 
 ### Mails
 
-- **4 sections, dans l'ordre** : UTC (ta boîte UTC, colin.flicourt@etu.utc.fr), QYRIS (colin@ et contact@ réunis, chaque mail porte l'étiquette de son adresse), Gmail, iCloud. En tête de chaque section, son nombre de non lus.
+- **4 sections, dans l'ordre** : UTC (ta boîte UTC, colin.flicourt@etu.utc.fr), QYRIS (colin@, sans étiquette d'adresse sur les mails ; contact@ est une redirection vers colin@, révisé le 2026-10-25), Gmail, iCloud. En tête de chaque section, son nombre de non lus.
 - **Chaque mail** : expéditeur, objet, extrait, heure (« 14 h 32 », « hier », « lun. 19/10 », « 19/10/2025 »).
 - **Pubs** : repliées sous « + 48 pubs », puis « Masquer les pubs ». Sur un mail : « Toujours afficher » ou « C'est une pub » ; sur une pub : « Ce n'est pas une pub ». Après une correction : « Retenu. »
 - **Boutons d'ouverture** : « Ouvrir le webmail UTC » (https://webmail.utc.fr), « Ouvrir dans Gmail », « Ouvrir dans iCloud Mail », « Ouvrir le webmail OVH ».
@@ -109,7 +109,7 @@
   - « iCloud ne répond pas. Vérifie le mot de passe d'application dans Réglages. »
   - « La boîte UTC ne répond pas. Vérifie ton mot de passe UTC dans Réglages. » (section UTC)
   - « Gmail ne répond pas. Vérifie le mot de passe d'application dans Réglages. » (section Gmail)
-  - « La boîte colin@qyris.fr ne répond pas. Vérifie son mot de passe dans Réglages. » (ou contact@)
+  - « La boîte colin@qyris.fr ne répond pas. Vérifie son mot de passe dans Réglages. » (section QYRIS)
   - compte non enregistré : « Pas encore connecté », avec le lien « Ouvrir Réglages ».
 - **Bloc Mails d'Aujourd'hui** : « 3 non lus · UTC 2 · QYRIS 1 » (sections à 0 omises), « Boîtes à jour. » s'il n'y en a aucun.
 - Textes du lot 3 validés par Colin le 2026-10-23 (SPEC § 16.11 et plan du lot 3).
@@ -149,7 +149,8 @@
   - mode d'emploi UTC : « Ton mot de passe UTC, celui du CAS. » ;
   - mode d'emploi Gmail : « Compte Google > Sécurité > Validation en deux étapes, puis Mots de passe des applications. Colle ici le mot de passe de 16 lettres. » ;
   - mode d'emploi iCloud : « Compte Apple > Connexion et sécurité > Mots de passe pour app. Colle ici le mot de passe créé. » ;
-  - mode d'emploi OVH : « Le mot de passe de la boîte, celui du webmail OVH. »
+  - mode d'emploi OVH (colin@qyris.fr) : « Le mot de passe de la boîte, celui du webmail OVH. »
+  - révisé le 2026-10-25 : plus de compte contact@qyris.fr (c'est une redirection vers colin@), 4 comptes au total
 - **Siri** : « Créer le raccourci Retiens pour Jarvis », avec le mode d'emploi.
 - **Session** : « Se déconnecter », « Déconnecter tous les appareils ».
 
@@ -349,7 +350,7 @@ L'estimation suppose une semaine type à environ 475 XP : 8 cartes, 30 élément
 | Mieux vaut tard | Une carte en retard de plus de 7 jours, enfin terminée |
 | Semaine parfaite | Une série de 7 jours |
 | Tous terrains | Une carte terminée dans chacun des 4 tableaux la même semaine |
-| Inbox zéro | Les 5 boîtes à zéro non lu au même moment |
+| Inbox zéro | Les 4 boîtes à zéro non lu au même moment |
 | Perfect | Un boss de 60 min battu au bout du temps (« J'ai fini la tâche » ne compte pas) |
 | Chasseur de boss | 10 boss battus |
 | Machine à sous | 10 tirages suivis d'un « C'est parti » |

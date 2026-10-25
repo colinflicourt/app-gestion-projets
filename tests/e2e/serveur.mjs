@@ -122,7 +122,7 @@ async function api(req, res, url, etat) {
   }
   if (req.method === 'GET' && route === 'mails') return json(res, 200, structuredClone(etat.mails));
   if (req.method === 'POST' && route === 'mails/rafraichir') {
-    const parSection = { utc: ['utc'], gmail: ['gmail'], icloud: ['icloud'], colin: ['qyris'], contact: ['qyris'] }[corps.compte];
+    const parSection = { utc: ['utc'], gmail: ['gmail'], icloud: ['icloud'], colin: ['qyris'] }[corps.compte];
     if (!parSection) return json(res, 400, { code: 'compte_invalide', message: 'Compte inconnu.' });
     return json(res, 200, {
       compte: corps.compte, sections: structuredClone(etat.mails.sections.filter((s) => parSection.includes(s.section))),

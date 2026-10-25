@@ -15,7 +15,7 @@ const JR_MAILS_AGE_ROUTE = 300;   // une copie de plus de 5 min est relue quand 
 const JR_MAILS_AGE_CRON = 900;    // et de plus de 15 min par le planificateur
 const JR_MAILS_LIMITE_ROUTE = 25; // secondes de lecture IMAP au plus pour une requête (set_time_limit(30) dans la route)
 const JR_MAILS_RESTE_CRON = 12;   // le planificateur ne lance une lecture que s'il lui reste ce temps
-const JR_MAILS_SECTIONS_DU_COMPTE = ['utc' => ['utc'], 'gmail' => ['gmail'], 'icloud' => ['icloud'], 'colin' => ['qyris'], 'contact' => ['qyris']];
+const JR_MAILS_SECTIONS_DU_COMPTE = ['utc' => ['utc'], 'gmail' => ['gmail'], 'icloud' => ['icloud'], 'colin' => ['qyris']];
 const JR_MAILS_MESSAGES = [
     'refus' => 'Mot de passe refusé',
     'injoignable' => "Boîte injoignable pour l'instant.",
@@ -27,7 +27,6 @@ const JR_MAILS_IDENTIFIANTS = [
     'gmail' => 'colin.flicourt@gmail.com',
     'icloud' => 'colin.flicourt@icloud.com',
     'colin' => 'colin@qyris.fr',
-    'contact' => 'contact@qyris.fr',
 ];
 
 function compte_mail_verifier(string $compte): void

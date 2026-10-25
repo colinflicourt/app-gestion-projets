@@ -3,7 +3,7 @@
 
 declare(strict_types=1);
 
-const JR_MAILS_COMPTES = ['utc', 'gmail', 'icloud', 'colin', 'contact'];
+const JR_MAILS_COMPTES = ['utc', 'gmail', 'icloud', 'colin'];
 const JR_MAILS_SECTIONS = ['utc', 'qyris', 'gmail', 'icloud'];
 const JR_MAILS_AFFICHES_MIN = 20;
 const JR_MAILS_PUBS_MAX = 20;

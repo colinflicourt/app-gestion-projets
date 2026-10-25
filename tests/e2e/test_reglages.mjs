@@ -321,8 +321,7 @@ test('Comptes mail : un état par compte, identifiants pré-remplis, champ mot d
   await compteMail(page, 'Gmail').getByText('Connecté, vérifié à 14 h 32', { exact: true }).waitFor();
   await compteMail(page, 'iCloud').getByText('Pas encore connecté', { exact: true }).waitFor();
   await compteMail(page, 'colin@qyris.fr').getByText('Mot de passe refusé', { exact: true }).waitFor();
-  await compteMail(page, 'contact@qyris.fr').getByText("Boîte injoignable pour l'instant.", { exact: true }).waitFor();
-  for (const [nom, id] of [['UTC', 'cflicour'], ['Gmail', 'colin.flicourt@gmail.com'], ['iCloud', 'colin.flicourt@icloud.com'], ['colin@qyris.fr', 'colin@qyris.fr'], ['contact@qyris.fr', 'contact@qyris.fr']]) {
+  for (const [nom, id] of [['UTC', 'cflicour'], ['Gmail', 'colin.flicourt@gmail.com'], ['iCloud', 'colin.flicourt@icloud.com'], ['colin@qyris.fr', 'colin@qyris.fr']]) {
     const c = compteMail(page, nom);
     assert.equal(await c.getByLabel('Identifiant').inputValue(), id);
     const mdp = c.getByLabel('Mot de passe');
@@ -344,15 +343,17 @@ test('Comptes mail : un état par compte, identifiants pré-remplis, champ mot d
 
 test('Comptes mail : « trop de temps », vérifié hier ou plus tôt (forme des heures de mail)', async ({ page, contexte, serveur }) => {
   const { comptesMail } = serveur.etat;
-  comptesMail.colin.derniere_erreur = 'delai';
-  comptesMail.contact.derniere_erreur = null;
-  comptesMail.contact.dernier_succes = '2026-10-13T08:05:00Z';
+  comptesMail.gmail.derniere_erreur = 'delai';
+  Object.assign(comptesMail.utc, { enregistre: true, derniere_erreur: 'injoignable' });
+  comptesMail.colin.derniere_erreur = null;
+  comptesMail.colin.dernier_succes = '2026-10-13T08:05:00Z';
   Object.assign(comptesMail.icloud, { enregistre: true, dernier_succes: '2026-10-09T08:05:00Z' });
   await preparer(page, contexte, serveur);
   await ouvrir(page, '/#/reglages');
-  await compteMail(page, 'contact@qyris.fr').getByText('Connecté, vérifié hier', { exact: true }).waitFor();
+  await compteMail(page, 'colin@qyris.fr').getByText('Connecté, vérifié hier', { exact: true }).waitFor();
   await compteMail(page, 'iCloud').getByText('Connecté, vérifié ven. 09/10', { exact: true }).waitFor();
-  await compteMail(page, 'colin@qyris.fr').getByText('La boîte a mis trop de temps à répondre.', { exact: true }).waitFor();
+  await compteMail(page, 'Gmail').getByText('La boîte a mis trop de temps à répondre.', { exact: true }).waitFor();
+  await compteMail(page, 'UTC').getByText("Boîte injoignable pour l'instant.", { exact: true }).waitFor();
 });
 
 test('Enregistrer : le mot de passe part en direct (pas dans la file), le champ se vide, « Compte enregistré. », état à jour', async ({ page, contexte, serveur }) => {

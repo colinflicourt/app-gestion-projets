@@ -41,21 +41,19 @@ test('resumeMails : 0, 1, plusieurs, sections à 0 omises, ordre UTC QYRIS Gmail
 
 const comptes = (o = {}) => ({
   utc: { recupere_le: null, erreur: null },  gmail: { recupere_le: null, erreur: null }, icloud: { recupere_le: null, erreur: null },
-  colin: { recupere_le: null, erreur: null }, contact: { recupere_le: null, erreur: null }, ...o,
+  colin: { recupere_le: null, erreur: null }, ...o,
 });
 
-test("etatSection : UTC suit son compte utc, Gmail le sien, QYRIS suit colin et contact, une boîte sans erreur n'a aucun avis", () => {
+test("etatSection : UTC suit son compte utc, Gmail le sien, QYRIS suit colin, une boîte sans erreur n'a aucun avis", () => {
   assert.deepEqual(etatSection('utc', comptes()), []);
   assert.deepEqual(etatSection('utc', comptes({ utc: { erreur: 'refus' } })), [{ compte: 'utc', code: 'refus' }]);
   assert.deepEqual(etatSection('utc', comptes({ gmail: { erreur: 'refus' } })), []);
   assert.deepEqual(etatSection('gmail', comptes({ utc: { erreur: 'refus' } })), []);
   assert.deepEqual(etatSection('gmail', comptes({ gmail: { erreur: 'non_connecte' } })), [{ compte: 'gmail', code: 'non_connecte' }]);
   assert.deepEqual(etatSection('icloud', comptes({ icloud: { erreur: 'delai' } })), [{ compte: 'icloud', code: 'delai' }]);
-  assert.deepEqual(
-    etatSection('qyris', comptes({ colin: { erreur: 'non_connecte' }, contact: { erreur: 'injoignable' } })),
-    [{ compte: 'colin', code: 'non_connecte' }, { compte: 'contact', code: 'injoignable' }],
-  );
-  assert.deepEqual(etatSection('qyris', comptes({ contact: { erreur: 'refus' } })), [{ compte: 'contact', code: 'refus' }]);
+  assert.deepEqual(etatSection('qyris', comptes({ colin: { erreur: 'non_connecte' } })), [{ compte: 'colin', code: 'non_connecte' }]);
+  assert.deepEqual(etatSection('qyris', comptes({ colin: { erreur: 'injoignable' } })), [{ compte: 'colin', code: 'injoignable' }]);
+  assert.deepEqual(etatSection('qyris', comptes({ gmail: { erreur: 'refus' } })), []);
   assert.deepEqual(etatSection('gmail', null), []);
 });
 

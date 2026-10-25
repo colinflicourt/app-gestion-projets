@@ -430,7 +430,7 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 | Lot | Contenu | Section de spec à écrire avant son plan |
 |---|---|---|
 | 2 | Notifications web (VAPID, aes128gcm vérifié contre la RFC 8291), planificateur appelé par cron-job.org, rappels automatiques et manuels, brief du matin, raccourci Siri, choix « Rappel » de la capture | Oui |
-| 3 | 5 boîtes mail en lecture seule (client IMAP maison, section UTC), onglet Mails, bloc Mails d'Aujourd'hui | Oui |
+| 3 | 4 boîtes mail en lecture seule (client IMAP maison, section UTC), onglet Mails, bloc Mails d'Aujourd'hui | Oui |
 | 4 | XP, niveaux, séries, badges calculés depuis `actions`, cartes et album, journal et Wrapped, combat contre le boss avec « J'ai fini la tâche » (« C'est parti » lance alors le boss) | Oui |
 
 **Préparatifs de Colin restants** : compte cron-job.org (avant le lot 2), mot de passe CAS de l'UTC et mots de passe d'application Gmail et iCloud (avant le lot 3), accord pour créer les 3 médians dans l'agenda principal (avant le lot 2).
@@ -563,13 +563,13 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 | 2 | Notifications de mails | **Aucune.** Les mails s'affichent à l'ouverture de l'app (onglet Mails, bloc d'Aujourd'hui) et dans le brief du matin |
 | 3 | Pubs | **Repérées automatiquement et repliées** (« + 48 pubs »), jamais comptées dans les non lus. Un expéditeur mal classé se corrige d'un geste, retenu par Junior seul |
 | 4 | UTC | **Jamais filtrée** : les listes de diffusion de l'UTC portent les mêmes signes que les pubs, et un changement de salle caché serait la pire erreur du lot |
-| 5 | Ordre des sections | UTC, QYRIS (colin@ et contact@ réunis), Gmail, iCloud. C'est l'ordre d'importance donné par Colin |
+| 5 | Ordre des sections | UTC, QYRIS (colin@), Gmail, iCloud. C'est l'ordre d'importance donné par Colin. **Révisé le 2026-10-25 : contact@qyris.fr est une redirection vers colin@qyris.fr, pas une boîte ; le compte `contact` est retiré, QYRIS ne contient que `colin`** |
 | 6 | Tri de la boîte iCloud | **Hors de l'app** (Junior reste en lecture seule) : chantier à part, carte Perso `h4xDF2bR` |
 
 ### 16.2 Portée
 
 - **Dans le lot 3** :
-  - client IMAP maison en lecture seule pour 5 comptes : UTC (`cflicour`, `imaps.utc.fr`), Gmail, iCloud, colin@qyris.fr, contact@qyris.fr ;
+  - client IMAP maison en lecture seule pour 4 comptes : UTC (`cflicour`, `imaps.utc.fr`), Gmail, iCloud, colin@qyris.fr (révisé le 2026-10-25 : contact@ est une redirection vers colin@, compte retiré) ;
   - section UTC alimentée uniquement par le compte UTC (Gmail n'alimente que la section Gmail) ;
   - tri des pubs et corrections par expéditeur ;
   - onglet **Mails** (5e onglet de la barre, § 8.1), bloc **Mails** d'Aujourd'hui, non lus dans le brief ;
@@ -584,7 +584,6 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 | `gmail` | `imap.gmail.com:993` | `colin.flicourt@gmail.com` | mot de passe d'application Google (validation en 2 étapes) |
 | `icloud` | `imap.mail.me.com:993` | `colin.flicourt@icloud.com` | mot de passe d'application Apple |
 | `colin` | `ssl0.ovh.net:993` | `colin@qyris.fr` | mot de passe de la boîte OVH |
-| `contact` | `ssl0.ovh.net:993` | `contact@qyris.fr` | mot de passe de la boîte OVH |
 
 - Serveurs et ports **écrits dans le code**, pas modifiables depuis l'app : sinon le serveur pourrait être poussé à se connecter n'importe où (même logique que la liste blanche des endpoints au § 15.3). L'identifiant est modifiable.
 - Mot de passe **chiffré avec `chiffrer()`** de `chiffrement.php` (libsodium, clé `APP_CLE_CHIFFREMENT` déjà en place), déchiffré seulement au moment de la connexion IMAP. **Il ne repart jamais vers l'iPhone** : l'API dit seulement s'il est enregistré, et quand il a marché pour la dernière fois.
@@ -595,10 +594,10 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 
 | Table | Colonnes | Rôle |
 |---|---|---|
-| `comptes_mail` | `compte` (clé : `utc`, `gmail`, `icloud`, `colin`, `contact`), `identifiant`, `mot_de_passe` VARBINARY (chiffré), `modifie_le`, `dernier_succes`, `derniere_erreur` (code court : `refus`, `injoignable`, `delai`) | Un compte par boîte |
+| `comptes_mail` | `compte` (clé : `utc`, `gmail`, `icloud`, `colin` ; une ligne d'un compte inconnu restée en base est ignorée), `identifiant`, `mot_de_passe` VARBINARY (chiffré), `modifie_le`, `dernier_succes`, `derniere_erreur` (code court : `refus`, `injoignable`, `delai`) | Un compte par boîte |
 | `expediteurs_tri` | `adresse` (clé, en minuscules), `choix` (`afficher` ou `pub`), `cree_le` | Corrections de Colin, valables pour toutes les boîtes |
 
-- **Copies** dans la table `copies` existante, **une source par compte** (`mail:utc`, `mail:gmail`, `mail:icloud`, `mail:colin`, `mail:contact`), chacune avec son verrou (`rafraichir()` de `rafraichir.php`, réutilisé tel quel). Une boîte lente ou en panne ne bloque pas les autres.
+- **Copies** dans la table `copies` existante, **une source par compte** (`mail:utc`, `mail:gmail`, `mail:icloud`, `mail:colin`), chacune avec son verrou (`rafraichir()` de `rafraichir.php`, réutilisé tel quel). Une boîte lente ou en panne ne bloque pas les autres.
 - **Contenu d'une copie** : `{uidvalidity, mails: [...]}`. Un mail : `{uid, message_id, date (UTC), de_nom, de_adresse, objet, extrait (200 caractères au plus, texte brut), non_lu, signes_pub, lien}`. La copie garde **tous les mails lus au § 16.5** (les 60 derniers et les non lus récents), extrait compris (choix de Claude : une copie large permet qu'une correction d'expéditeur remplisse la liste sans relire la boîte). **L'affichage** montre les non lus et les 20 derniers mails hors pubs, plus les 20 dernières pubs dans la liste repliée. Rien d'autre du mail n'est stocké.
 - **Doublons** (choix de Claude) : dans une section qui réunit deux comptes (QYRIS), un mail présent dans les deux (même `Message-ID`) ne s'affiche et ne compte qu'une fois.
 - **Le tri (`pub`) et les compteurs sont calculés à la lecture** de la copie, pas à sa création : une correction de Colin s'applique tout de suite, sans relire la boîte. La copie garde donc les signes bruts utiles au tri (`signes_pub`, voir § 16.6).
@@ -641,9 +640,9 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 ### 16.8 Sur l'iPhone
 
 - **Onglet Mails** (textes de `CONTENU.md` § Mails, dessin de la maquette v28) :
-  - 4 sections (5 comptes) dans l'ordre UTC, QYRIS, Gmail, iCloud ; en tête de chaque section, son nombre de non lus ;
+  - 4 sections (4 comptes) dans l'ordre UTC, QYRIS, Gmail, iCloud ; en tête de chaque section, son nombre de non lus ;
   - **révisé le 2026-10-25 à la demande de Colin** : `#/mails` liste seulement les 4 boîtes (nom, « 2 non lus », « Ne répond pas » ou « Pas encore connecté ») ; un toucher ouvre la boîte seule sur `#/mails/<boîte>`, avec « Retour aux boîtes » ; le bloc d'Aujourd'hui ouvre la liste ;
-  - QYRIS réunit colin@ et contact@ ; chaque mail porte une petite étiquette de son adresse ;
+  - QYRIS ne montre que colin@ (révisé le 2026-10-25 : contact@ est une redirection vers colin@, compte retiré) ; aucune étiquette d'adresse sur les mails ;
   - un mail : expéditeur, objet, extrait, heure (« 14 h 32 », « hier », « lun. 19/10 ») ; un non lu est mis en évidence ;
   - pubs repliées sous « + 48 pubs » (texte nouveau), dépliables ;
   - sur un mail, un bouton discret propose « Toujours afficher » ou « C'est une pub » (textes nouveaux), et sur une pub « Ce n'est pas une pub » ;
@@ -673,7 +672,7 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 - **Tests JS** : format des heures de la liste, résumé « 3 non lus · UTC 2 · QYRIS 1 ».
 - **Playwright** (boîtes simulées) : onglet Mails (sections, pubs repliées, correction d'un expéditeur), bloc d'Aujourd'hui, Réglages > Comptes mail, une section en erreur.
 - **Le lot 3 est fini quand** :
-  - les 5 comptes sont connectés depuis l'iPhone ;
+  - les 4 comptes sont connectés depuis l'iPhone ;
   - un mail envoyé à l'adresse `@etu.utc.fr` apparaît dans la section UTC ;
   - une newsletter est repliée dans les pubs et ne compte pas dans les non lus ;
   - **un mail non lu reste non lu** dans Gmail, iCloud, le webmail UTC et le webmail OVH après que Junior l'a affiché (vérifié à la main par Colin) ;
@@ -689,5 +688,5 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 - **UTC** : avoir son mot de passe CAS sous la main, à saisir dans Réglages. Puis s'envoyer un mail de test sur l'adresse `@etu.utc.fr`.
 - **Gmail** : validation en 2 étapes, puis un mot de passe d'application.
 - **iCloud** : un mot de passe d'application (compte Apple > Connexion et sécurité).
-- **colin@ et contact@** : avoir leurs mots de passe OVH (contact@ n'a jamais été testée).
+- **colin@** : avoir son mot de passe OVH (contact@ n'est qu'une redirection vers colin@, rien à brancher).
 - Ces préparatifs bloquent les tests réels, pas le développement (boîtes simulées et faux serveur IMAP).

@@ -44,14 +44,14 @@ test('mails : GET mails sans aucun compte rend les 4 sections vides et non_conne
     egal(200, $r['statut']);
     $d = corps($r);
     egal(['utc', 'qyris', 'gmail', 'icloud'], array_column($d['sections'], 'section'));
-    egal(['utc', 'gmail', 'icloud', 'colin', 'contact'], array_keys($d['comptes']));
+    egal(['utc', 'gmail', 'icloud', 'colin'], array_keys($d['comptes']));
     foreach ($d['comptes'] as $etat) {
         egal(['recupere_le' => null, 'erreur' => 'non_connecte'], $etat);
     }
     egal([], appels_imap());
 });
 
-test('mails : une boîte en refus, les autres affichées ; QYRIS réunit colin@ et contact@', function () {
+test('mails : une boîte en refus, les autres affichées ; QYRIS montre colin@', function () {
     base_de_test();
     fixer_heure('2026-10-23 10:00:00');
     $boites = [
@@ -60,8 +60,7 @@ test('mails : une boîte en refus, les autres affichées ; QYRIS réunit colin@ 
             brut_test(2, ['non_lu' => true, 'entetes' => ['to' => ['Colin <c@etu.utc.fr>'], 'received' => ['from mx.utc.fr by mx.google.com']]]),
         ]),
         'icloud' => contenu_brut_test([brut_test(6)]),
-        'colin' => contenu_brut_test([brut_test(3, ['message_id' => '<pareil@x.fr>', 'non_lu' => true])]),
-        'contact' => contenu_brut_test([brut_test(4, ['message_id' => '<pareil@x.fr>']), brut_test(5, ['non_lu' => true])]),
+        'colin' => contenu_brut_test([brut_test(3, ['non_lu' => true])]),
     ];
     faux_imap($boites);
     foreach (JR_MAILS_COMPTES as $compte) {
@@ -74,19 +73,18 @@ test('mails : une boîte en refus, les autres affichées ; QYRIS réunit colin@ 
     }
     $d = corps(appeler('GET', 'mails'));
     egal('refus', $d['comptes']['icloud']['erreur']);
-    egal([null, null, null, null], [$d['comptes']['utc']['erreur'], $d['comptes']['gmail']['erreur'], $d['comptes']['colin']['erreur'], $d['comptes']['contact']['erreur']]);
+    egal([null, null, null], [$d['comptes']['utc']['erreur'], $d['comptes']['gmail']['erreur'], $d['comptes']['colin']['erreur']]);
     egal('2026-10-23T12:00:00+02:00', $d['comptes']['gmail']['recupere_le']);
     egal(null, $d['comptes']['icloud']['recupere_le']);
     egal([1], array_column(section_de($d['sections'], 'utc')['mails'], 'uid'));
     egal([2], array_column(section_de($d['sections'], 'gmail')['mails'], 'uid'));
     egal([], section_de($d['sections'], 'icloud')['mails']);
     $qyris = section_de($d['sections'], 'qyris');
-    egal(2, $qyris['non_lus']);
+    egal(1, $qyris['non_lus']);
     $comptes_qyris = array_values(array_unique(array_column($qyris['mails'], 'compte')));
     sort($comptes_qyris);
-    egal(['colin', 'contact'], $comptes_qyris);
-    egal(1, count(array_filter($qyris['mails'], fn(array $m): bool => $m['message_id'] === '<pareil@x.fr>')));
-    egal(['lecture utc', 'lecture gmail', 'lecture icloud', 'lecture colin', 'lecture contact'], array_slice(appels_imap(), 0, 5));
+    egal(['colin'], $comptes_qyris);
+    egal(['lecture utc', 'lecture gmail', 'lecture icloud', 'lecture colin'], array_slice(appels_imap(), 0, 4));
 });
 
 test('mails : POST mails/rafraichir rend la section du compte (gmail pour gmail, utc pour utc) et son état', function () {

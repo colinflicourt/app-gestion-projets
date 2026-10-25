@@ -203,8 +203,7 @@ export const T = {
     aJourIlYa: (age) => `à jour il y a ${age}`,
     ouvrir: { utc: 'Ouvrir le webmail UTC', gmail: 'Ouvrir dans Gmail', icloud: 'Ouvrir dans iCloud Mail', qyris: 'Ouvrir le webmail OVH' },
     hier: 'hier',
-    etiquetteCompte: { colin: 'colin@', contact: 'contact@' },
-    adresseCompte: { utc: 'colin.flicourt@etu.utc.fr', colin: 'colin@qyris.fr', contact: 'contact@qyris.fr' },
+    adresseCompte: { utc: 'colin.flicourt@etu.utc.fr', colin: 'colin@qyris.fr' },
   },
   moi: {
     titre: 'Moi',
@@ -276,7 +275,7 @@ export const T = {
     testPersonne: "Aucun appareil n'est abonné. Réactive les notifications sur cet iPhone.",
     reseau: 'Pas de réseau. Réessaie quand ça revient.',
     comptesMail: 'Comptes mail',
-    comptesMailNoms: { utc: 'UTC', gmail: 'Gmail', icloud: 'iCloud', colin: 'colin@qyris.fr', contact: 'contact@qyris.fr' },
+    comptesMailNoms: { utc: 'UTC', gmail: 'Gmail', icloud: 'iCloud', colin: 'colin@qyris.fr' },
     identifiant: 'Identifiant',
     motDePasse: 'Mot de passe',
     enregistrer: 'Enregistrer',
@@ -298,7 +297,6 @@ export const T = {
       gmail: 'Compte Google > Sécurité > Validation en deux étapes, puis Mots de passe des applications. Colle ici le mot de passe de 16 lettres.',
       icloud: 'Compte Apple > Connexion et sécurité > Mots de passe pour app. Colle ici le mot de passe créé.',
       colin: 'Le mot de passe de la boîte, celui du webmail OVH.',
-      contact: 'Le mot de passe de la boîte, celui du webmail OVH.',
     },
   },
 };

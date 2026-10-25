@@ -30,7 +30,7 @@ Jarvis Jr. réunit dans une seule app installée sur l'iPhone :
 - **l'emploi du temps** : Google Agenda, avec l'agenda principal et « UTC · Emploi du temps A26 » ;
 - **la to-do** : les 4 tableaux Trello Jarvis (QYRIS, Asso, Études, Perso) ;
 - **les rappels par notification** : avant les cours, la veille des échéances, à J-7, J-3 et J-1 des médians, et un brief du matin ;
-- **les mails, en lecture seule** : UTC (en direct), Gmail, iCloud, colin@ et contact@qyris.fr.
+- **les mails, en lecture seule** : UTC (en direct), Gmail, iCloud, colin@qyris.fr.
 
 Il ajoute de quoi donner envie d'avancer :
 - « Je fais quoi maintenant ? » ;

@@ -110,7 +110,7 @@ function actionDe(mail, estPub, section) {
   return mail.signes_pub.length > 0 ? [M.toujoursAfficher, 'afficher'] : [M.cestUnePub, 'pub'];
 }
 
-function carteMail(app, mail, { estPub, section, qyris }) {
+function carteMail(app, mail, { estPub, section }) {
   const ouvert = etat.ouvert === cleMail(mail);
   const action = actionDe(mail, estPub, section);
   return h('li', { class: `mail${mail.non_lu ? ' non-lu' : ''}${estPub ? ' est-pub' : ''}` },
@@ -125,7 +125,6 @@ function carteMail(app, mail, { estPub, section, qyris }) {
       mail.non_lu && h('span', { class: 'mail-pastille', 'aria-hidden': 'true' }),
       mail.non_lu && h('span', { class: 'sr-only' }, M.nonLu),
       h('span', { class: 'mail-de' }, mail.de_nom || mail.de_adresse),
-      qyris && h('span', { class: 'mail-etiquette' }, M.etiquetteCompte[mail.compte]),
       h('span', { class: 'mail-heure' }, heureMail(mail.date, app.maintenant()))),
     h('span', { class: 'mail-objet' }, mail.objet),
     mail.extrait && h('span', { class: 'mail-extrait' }, mail.extrait)),
@@ -160,7 +159,7 @@ function boutonOuvrir(section) {
 }
 
 function ageSection(app, section) {
-  const comptes = section === 'qyris' ? ['colin', 'contact'] : [section];
+  const comptes = section === 'qyris' ? ['colin'] : [section];
   const dates = comptes.map((c) => etat.comptes?.[c]?.recupere_le).filter(Boolean).map((iso) => new Date(iso));
   if (dates.length === 0) return null;
   const plusVieux = dates.reduce((a, b) => (a < b ? a : b));
@@ -168,10 +167,9 @@ function ageSection(app, section) {
 }
 
 function rendreSection(app, s) {
-  const qyris = s.section === 'qyris';
   const ouvertes = etat.pubsOuvertes.has(s.section);
   const age = app.etat.horsLigne ? ageSection(app, s.section) : null;
-  const liste = (mails, estPub) => h('ul', { class: `mails-liste${estPub ? ' mails-pubs' : ''}` }, mails.map((m) => carteMail(app, m, { estPub, section: s.section, qyris })));
+  const liste = (mails, estPub) => h('ul', { class: `mails-liste${estPub ? ' mails-pubs' : ''}` }, mails.map((m) => carteMail(app, m, { estPub, section: s.section })));
   return h('section', { class: 'mails-section', 'aria-label': M.sections[s.section] },
     h('h2', { class: 'section-titre groupe-titre' }, h('span', {}, M.derniers), h('span', {}, M.nonLus(s.non_lus))),
     age && h('p', { class: 'mails-age' }, age),

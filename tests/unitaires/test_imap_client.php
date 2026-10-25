@@ -136,9 +136,9 @@ test('IMAP : serveurs réels connus, TLS sur le port 993, compte inconnu refusé
     egal('tls://imap.gmail.com:993', imap_adresse('gmail'));
     egal('tls://imap.mail.me.com:993', imap_adresse('icloud'));
     egal('tls://ssl0.ovh.net:993', imap_adresse('colin'));
-    egal('tls://ssl0.ovh.net:993', imap_adresse('contact'));
+    leve(InvalidArgumentException::class, fn() => imap_adresse('contact'));
     leve(InvalidArgumentException::class, fn() => imap_adresse('inconnu'));
-    egal(['utc', 'gmail', 'icloud', 'colin', 'contact'], array_keys(JR_IMAP_SERVEURS));
+    egal(['utc', 'gmail', 'icloud', 'colin'], array_keys(JR_IMAP_SERVEURS));
     egal(null, $GLOBALS['JR_IMAP_ADRESSE'], 'le lanceur de tests remet JR_IMAP_ADRESSE à null avant chaque test');
 });
 

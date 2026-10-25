@@ -56,7 +56,7 @@ function copie_test(array $mails): array
     return ['uidvalidity' => 1, 'mails' => $mails];
 }
 
-test('tri mails : sections dans l ordre, utc séparé de gmail, QYRIS réunit colin et contact', function () {
+test('tri mails : sections dans l ordre, utc séparé de gmail, QYRIS ne contient que colin', function () {
     $s = mails_sections([
         'utc' => copie_test([mail_test(1, ['non_lu' => true, 'signes_pub' => ['list-id']])]),
         'gmail' => copie_test([
@@ -64,14 +64,13 @@ test('tri mails : sections dans l ordre, utc séparé de gmail, QYRIS réunit co
         ]),
         'icloud' => copie_test([mail_test(3, ['non_lu' => true])]),
         'colin' => copie_test([mail_test(4, ['non_lu' => true])]),
-        'contact' => copie_test([mail_test(5, ['non_lu' => true])]),
     ], []);
     egal(['utc', 'qyris', 'gmail', 'icloud'], array_column($s, 'section'));
-    egal([1, 2, 1, 1], array_column($s, 'non_lus'));
+    egal([1, 1, 1, 1], array_column($s, 'non_lus'));
     egal([1], array_column($s[0]['mails'], 'uid'));
     $comptes = array_column($s[1]['mails'], 'compte');
     sort($comptes);
-    egal(['colin', 'contact'], $comptes);
+    egal(['colin'], $comptes);
     egal([2], array_column($s[2]['mails'], 'uid'));
     egal('icloud', $s[3]['mails'][0]['compte']);
 });
@@ -119,8 +118,7 @@ test('tri mails : une correction déplace le mail entre mails et pubs sans relir
 test('tri mails : doublon QYRIS fusionné par message_id, messages sans Message-ID jamais fusionnés (focus 5)', function () {
     $commun = ['message_id' => '<commun@exemple.fr>', 'non_lu' => true];
     $s = mails_sections([
-        'colin' => copie_test([mail_test(1, $commun), mail_test(2, ['message_id' => '', 'non_lu' => true])]),
-        'contact' => copie_test([mail_test(11, $commun), mail_test(12, ['message_id' => '', 'non_lu' => true])]),
+        'colin' => copie_test([mail_test(1, $commun), mail_test(11, $commun), mail_test(2, ['message_id' => '', 'non_lu' => true]), mail_test(12, ['message_id' => '', 'non_lu' => true])]),
     ], [])[1];
     egal(3, count($s['mails']));
     egal(3, $s['non_lus']);

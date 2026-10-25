@@ -135,7 +135,7 @@ export function mailsDeBase() {
         section: 'qyris', non_lus: 1, pubs_total: 0, pubs: [],
         mails: [
           mail('colin', 201, 'Cathy Martin', 'cathy@exemple-idfense.fr', 'Devis du site', 'Bonjour Colin, voici le devis signé.', '2026-10-14T08:05:00Z', true),
-          mail('contact', 202, 'Léa Bernard', 'lea@exemple.fr', 'Question sur la formation', "Bonjour, la formation est-elle ouverte aux débutants ?", '2026-10-12T10:00:00Z', false),
+          mail('colin', 202, 'Léa Bernard', 'lea@exemple.fr', 'Question sur la formation', "Bonjour, la formation est-elle ouverte aux débutants ?", '2026-10-12T10:00:00Z', false),
         ],
       },
       {
@@ -151,7 +151,7 @@ export function mailsDeBase() {
         mails: [mail('icloud', 401, 'Maman', 'maman@exemple.fr', 'Dimanche midi', 'On mange à 12 h 30, tu viens ?', '2025-12-24T10:00:00Z', false)],
       },
     ],
-    comptes: Object.fromEntries(['utc', 'gmail', 'icloud', 'colin', 'contact'].map((c) => [c, { recupere_le: releve, erreur: null }])),
+    comptes: Object.fromEntries(['utc', 'gmail', 'icloud', 'colin'].map((c) => [c, { recupere_le: releve, erreur: null }])),
   };
 }
 
@@ -188,7 +188,7 @@ export function reglagesDeBase() {
 }
 
 // Ce que rend GET comptes-mail : jamais de mot de passe. UTC et iCloud pas encore saisis, Gmail vérifié à 14 h 32,
-// colin@ refusé, contact@ injoignable.
+// colin@ refusé.
 export function comptesMailDeBase() {
   const compte = (identifiant, enregistre, dernier_succes, derniere_erreur) => ({ identifiant, enregistre, dernier_succes, derniere_erreur });
   return {
@@ -196,7 +196,6 @@ export function comptesMailDeBase() {
     gmail: compte('colin.flicourt@gmail.com', true, '2026-10-14T12:32:00Z', null),
     icloud: compte('colin.flicourt@icloud.com', false, null, null),
     colin: compte('colin@qyris.fr', true, '2026-10-13T08:00:00Z', 'refus'),
-    contact: compte('contact@qyris.fr', true, '2026-10-14T12:00:00Z', 'injoignable'),
   };
 }
 

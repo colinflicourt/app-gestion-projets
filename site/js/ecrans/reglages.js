@@ -11,7 +11,7 @@ const R = T.reglages;
 const MINUTES = [5, 10, 15, 30, 60];
 const JOURS_MEDIANS = [14, 7, 3, 1];
 const SEUIL_PLANIFICATEUR = 5;  // minutes sans passage avant d'alerter
-const COMPTES_MAIL = ['utc', 'gmail', 'icloud', 'colin', 'contact'];
+const COMPTES_MAIL = ['utc', 'gmail', 'icloud', 'colin'];
 const DELAI_BOITE = 30000;  // le serveur s'arrête à 25 s
 
 let etatNotif = null;  // null tant que l'état n'est pas lu
