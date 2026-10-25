@@ -82,7 +82,7 @@ Il y a de grands créneaux libres entre les cours : c'est là que « Je fais quo
 | Gmail | IMAP, mot de passe d'application | Validation en 2 étapes à vérifier, mot de passe à créer |
 | iCloud | IMAP, mot de passe d'application Apple | À créer |
 | colin@qyris.fr | IMAP OVH | Mot de passe connu de toi |
-| contact@qyris.fr | IMAP OVH | Jamais testée : la carte LinkedIn demande déjà un mail de test |
+| contact@qyris.fr | Redirection vers colin@ (pas une boîte) | Compte retiré le 2026-10-25 ; les mails adressés à contact@ portent l'étiquette « contact@ » |
 
 ---
 

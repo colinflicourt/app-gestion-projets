@@ -1,38 +1,41 @@
-# Passation · Jarvis Jr. · 2026-10-23 16:06
+# Passation · Jarvis Jr. · 2026-10-25 12:16
 
 ## Objectif
-Jarvis Jr. (jr.qyris.fr), l'app perso d'organisation de Colin sur iPhone. Le **lot 3 (Mails, lecture seule)** est codé ; il reste sa mise en ligne et sa recette avec Colin (partie B). Le lot 4 (le fun) viendra après.
+Jarvis Jr. (jr.qyris.fr), l'app perso d'organisation de Colin sur iPhone. Lot 3 (Mails) en ligne et en recette ; prochain chantier : le **lot 3.2**, lire un mail en entier depuis l'app.
 
 ## Où on en est
-- **Fait et vérifié** (23/10) :
-  - Lot 3, missions M1 à M7 faites par sous-agents, relues et commitées par Claude. Heures « 14 h 32 » et textes nouveaux validés par Colin (`b88e23a`).
-  - **M7 (vérification indépendante) conforme** : 351 tests PHP, 48 JS, 98 d'écran, 0 échec (avant le lot : 247, 41, 73). Aucun `STORE`, `EXPUNGE`, `SELECT "` dans `serveur/` ; liste blanche : CAPABILITY, LOGIN, `EXAMINE "INBOX"`, `UID SEARCH UNSEEN|ALL`, `UID FETCH` en `BODY.PEEK`, LOGOUT. Aucun secret suivi, aucun tiret long. Captures 12 à 15 (`tests/e2e/captures/`) propres.
-  - Relecture de Claude : mot de passe `SensitiveParameter`, chiffré en base, absent des réponses ; erreurs IMAP sans texte du serveur ; `journal_erreur` n'écrit que le message.
-  - SPEC § 16, `CONTENU.md` § 3 (Mails, Réglages), README à jour (`57bfe38`). **Fusionné dans `main` en local** (`d8f1a77`). Pas sur GitHub, pas en ligne.
-- **Fait, pas encore vérifié** : tout le lot 3 sur de vraies boîtes (rien n'a parlé à un vrai serveur IMAP).
-- **En cours chez un sous-agent** : rien. Arbre git propre, sur `main`.
+- **Fait et vérifié** :
+  - Lot 3 en ligne le 25/10 (`/api/sante` : `version_base` 6). Comptes UTC (`imaps.utc.fr`, la redirection vers Gmail est abandonnée), Gmail et iCloud branchés par Colin : « Connecté, vérifié ».
+  - Commits du 25/10, sur `main` en local : `226c88f` (onglet Mails = liste des 4 boîtes, une boîte s'ouvre sur `#/mails/<boîte>` avec « Retour aux boîtes »), `19574f9` (non lu : pastille et trait ambre, gras ; lu : gris), `e73e7c9` (compte `contact` retiré : contact@ n'est qu'une redirection vers colin@ ; une ligne `contact` restée en base est ignorée, test ajouté), `b231629` (étiquette « contact@ » sur un mail adressé à contact@, via To/Cc/Delivered-To/X-Forwarded-To déjà lus, champ `pour_contact`). 349 tests PHP, 48 JS, 100 e2e, 0 échec ; captures vérifiées.
+- **Fait, pas encore vérifié** : ces 4 commits ne sont **pas en ligne** (Colin lance `outils/deploy-ovh.sh`). colin@qyris.fr pas encore branché. Recette `RECETTE-LOT3.md` § 5 et § 6 pas faite.
+- **En cours chez un sous-agent** : rien. Arbre git propre.
 
 ## Décisions prises
-- Plan du lot 3 (décisions 1 à 12) et SPEC § 16.1 : à ne pas rediscuter.
+- Lot 3.2, tranché par Colin le 25/10 :
+  1. Toucher un mail ouvre son **contenu complet**.
+  2. L'ouvrir le **marque comme lu dans la vraie boîte** : fin de la lecture seule stricte, ouverte au minimum (seul le drapeau `\Seen`, jamais `\Deleted` ni `EXPUNGE`). **Pas** de bouton « Marquer non lu ».
+  3. « Répondre » = version **simple** : ouvre Mail ou Gmail de l'iPhone (destinataire et « Re: objet » pré-remplis). Pas d'envoi SMTP depuis l'app (risque d'usurpation si la session est volée).
+  4. Mails HTML : affichés **nettoyés**, images distantes **bloquées** avec un bouton « Afficher les images ».
 - Sous-agents sans commit (Claude relit et commite). C'est Colin qui lance tout envoi vers OVH.
 
 ## Prochaine étape
-1. **Colin fait ses préparatifs** (`RECETTE-LOT3.md` partie 1, 30 à 45 min) : redirection depuis le webmail UTC vers Gmail + mail « Test UTC », mot de passe d'application Gmail (validation en 2 étapes), mot de passe d'application iCloud, mots de passe OVH de colin@ et contact@. Jamais de mot de passe collé dans la conversation.
-2. Colin lance la mise en ligne (commandes exactes dans `RECETTE-LOT3.md`, migration 006 comprise), saisit les 4 comptes dans Réglages sur l'iPhone, lance le diagnostic.
-3. Claude lit `entetes_gmail` à travers le filtre ; si le mail « Test UTC » n'est pas reconnu, petite mission pour ajuster `JR_MARQUEURS_UTC`, nouvelle mise en ligne.
-4. Recette du SPEC § 16.10 (cases de `RECETTE-LOT3.md`), puis `main` sur GitHub, README, Trello.
-
-Effort conseillé pour la conversation suivante : **moyen**.
+1. Demander à Colin si la mise en ligne de `b231629` est faite et si colin@ est branché ; sinon la lui faire lancer d'abord.
+2. Spec du lot 3.2 avec superpowers:brainstorming → `SPEC.md` § 17 : route de contenu (`BODY.PEEK[partie]` puis `UID STORE +FLAGS.SILENT (\Seen)`, donc `SELECT` au lieu d'`EXAMINE` pour cette route seulement), liste blanche IMAP élargie au strict nécessaire, nettoyage HTML (affichage isolé, CSP, pas de script), écran du mail, bouton Répondre (`mailto:`, `googlegmail://co?…` pour Gmail, cas UTC). Faire valider par Colin.
+3. Plan de missions (`plans/2026-10-25-lot3-2-contenu.md`), en mode chef d'orchestre, puis exécution par sous-agents.
+Effort conseillé pour la conversation suivante : **haut** (sécurité de l'écriture IMAP et du HTML).
 
 ## Fichiers clés
-- `RECETTE-LOT3.md` : préparatifs, mise en ligne, diagnostic, recette pas à pas
-- `plans/2026-10-23-lot3-1-mails.md` : décisions et interfaces, si un ajustement est nécessaire
-- `serveur/lib/tri_mails.php` (`JR_MARQUEURS_UTC`, `mail_est_utc`) : seul endroit à toucher pour la règle UTC
-- `SPEC.md` § 16.10 et § 16.12
+- `SPEC.md` § 16 (lot 3, décisions 16.1, révisions du 25/10) : base de la spec 3.2
+- `serveur/lib/imap.php` (`imap_segments_commande`, `JR_IMAP_ELEMENT_FETCH`, `imap_lire_boite`) et `serveur/lib/imap_decodage.php` (extraits par partie, en-têtes)
+- `site/js/ecrans/mails.js` : liste des boîtes, `rendreSection`, `carteMail`
+- `RECETTE-LOT3.md` : recette restante du lot 3
 
 ## Pièges et points ouverts
-- Garde-fou : toute commande qui cite `.env`, `config.php`, `serveur/lib` en recherche récursive, un `grep -r`, `brew services` ou un script de mise en ligne passe entièrement par `{ … ; } 2>&1 | ~/.claude/hooks/redact-secrets`. Un heredoc contenant « .env » est bloqué. Le sous-agent de M7 a vu `brew services run mysql@8.4` bloqué même filtré : vérifier MySQL par `pgrep -fl mysqld`.
-- La suite PHP dure environ 70 s (serveur muet de 8 s). Filtre par nom : `php tests/run.php <morceau du nom>`.
-- Adresse du webmail OVH (décision 9) et lien direct d'un mail Gmail (`lien`) à confirmer à la recette.
-- Lot 2, toujours ouvert : rappel « Dans 1 h » à recréer puis contrôler (`envoyer.sh --lot2`) ; le 25/10, vérifier que le brief n'est ni doublé ni sauté au passage à l'heure d'hiver ; clore le lot (Trello, GitHub).
-- Encore à trancher par Colin : piège de « Terminer », chiffres des codes d'UV, effacement de la copie de l'iPhone au premier 401, relecture de `CONTENU.md` § 5 et § 5.1.
+- Garde-fou : toute commande citant `.env`, `config.php`, `secrets/`, un `grep -r` ou un script de mise en ligne passe entièrement par `{ … ; } 2>&1 | ~/.claude/hooks/redact-secrets`. Un heredoc Python long avec ces mots peut être bloqué : écrire le script dans le scratchpad. MySQL : `pgrep -fl mysqld`.
+- `site/sw.js` : `VERSION` = empreinte des fichiers, à refaire après tout changement dans `site/` (`php tests/run.php "service worker"` donne la valeur).
+- `outils/deploy-ovh.sh` dit « En ligne. » dès que `base_ok` est vrai, sans comparer `version_base` au nombre de migrations locales (au 25/10 il a affiché 5 alors que 006 était attendue ; un appel suivant a donné 6). À corriger.
+- `JR_VERSION` (`serveur/lib/amorce.php`) est resté à 0.2.0 depuis le lot 2.
+- `PLAN.md` cite encore contact@ et « 5 boîtes » (document d'origine, laissé tel quel).
+- Lot 2 encore ouvert : rappel « Dans 1 h » à recréer et contrôler ; vérifier que le brief du 25/10 (passage à l'heure d'hiver) n'a été ni doublé ni sauté.
+- Adresse du webmail OVH (`LIENS.qyris`) à confirmer par Colin.
+- Colin en Espagne du 26 au 30/10.
