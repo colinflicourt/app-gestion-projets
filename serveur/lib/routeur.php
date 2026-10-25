@@ -13,6 +13,8 @@ require_once __DIR__ . '/session.php';
 const JR_CORPS_MAX = 65536;
 
 // Chaque fichier de serveur/routes/ renvoie ['MÉTHODE chemin' => ['publique' => bool, 'action' => callable]].
+// Une route peut ajouter 'erreur' => callable(int $statut, string $code): array, qui fabrique la réponse de toute
+// erreur de cette route (session expirée comprise) à la place du JSON : corps d'un mail, pièces.
 // Une route 'machine' (cron-job.org, Siri : pas de navigateur) n'exige ni l'origine de l'app ni de corps,
 // et vérifie elle-même son jeton.
 function routes(): array
@@ -27,6 +29,10 @@ function routes(): array
 function traiter(array $requete): array
 {
     $prolongation = null;
+    $route = null;
+    $erreur = function (string $code, string $message, int $statut) use (&$route): array {
+        return isset($route['erreur']) ? ($route['erreur'])($statut, $code) : reponse_erreur($code, $message, $statut);
+    };
     try {
         $route = routes()[$requete['methode'] . ' ' . $requete['chemin']] ?? null;
         if ($route === null) {
@@ -42,14 +48,15 @@ function traiter(array $requete): array
         $prolongation = $session !== null ? session_prolonger_si_besoin($session) : null;
         $reponse = ($route['action'])($requete, $session);
     } catch (ErreurApi $e) {
-        $reponse = reponse_erreur($e->codeErreur, $e->getMessage(), $e->statut);
+        $reponse = $erreur($e->codeErreur, $e->getMessage(), $e->statut);
     } catch (ErreurSource $e) {
         // Trello ou Google a manqué une écriture : l'iPhone garde l'écriture en file et réessaiera
         journal_erreur((string) $requete['chemin'], $e);
-        $reponse = reponse_erreur($e->codeErreur, JR_MESSAGES_SOURCES[$e->codeErreur] ?? 'Service indisponible. Réessaie dans un instant.', 502);
+        // Sur une route qui a son 'erreur', le statut est celui du code (404 mail absent, 413 pièce trop lourde)
+        $reponse = $erreur($e->codeErreur, JR_MESSAGES_SOURCES[$e->codeErreur] ?? 'Service indisponible. Réessaie dans un instant.', isset($route['erreur']) ? statut_erreur_source($e->codeErreur) : 502);
     } catch (Throwable $e) {
         journal_erreur((string) $requete['chemin'], $e);
-        $reponse = reponse_erreur('erreur_serveur', 'Erreur du serveur. Réessaie dans un instant.', 500);
+        $reponse = $erreur('erreur_serveur', 'Erreur du serveur. Réessaie dans un instant.', 500);
     }
     // Une session prolongée le reste, même si l'action a échoué
     if ($prolongation !== null) {
