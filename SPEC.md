@@ -642,6 +642,7 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 
 - **Onglet Mails** (textes de `CONTENU.md` § Mails, dessin de la maquette v28) :
   - 4 sections (5 comptes) dans l'ordre UTC, QYRIS, Gmail, iCloud ; en tête de chaque section, son nombre de non lus ;
+  - **révisé le 2026-10-25 à la demande de Colin** : `#/mails` liste seulement les 4 boîtes (nom, « 2 non lus », « Ne répond pas » ou « Pas encore connecté ») ; un toucher ouvre la boîte seule sur `#/mails/<boîte>`, avec « Retour aux boîtes » ; le bloc d'Aujourd'hui ouvre la liste ;
   - QYRIS réunit colin@ et contact@ ; chaque mail porte une petite étiquette de son adresse ;
   - un mail : expéditeur, objet, extrait, heure (« 14 h 32 », « hier », « lun. 19/10 ») ; un non lu est mis en évidence ;
   - pubs repliées sous « + 48 pubs » (texte nouveau), dépliables ;

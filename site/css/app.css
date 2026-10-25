@@ -388,3 +388,11 @@ ul { padding: 0; list-style: none; }
 .mails-resume { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 48px; margin-top: 10px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--panneau); color: var(--texte); text-align: left; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 6px 14px rgba(0, 0, 0, 0.3); }
 .mails-resume-texte { font-size: calc(15 * var(--px)); font-weight: 600; }
 .mails-bascule + .mails-pubs { margin-top: 10px; }
+.mails-boites { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; list-style: none; padding: 0; }
+.mails-boite { position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 14px; border-radius: 12px; background: var(--panneau); color: var(--texte); text-decoration: none; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 6px 14px rgba(0, 0, 0, 0.3); }
+.mails-boite.non-lu::before { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 3px; background: var(--scotch); }
+.mails-boite-nom { flex: 1 1 auto; min-width: 0; font-size: calc(17 * var(--px)); font-weight: 650; }
+.mails-boite-etat { flex: none; font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; color: var(--texte-2); }
+.mails-boite.non-lu .mails-boite-etat { color: var(--texte); font-weight: 600; }
+.mails-boite.erreur .mails-boite-etat { color: var(--rouge-texte); }
+.entete-retour .entete-cote { margin-left: auto; }

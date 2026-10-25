@@ -1,5 +1,6 @@
-// L'onglet Mails (SPEC § 16.8) : 4 sections en lecture seule, pubs repliées. L'écran montre sa copie locale,
-// puis GET mails, puis remplace chaque section à mesure que le rafraîchissement de sa boîte revient.
+// L'onglet Mails (SPEC § 16.8) : la liste des 4 boîtes (#/mails), puis une boîte à la fois (#/mails/utc), en lecture
+// seule, pubs repliées. L'écran montre sa copie locale, puis GET mails, puis remplace chaque section à mesure que le
+// rafraîchissement de sa boîte revient.
 import { h, icone } from '../lib/dom.js';
 import { T } from '../lib/textes.js';
 import { appeler, ErreurApi, ErreurReseau } from '../api.js';
@@ -170,7 +171,7 @@ function rendreSection(app, s) {
   const age = app.etat.horsLigne ? ageSection(app, s.section) : null;
   const liste = (mails, estPub) => h('ul', { class: `mails-liste${estPub ? ' mails-pubs' : ''}` }, mails.map((m) => carteMail(app, m, { estPub, section: s.section, qyris })));
   return h('section', { class: 'mails-section', 'aria-label': M.sections[s.section] },
-    h('h2', { class: 'section-titre groupe-titre' }, h('span', {}, M.sections[s.section]), h('span', {}, M.nonLus(s.non_lus))),
+    h('h2', { class: 'section-titre groupe-titre' }, h('span', {}, M.derniers), h('span', {}, M.nonLus(s.non_lus))),
     age && h('p', { class: 'mails-age' }, age),
     etatSection(s.section, etat.comptes).map((a) => avis(s.section, a)),
     s.mails.length > 0 && liste(s.mails, false),
@@ -186,14 +187,35 @@ function rendreSection(app, s) {
     boutonOuvrir(s.section));
 }
 
-export function rendre(app) {
+// Une ligne par boîte : son nom, ses non lus (ou « Ne répond pas », « Pas encore connecté »), et elle ouvre la boîte
+function ligneBoite(s) {
+  const avisBoite = etatSection(s.section, etat.comptes);
+  const enPanne = avisBoite.some((a) => a.code !== 'non_connecte');
+  const resume = enPanne ? M.neRepondPas : avisBoite.length > 0 && s.mails.length === 0 ? M.pasConnecte : M.nonLus(s.non_lus);
+  return h('li', {},
+    h('a', { class: `mails-boite${s.non_lus > 0 ? ' non-lu' : ''}${enPanne ? ' erreur' : ''}`, href: `#/mails/${s.section}` },
+      h('span', { class: 'mails-boite-nom' }, M.sections[s.section]),
+      h('span', { class: 'mails-boite-etat' }, resume),
+      icone('droite', 18)));
+}
+
+export function rendre(app, route) {
   const enFile = app.etat.file.filter((e) => e.route === 'mails/expediteur').map((e) => [e.corps.adresse, e.corps.choix]);
   const sections = etat.sections && deplacerCorrections(etat.sections, new Map([...etat.corrections, ...enFile]));
-  const corps = sections === null
-    ? h('p', { class: 'vide' }, app.etat.horsLigne ? T.etats.vide : T.agenda.chargement)
-    : sections.map((s) => rendreSection(app, s));
+  const actualisation = etat.charge && sections !== null ? T.etats.actualisation : '';
+  const attente = h('p', { class: 'vide' }, app.etat.horsLigne ? T.etats.vide : T.agenda.chargement);
+  const boite = M.sections[route?.param] ? route.param : null;
+  if (boite) {
+    const s = sections?.find((x) => x.section === boite);
+    return h('div', { class: 'mails' },
+      h('header', { class: 'entete-retour' },
+        h('button', { type: 'button', class: 'bouton-carre', 'aria-label': M.retour, onclick: () => app.retour('#/mails') }, icone('gauche', 20, 2)),
+        h('h1', { class: 'titre-ecran' }, M.sections[boite]),
+        h('span', { class: 'entete-cote' }, actualisation)),
+      s ? rendreSection(app, s) : attente);
+  }
   return h('div', { class: 'mails' },
-    h('header', { class: 'entete' }, h('h1', { class: 'titre-ecran' }, M.titre), h('span', { class: 'entete-cote' }, etat.charge && sections !== null ? T.etats.actualisation : '')),
+    h('header', { class: 'entete' }, h('h1', { class: 'titre-ecran' }, M.titre), h('span', { class: 'entete-cote' }, actualisation)),
     h('p', { class: 'mails-note' }, M.lectureSeule),
-    corps);
+    sections === null ? attente : h('ul', { class: 'mails-boites', 'aria-label': M.boites }, sections.map(ligneBoite)));
 }

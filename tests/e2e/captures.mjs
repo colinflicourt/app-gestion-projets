@@ -50,7 +50,8 @@ const PLANCHES = [
   ['10-agenda', MERCREDI, '/#/agenda', true, null],
   ['11-moi', MERCREDI, '/#/moi', true, null],
   ['12-mails', MERCREDI, '/#/mails', true, null],
-  ['13-mails-pubs', MERCREDI, '/#/mails', true, pubs],
+  ['13-mails-utc', MERCREDI, '/#/mails/utc', true, null],
+  ['13b-mails-gmail-pubs', MERCREDI, '/#/mails/gmail', true, pubs],
   ['14-aujourdhui-mails', MERCREDI, '/#/aujourdhui', true, blocMails],
   ['15-reglages-comptes-mail', MERCREDI, '/#/reglages', true, comptesMail],
 ];
