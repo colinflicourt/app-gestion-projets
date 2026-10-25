@@ -26,6 +26,9 @@ test('routeur : toute route non publique refuse sans session (401)', function ()
         [$methode, $chemin] = explode(' ', $cle, 2);
         $r = traiter(requete(['methode' => $methode, 'chemin' => $chemin, 'corps_brut' => '{}']));
         egal(401, $r['statut'], $cle);
+        if (isset($protegees[$cle]['erreur'])) {
+            continue; // corps et pièces d'un mail : erreur non JSON, vérifiée dans test_routes_mails_contenu.php
+        }
         egal('session_expiree', corps($r)['erreur']['code'], $cle);
         egal('Ta session a expiré. Reconnecte-toi.', corps($r)['erreur']['message'], $cle);
     }
