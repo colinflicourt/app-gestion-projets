@@ -50,8 +50,8 @@ const etat = {
 
 export function lireRoute(hash = location.hash) {
   const [chemin, requete = ''] = hash.replace(/^#\/?/, '').split('?');
-  const [nom, param = null] = chemin.split('/').filter(Boolean);
-  return { nom: ECRANS[nom] ? nom : 'aujourdhui', param, requete: new URLSearchParams(requete) };
+  const [nom, param = null, ...reste] = chemin.split('/').filter(Boolean);
+  return { nom: ECRANS[nom] ? nom : 'aujourdhui', param, reste, requete: new URLSearchParams(requete) };
 }
 
 const app = {
@@ -90,7 +90,7 @@ let affichee = null;
 
 function rendre() {
   const route = lireRoute();
-  const cle = etat.connexion ? 'connexion' : `${route.nom}/${route.param ?? ''}`;
+  const cle = etat.connexion ? 'connexion' : [route.nom, route.param ?? '', ...route.reste].join('/');
   const changement = cle !== affichee;
   const ecran = document.getElementById('ecran');
   if (changement && affichee !== null) {
@@ -100,7 +100,9 @@ function rendre() {
   const haut = changement ? 0 : ecran.scrollTop;
   const module = etat.connexion ? connexion : ECRANS[route.nom];
   document.getElementById('app').classList.toggle('sans-onglets', etat.connexion);
-  ecran.replaceChildren(module.rendre(app, route));
+  const contenu = module.rendre(app, route);
+  // Un écran qui garde son propre contenu (le cadre d'un mail) rend le même nœud : on n'y touche pas, sinon le cadre se recharge
+  if (ecran.childNodes.length !== 1 || ecran.firstChild !== contenu) ecran.replaceChildren(contenu);
   ecran.scrollTop = haut;
   affichee = cle;
   for (const a of document.querySelectorAll('.onglet')) {

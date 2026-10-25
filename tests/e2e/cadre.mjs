@@ -17,8 +17,9 @@ export const IPHONE = {
   locale: 'fr-FR', timezoneId: 'America/New_York',
 };
 
-// Messages de la console qui ne sont pas des erreurs de l'app : un échec réseau voulu (hors ligne, 401)
-const IGNORES = [/^Failed to load resource/];
+// Messages de la console qui ne sont pas des erreurs de l'app : un échec réseau voulu (hors ligne, 401), et le script
+// d'horloge que Playwright (page.clock) tente de lancer dans le cadre d'un mail, que son `sandbox` refuse
+const IGNORES = [/^Failed to load resource/, /^Blocked script execution in '[^']*\/api\/mails\/corps\?/];
 
 export async function lancer(filtre) {
   const serveur = await demarrer();

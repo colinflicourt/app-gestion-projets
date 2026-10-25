@@ -37,6 +37,10 @@ const ICONES = {
   droite: [['path', { d: 'M9 5l7 7-7 7' }]],
   fermer: [['path', { d: 'M6 6l12 12M18 6L6 18' }]],
   externe: [['path', { d: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5' }]],
+  fichier: [['path', { d: 'M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20z' }], ['path', { d: 'M14 3.5V8h4M9.5 13h5M9.5 16.5h5' }]],
+  image: [['rect', { x: 3.5, y: 5, width: 17, height: 14, rx: 2 }], ['circle', { cx: 9, cy: 10, r: 1.6 }], ['path', { d: 'M4 17l5-4.5 3.5 3L15 13l5 4.5' }]],
+  points: [['circle', { cx: 6, cy: 12, r: 1.2, fill: 'currentColor' }], ['circle', { cx: 12, cy: 12, r: 1.2, fill: 'currentColor' }], ['circle', { cx: 18, cy: 12, r: 1.2, fill: 'currentColor' }]],
+  repondre: [['path', { d: 'M10 6L4 12l6 6M4 12h9a7 7 0 0 1 7 7' }]],
   ferie: [['rect', { x: 3.5, y: 5, width: 17, height: 15, rx: 2 }], ['path', { d: 'M3.5 10h17M9 14l6 4M15 14l-6 4' }]],
 };
 

@@ -28,7 +28,7 @@ test('mails : la liste des 4 boîtes dans l\'ordre UTC, QYRIS, Gmail, iCloud, av
   assert.deepEqual(await boites(page), [['UTC', '2 non lus'], ['QYRIS', '1 non lu'], ['Gmail', '1 non lu'], ['iCloud', '0 non lu']]);
   assert.equal(await page.locator('.mails-section').count(), 0, 'aucun mail sur la liste des boîtes');
   assert.equal(await page.locator('.mails-boite.non-lu').count(), 3);
-  assert.equal(await texte(page, '.mails-note'), 'Lecture seule : Junior ne marque rien comme lu.');
+  assert.equal(await texte(page, '.mails-note'), 'Junior marque comme lu seulement les mails que tu ouvres.');
   assert.equal(await page.locator('.onglet[aria-current="page"]').textContent(), 'Mails');
 });
 
@@ -94,7 +94,7 @@ test('mails : pubs repliées sous « + 48 pubs », dépliées puis « Masquer le
 test('mails : « C\'est une pub » déplace le mail dans les pubs tout de suite, « Retenu. » et un seul envoi par la file', async ({ page, contexte, serveur }) => {
   await ouvrirMails(page, contexte, serveur);
   const gmail = await voir(page, 'gmail');
-  await gmail.locator('.mail-corps', { hasText: 'Nouvelle connexion' }).click();
+  await gmail.locator('.mail', { hasText: 'Nouvelle connexion' }).getByRole('button', { name: 'Options du mail' }).click();
   await gmail.getByRole('button', { name: "C'est une pub" }).click();
   await page.locator('.message', { hasText: 'Retenu.' }).waitFor();
   assert.equal(await gmail.locator('.mail').count(), 0);
@@ -110,7 +110,7 @@ test('mails : « Ce n\'est pas une pub » remet le mail dans la liste et compte 
   await ouvrirMails(page, contexte, serveur);
   const gmail = await voir(page, 'gmail');
   await gmail.getByRole('button', { name: '+ 48 pubs' }).click();
-  await gmail.locator('.mail-corps', { hasText: 'Les nouvelles de la semaine' }).click();
+  await gmail.locator('.mail', { hasText: 'Les nouvelles de la semaine' }).getByRole('button', { name: 'Options du mail' }).click();
   await gmail.getByRole('button', { name: "Ce n'est pas une pub" }).click();
   await page.locator('.message', { hasText: 'Retenu.' }).waitFor();
   assert.equal(await gmail.locator('.mails-liste:not(.mails-pubs) .mail').count(), 2);
