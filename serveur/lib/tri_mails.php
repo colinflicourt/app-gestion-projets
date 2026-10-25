@@ -20,6 +20,19 @@ function mail_valeurs_entete(array $entetes, string $nom): array
     return $valeurs;
 }
 
+// Un mail écrit à contact@qyris.fr, simple redirection vers colin@ : il se repère à ses destinataires
+function mail_pour_contact(array $entetes): bool
+{
+    foreach (['to', 'cc', 'delivered-to', 'x-forwarded-to'] as $nom) {
+        foreach (mail_valeurs_entete($entetes, $nom) as $valeur) {
+            if (preg_match('/(?<![\w.+-])contact@qyris\.fr(?![\w-]|\.\w)/i', $valeur)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 function mail_signes_pub(array $entetes): array
 {
     $signes = [];
@@ -83,6 +96,7 @@ function mail_pour_copie(array $brut, string $compte): array
         'non_lu' => (bool) ($brut['non_lu'] ?? false),
         'signes_pub' => mail_signes_pub($entetes),
         'lien' => $lien,
+        'pour_contact' => $compte === 'colin' && mail_pour_contact($entetes),
     ];
 }
 

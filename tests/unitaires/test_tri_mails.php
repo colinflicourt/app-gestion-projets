@@ -32,13 +32,24 @@ test('tri mails : signes de pub, Precedence bulk et list mais pas junk', functio
 test("tri mails : forme d'un mail de copie et lien Gmail en hexadécimal minuscule", function () {
     $brut = brut_test(7, ['gm_msgid' => '1234567890123456789', 'non_lu' => true]);
     $mail = mail_pour_copie($brut, 'gmail');
-    egal(['uid', 'message_id', 'date', 'de_nom', 'de_adresse', 'objet', 'extrait', 'non_lu', 'signes_pub', 'lien'], array_keys($mail));
+    egal(['uid', 'message_id', 'date', 'de_nom', 'de_adresse', 'objet', 'extrait', 'non_lu', 'signes_pub', 'lien', 'pour_contact'], array_keys($mail));
     egal('2026-10-23T07:00:00Z', $mail['date']);
     egal('https://mail.google.com/mail/u/0/#all/112210f47de98115', $mail['lien']);
     egal('https://mail.google.com/mail/u/0/#all/ffffffffffffffff', mail_pour_copie(brut_test(1, ['gm_msgid' => '18446744073709551615']), 'gmail')['lien']);
     egal('https://mail.google.com/mail/u/0/#all/0', mail_pour_copie(brut_test(1, ['gm_msgid' => '0']), 'gmail')['lien']);
     egal(null, mail_pour_copie(brut_test(1), 'gmail')['lien']);
     egal(null, mail_pour_copie($brut, 'icloud')['lien']);
+});
+
+test('tri mails : un mail écrit à contact@qyris.fr est marqué pour_contact, dans colin seulement', function () {
+    $pour = fn (array $entetes, string $compte = 'colin') => mail_pour_copie(brut_test(1, ['entetes' => $entetes]), $compte)['pour_contact'];
+    vrai($pour(['to' => ['QYRIS <Contact@QYRIS.fr>']]), 'to, casse');
+    vrai($pour(['to' => ['a@b.fr'], 'cc' => ['contact@qyris.fr']]), 'cc');
+    vrai($pour(['x-forwarded-to' => ['contact@qyris.fr']]), 'x-forwarded-to');
+    vrai(!$pour(['to' => ['colin@qyris.fr']]), 'colin@');
+    vrai(!$pour(['to' => ['moncontact@qyris.fr', 'contact@qyris.fr.exemple.com']]), 'autres adresses');
+    vrai(!$pour([]), 'sans en-tête');
+    vrai(!$pour(['to' => ['contact@qyris.fr']], 'gmail'), 'autre compte');
 });
 
 test('tri mails : pub, UTC jamais pub, correction pub ou afficher', function () {

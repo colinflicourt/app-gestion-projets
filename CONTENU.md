@@ -100,7 +100,7 @@
 
 ### Mails
 
-- **4 sections, dans l'ordre** : UTC (ta boîte UTC, colin.flicourt@etu.utc.fr), QYRIS (colin@, sans étiquette d'adresse sur les mails ; contact@ est une redirection vers colin@, révisé le 2026-10-25), Gmail, iCloud. En tête de chaque section, son nombre de non lus.
+- **4 sections, dans l'ordre** : UTC (ta boîte UTC, colin.flicourt@etu.utc.fr), QYRIS (colin@, un mail écrit à contact@ porte l'étiquette « contact@ » ; contact@ est une redirection vers colin@, révisé le 2026-10-25), Gmail, iCloud. En tête de chaque section, son nombre de non lus.
 - **Chaque mail** : expéditeur, objet, extrait, heure (« 14 h 32 », « hier », « lun. 19/10 », « 19/10/2025 »).
 - **Pubs** : repliées sous « + 48 pubs », puis « Masquer les pubs ». Sur un mail : « Toujours afficher » ou « C'est une pub » ; sur une pub : « Ce n'est pas une pub ». Après une correction : « Retenu. »
 - **Boutons d'ouverture** : « Ouvrir le webmail UTC » (https://webmail.utc.fr), « Ouvrir dans Gmail », « Ouvrir dans iCloud Mail », « Ouvrir le webmail OVH ».

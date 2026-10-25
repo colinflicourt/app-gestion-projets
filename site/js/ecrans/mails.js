@@ -125,6 +125,7 @@ function carteMail(app, mail, { estPub, section }) {
       mail.non_lu && h('span', { class: 'mail-pastille', 'aria-hidden': 'true' }),
       mail.non_lu && h('span', { class: 'sr-only' }, M.nonLu),
       h('span', { class: 'mail-de' }, mail.de_nom || mail.de_adresse),
+      mail.pour_contact && h('span', { class: 'mail-etiquette' }, M.etiquetteContact),
       h('span', { class: 'mail-heure' }, heureMail(mail.date, app.maintenant()))),
     h('span', { class: 'mail-objet' }, mail.objet),
     mail.extrait && h('span', { class: 'mail-extrait' }, mail.extrait)),

@@ -69,11 +69,12 @@ test('mails : un mail montre expéditeur, objet, extrait et heure (« 14 h 32 »
   assert.equal(await page.getByText('Une connexion depuis un nouvel appareil').count(), 1);
 });
 
-test('mails : QYRIS montre les mails de colin@, sans aucune étiquette d\'adresse', async ({ page, contexte, serveur }) => {
+test('mails : QYRIS montre les mails de colin@, l\'étiquette « contact@ » seulement sur un mail écrit à contact@', async ({ page, contexte, serveur }) => {
   await ouvrirMails(page, contexte, serveur);
   const qyris = await voir(page, 'qyris');
   assert.deepEqual(await qyris.locator('.mail-objet').allTextContents(), ['Devis du site', 'Question sur la formation']);
-  assert.equal(await page.locator('.mail-etiquette').count(), 0);
+  assert.deepEqual(await qyris.locator('.mail').evaluateAll((els) => els.map((e) => e.querySelector('.mail-etiquette')?.textContent ?? null)), [null, 'contact@']);
+  assert.equal(await (await voir(page, 'gmail')).locator('.mail-etiquette').count(), 0);
 });
 
 test('mails : pubs repliées sous « + 48 pubs », dépliées puis « Masquer les pubs »', async ({ page, contexte, serveur }) => {

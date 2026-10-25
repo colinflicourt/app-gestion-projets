@@ -377,6 +377,7 @@ ul { padding: 0; list-style: none; }
 .mail-corps { display: flex; flex-direction: column; gap: 3px; width: 100%; min-height: 44px; padding: 11px 12px; border: 0; background: transparent; color: var(--texte); text-align: left; }
 .mail-ligne { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .mail-de { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: calc(15 * var(--px)); }
+.mail-etiquette { flex: none; padding: 1px 5px; border: 1px solid var(--contour); border-radius: 4px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.04em; color: var(--texte-2); }
 .mail-heure { flex: none; font-family: var(--mono); font-size: 11px; letter-spacing: 0.02em; color: var(--texte-2); }
 .mail-objet { font-size: calc(14 * var(--px)); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .mail-extrait { font-size: calc(13 * var(--px)); color: var(--texte-2); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }

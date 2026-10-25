@@ -135,7 +135,7 @@ export function mailsDeBase() {
         section: 'qyris', non_lus: 1, pubs_total: 0, pubs: [],
         mails: [
           mail('colin', 201, 'Cathy Martin', 'cathy@exemple-idfense.fr', 'Devis du site', 'Bonjour Colin, voici le devis signé.', '2026-10-14T08:05:00Z', true),
-          mail('colin', 202, 'Léa Bernard', 'lea@exemple.fr', 'Question sur la formation', "Bonjour, la formation est-elle ouverte aux débutants ?", '2026-10-12T10:00:00Z', false),
+          mail('colin', 202, 'Léa Bernard', 'lea@exemple.fr', 'Question sur la formation', "Bonjour, la formation est-elle ouverte aux débutants ?", '2026-10-12T10:00:00Z', false, { pour_contact: true }),
         ],
       },
       {
