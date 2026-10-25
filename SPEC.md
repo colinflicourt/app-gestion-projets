@@ -693,7 +693,7 @@ Ils ne sont pas dans `CONTENU.md` et viennent des décisions de cette session :
 
 ## 17. Lot 3.2 : lire un mail en entier
 
-> Rédigé le 2026-10-25 avec superpowers:brainstorming, à partir des décisions de Colin du 25/10 (`PASSATION.md`), de la conversation du même jour et du code du lot 3. Relu par un sous-agent « builder » le même jour (8 points : en-têtes `.htaccess` vérifiés dans le code, les autres tranchés et marqués « choix de Claude »). **Statut : validé par Colin le 2026-10-25**, textes nouveaux du § 17.11 compris.
+> Rédigé le 2026-10-25 avec superpowers:brainstorming, à partir des décisions de Colin du 25/10 (`PASSATION.md`), de la conversation du même jour et du code du lot 3. Relu par un sous-agent « builder » le même jour (8 points : en-têtes `.htaccess` vérifiés dans le code, les autres tranchés et marqués « choix de Claude »). **Statut : validé par Colin le 2026-10-25**, textes nouveaux du § 17.11 compris. **Partie code faite en local le 2026-10-25** (`plans/2026-10-25-lot3-2-contenu.md`, missions M1 à M7, vérification indépendante M8 conforme, version 0.3.2) ; mise en ligne et recette à faire (`RECETTE-LOT3-2.md`, recette sur l'iPhone à partir du 31/10).
 
 ### 17.1 Pourquoi
 

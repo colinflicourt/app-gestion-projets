@@ -36,7 +36,14 @@ const noter = async (p) => {
   await p.getByRole('dialog').waitFor();
 };
 
-// [nom, heure de l'iPhone, adresse, connecté, geste avant la capture]
+const mailPret = async (p) => {
+  await p.locator('.mail-cadre:not([hidden])').waitFor();
+  await p.frameLocator('iframe.mail-cadre').locator('body').waitFor();
+  await p.waitForFunction(() => document.querySelector('iframe.mail-cadre').contentDocument?.getElementById('cid')?.complete !== false);
+  await p.waitForTimeout(500);
+};
+
+// [nom, heure de l'iPhone, adresse, connecté, geste avant la capture, thème de l'iPhone (clair par défaut du navigateur)]
 const PLANCHES = [
   ['01-connexion', MERCREDI, '/', false, null],
   ['02-matin', '2026-10-14T07:32:00+02:00', '/#/aujourdhui', true, null],
@@ -54,13 +61,17 @@ const PLANCHES = [
   ['13b-mails-gmail-pubs', MERCREDI, '/#/mails/gmail', true, pubs],
   ['14-aujourdhui-mails', MERCREDI, '/#/aujourdhui', true, blocMails],
   ['15-reglages-comptes-mail', MERCREDI, '/#/reglages', true, comptesMail],
+  ['16-mail-html-clair', MERCREDI, '/#/mails/utc/utc/101', true, mailPret, 'light'],
+  ['16-mail-html-sombre', MERCREDI, '/#/mails/utc/utc/101', true, mailPret, 'dark'],
+  ['17-mail-texte-clair', MERCREDI, '/#/mails/utc/utc/102', true, mailPret, 'light'],
+  ['17-mail-texte-sombre', MERCREDI, '/#/mails/utc/utc/102', true, mailPret, 'dark'],
 ];
 
 mkdirSync(DOSSIER, { recursive: true });
 const serveur = await demarrer();
 const navigateur = await chromium.launch();
-for (const [nom, heure, adresse, connecte, geste] of PLANCHES) {
-  const contexte = await navigateur.newContext({ ...IPHONE, baseURL: serveur.origine, serviceWorkers: 'block' });
+for (const [nom, heure, adresse, connecte, geste, theme] of PLANCHES) {
+  const contexte = await navigateur.newContext({ ...IPHONE, baseURL: serveur.origine, serviceWorkers: 'block', ...(theme ? { colorScheme: theme } : {}) });
   if (connecte) await contexte.addCookies([{ name: 'jr-test', value: '1', url: serveur.origine }]);
   const page = await contexte.newPage();
   await page.clock.setFixedTime(new Date(heure));

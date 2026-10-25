@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/ecritures.php';
+require_once __DIR__ . '/../lib/mail_lecture.php';
 require_once __DIR__ . '/../lib/mails.php';
 
 // Mails en lecture seule (SPEC § 16.7). GET mails ne lit que les copies : aucun appel IMAP.
@@ -55,4 +56,41 @@ return [
         });
         return ['adresse' => mail_adresse_normalisee($adresse), 'choix' => $choix];
     }),
+
+    // Ouvre un mail et le marque lu dans la boîte (SPEC § 17.5) : réseau exigé, réponse immédiate, pas de file (décision 3)
+    'POST mails/ouvrir' => ['publique' => false, 'action' => function (array $requete, ?array $session): array {
+        $compte = mails_compte_du_corps($requete['corps']);
+        $uid = $requete['corps']['uid'] ?? null;
+        if (!is_int($uid) || $uid < 1 || $uid > 4294967295) {
+            throw new ErreurApi('requete_invalide', 400, 'Requête illisible.');
+        }
+        set_time_limit(30);
+        return reponse_json(mail_ouvrir($compte, $uid));
+    }],
+
+    // Réponses brutes : leurs propres en-têtes, y compris pour les erreurs (décision 5)
+    'GET mails/corps' => [
+        'publique' => false,
+        'action' => function (array $requete, ?array $session): array {
+            [$compte, $uid, $images] = mail_parametres_get($requete, false);
+            set_time_limit(30);
+            return mail_page_corps($compte, $uid, $images);
+        },
+        'erreur' => fn(int $statut, string $code): array => reponse_brute($statut, entetes_corps_mail(false), page_corps_erreur("Ce mail ne s'ouvre pas pour l'instant.")),
+    ],
+
+    'GET mails/piece' => [
+        'publique' => false,
+        'action' => function (array $requete, ?array $session): array {
+            [$compte, $uid, $partie] = mail_parametres_get($requete, true);
+            return mail_flux_piece($compte, $uid, $partie);
+        },
+        'erreur' => fn(int $statut, string $code): array => reponse_brute($statut, entetes_piece_erreur(), match (true) {
+            $statut === 404 => 'Introuvable.',
+            $statut === 413 => 'Trop volumineux.',
+            $statut === 401 => 'Session expirée.',
+            $statut >= 500 => 'Indisponible pour le moment.',
+            default => 'Requête refusée.',
+        }),
+    ],
 ];

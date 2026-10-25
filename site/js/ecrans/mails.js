@@ -5,8 +5,9 @@ import { h, icone } from '../lib/dom.js';
 import { T } from '../lib/textes.js';
 import { appeler, ErreurApi, ErreurReseau } from '../api.js';
 import * as stockage from '../stockage.js';
-import { deplacerCorrections, etatSection, heureMail } from '../lib/mails.js';
+import { deplacerCorrections, etatSection, heureMail, marquerLu } from '../lib/mails.js';
 import { ageTexte, minutesEntre } from '../lib/temps.js';
+import * as mailEcran from './mail.js';
 
 const M = T.mails;
 const CODES_BOITE = ['refus', 'injoignable', 'delai'];
@@ -15,6 +16,7 @@ const GMAIL_APP = 'googlegmail://';
 const GMAIL_WEB = 'https://mail.google.com/';
 const REPLI_GMAIL = 1500;
 const RECENT = 30000;
+const COMPTES_DE = { utc: ['utc'], qyris: ['colin'], gmail: ['gmail'], icloud: ['icloud'] };
 
 const etat = {
   sections: null,        // [{ section, non_lus, mails, pubs, pubs_total }] dans l'ordre utc, qyris, gmail, icloud
@@ -91,8 +93,35 @@ async function charger(app) {
   }
 }
 
+// #/mails/<section>/<compte>/<uid> : le mail à ouvrir, ou null (adresse mal formée : on reste sur la boîte)
+function mailCible(route) {
+  const [compte, uid, ...autres] = route.reste ?? [];
+  if (!COMPTES_DE[route.param]?.includes(compte) || !/^[1-9]\d{0,9}$/.test(uid ?? '') || autres.length > 0) return null;
+  return { section: route.param, compte, uid: Number(uid) };
+}
+
 export function apres(app, route, ecran, changement) {
+  if (mailCible(route)) return;
   if (changement && (etat.sections === null || Date.now() - etat.dernier > RECENT)) charger(app);
+}
+
+export function quitter() {
+  mailEcran.quitter();
+}
+
+// Le mail ouvert passe lu dans la copie locale et les compteurs (section, bloc d'Aujourd'hui) baissent, sans relire la boîte
+function mailOuvert(app, compte, uid) {
+  if (etat.sections === null) return;
+  const r = marquerLu(etat.sections, compte, uid);
+  if (!r.change) return;
+  etat.sections = r.sections;
+  sauvegarder();
+  const resume = app.etat.donnees?.mails_resume;
+  if (r.liste === 'mails' && resume?.par_section[r.section] > 0) {
+    resume.total -= 1;
+    resume.par_section[r.section] -= 1;
+    stockage.ecrire('donnees', 'derniere', app.etat.donnees).catch(() => {});
+  }
 }
 
 function corriger(app, mail, choix) {
@@ -114,21 +143,22 @@ function carteMail(app, mail, { estPub, section }) {
   const ouvert = etat.ouvert === cleMail(mail);
   const action = actionDe(mail, estPub, section);
   return h('li', { class: `mail${mail.non_lu ? ' non-lu' : ''}${estPub ? ' est-pub' : ''}` },
-    h('button', {
-      type: 'button', class: 'mail-corps', 'aria-expanded': action ? String(ouvert) : null,
+    h('a', { class: 'mail-corps', href: `#/mails/${section}/${mail.compte}/${mail.uid}` },
+      h('span', { class: 'mail-ligne' },
+        mail.non_lu && h('span', { class: 'mail-pastille', 'aria-hidden': 'true' }),
+        mail.non_lu && h('span', { class: 'sr-only' }, M.nonLu),
+        h('span', { class: 'mail-de' }, mail.de_nom || mail.de_adresse),
+        mail.pour_contact && h('span', { class: 'mail-etiquette' }, M.etiquetteContact),
+        h('span', { class: 'mail-heure' }, heureMail(mail.date, app.maintenant()))),
+      h('span', { class: 'mail-objet' }, mail.objet),
+      mail.extrait && h('span', { class: 'mail-extrait' }, mail.extrait)),
+    action && h('button', {
+      type: 'button', class: 'mail-options', 'aria-label': M.options, 'aria-expanded': String(ouvert),
       onclick: () => {
         etat.ouvert = ouvert ? null : cleMail(mail);
         app.rendre();
       },
-    },
-    h('span', { class: 'mail-ligne' },
-      mail.non_lu && h('span', { class: 'mail-pastille', 'aria-hidden': 'true' }),
-      mail.non_lu && h('span', { class: 'sr-only' }, M.nonLu),
-      h('span', { class: 'mail-de' }, mail.de_nom || mail.de_adresse),
-      mail.pour_contact && h('span', { class: 'mail-etiquette' }, M.etiquetteContact),
-      h('span', { class: 'mail-heure' }, heureMail(mail.date, app.maintenant()))),
-    h('span', { class: 'mail-objet' }, mail.objet),
-    mail.extrait && h('span', { class: 'mail-extrait' }, mail.extrait)),
+    }, icone('points', 20)),
     action && ouvert && h('div', { class: 'mail-actions' },
       h('button', { type: 'button', class: 'bouton bouton-petit', onclick: () => corriger(app, mail, action[1]) }, action[0])));
 }
@@ -201,6 +231,8 @@ function ligneBoite(s) {
 }
 
 export function rendre(app, route) {
+  const cible = mailCible(route);
+  if (cible) return mailEcran.rendre(app, cible, { marquerLu: (compte, uid) => mailOuvert(app, compte, uid), boutonOuvrir });
   const enFile = app.etat.file.filter((e) => e.route === 'mails/expediteur').map((e) => [e.corps.adresse, e.corps.choix]);
   const sections = etat.sections && deplacerCorrections(etat.sections, new Map([...etat.corrections, ...enFile]));
   const actualisation = etat.charge && sections !== null ? T.etats.actualisation : '';

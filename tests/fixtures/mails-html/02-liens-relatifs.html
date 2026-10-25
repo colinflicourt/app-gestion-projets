@@ -1,0 +1,26 @@
+<html>
+<head>
+<style>
+.fond { background-image: url(/api/x); }
+.autre { background: url('//exemple.com/a.png') no-repeat; }
+.relatif { background: url("../images/fond.png"); }
+.ensemble { background-image: image-set("/api/mails/piece?x" 1x); }
+.echappe { background: \75 rl(/api/echappe); }
+.sans-fin { background: url(/api/sans-fin
+</style>
+</head>
+<body>
+<a href="/api/session/deconnexion">Déconnexion</a>
+<a href="//exemple.com">double barre</a>
+<a href="page.html">relatif</a>
+<a href="?x=1">requete</a>
+<a href="#ancre">ancre</a>
+<img src="/api/mails/piece?x" alt="piece">
+<img src="//exemple.com/i.png" alt="double barre">
+<img src="relatif.png" alt="relatif">
+<img src="photo.jpg" srcset="/api/mails/piece?x 1x, //exemple.com/b.png 2x" alt="multi">
+<table background="/api/x" style="background-image: url(/api/x)"><tr><td background="/api/y">cellule</td></tr></table>
+<p style="background-image: url(/api/x); color: green">style en ligne</p>
+<p style="background: url('//exemple.com/a.png')">style en ligne 2</p>
+</body>
+</html>

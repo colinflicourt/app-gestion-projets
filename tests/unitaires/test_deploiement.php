@@ -46,3 +46,15 @@ test("déploiement : les migrations 003 à 006 existent et le serveur en attend 
     }
     vrai(version_attendue($dossier) >= 6, 'version attendue au moins 6');
 });
+
+test("déploiement : la vérification compare version_base au plus grand numéro de migration, « En ligne. » seulement si égaux", function () {
+    $script = (string) file_get_contents(dirname(__DIR__, 2) . '/outils/deploy-ovh.sh');
+    $fin = substr($script, (int) strpos($script, '6/6'));
+    vrai(str_contains($fin, 'migrations/'), 'lecture du dossier des migrations attendue');
+    vrai(str_contains($fin, 'sort -n'), 'comparaison numérique du plus grand numéro attendue');
+    vrai(str_contains($fin, '"version_base":'), 'lecture de version_base dans la réponse attendue');
+    vrai(str_contains($fin, '[ "$X" = "$ATTENDU" ]'), 'comparaison version_base / attendu attendue');
+    vrai(strpos($fin, 'echo "En ligne."') > strpos($fin, '[ "$X" = "$ATTENDU" ]'), '« En ligne. » attendu seulement après la comparaison');
+    vrai(str_contains($fin, 'Ne pas considérer la mise en ligne comme finie'), 'message d\'écart attendu');
+    vrai(str_contains($fin, 'illisible'), 'cas version_base illisible attendu');
+});

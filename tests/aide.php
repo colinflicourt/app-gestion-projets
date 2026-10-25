@@ -128,6 +128,11 @@ function lancer_tests(string $filtre): int
         $GLOBALS['JR_ESSAI_IMAP'] = function (): void {
             throw new EchecTest("Essai IMAP sans faux_imap()");
         };
+        foreach (['JR_IMAP_OUVRIR' => 'Ouverture', 'JR_IMAP_CORPS' => 'Lecture du corps', 'JR_IMAP_PIECE' => 'Lecture de pièce'] as $nom_global => $genre) {
+            $GLOBALS[$nom_global] = function () use ($genre): never {
+                throw new EchecTest("$genre IMAP sans faux_imap_mail()");
+            };
+        }
         $GLOBALS['JR_APPELS_IMAP'] = [];
         $GLOBALS['JR_TRELLO_IDS'] = fabrique_trello_ids();
         $GLOBALS['JR_VERROU_ATTENTE'] = null;
@@ -355,4 +360,33 @@ function faux_imap(array $par_compte): void
 function appels_imap(): array
 {
     return array_map(fn(array $a): string => $a['genre'] . ' ' . $a['compte'], $GLOBALS['JR_APPELS_IMAP']);
+}
+
+// Remplace l'ouverture, le corps et la pièce d'un mail. Chaque entrée de $par_usage ('ouvrir', 'corps', 'piece') est
+// soit le résultat rendu, soit un code d'erreur en texte (absent, refus, trop_lourde…) qui lève une ErreurSource, soit
+// un callable. Une pièce attend ['piece' => {partie, nom, type, …}, 'octets' => [morceaux]]. Les appels sont notés
+// dans $GLOBALS['JR_APPELS_IMAP'] (« ouvrir gmail », « corps gmail », « piece gmail »).
+function faux_imap_mail(array $par_usage): void
+{
+    $GLOBALS['JR_APPELS_IMAP'] = [];
+    $resultat = function (string $usage, string $compte, array $arguments) use ($par_usage) {
+        $GLOBALS['JR_APPELS_IMAP'][] = ['genre' => $usage, 'compte' => $compte, 'mot_de_passe' => $arguments[0], 'limite' => $arguments[1], 'uid' => $arguments[2], 'uidvalidity' => $arguments[3]];
+        if (!array_key_exists($usage, $par_usage)) {
+            throw new EchecTest("Appel IMAP inattendu : $usage $compte");
+        }
+        $valeur = $par_usage[$usage];
+        if (is_string($valeur)) {
+            throw new ErreurSource($valeur, 'IMAP : ' . $valeur);
+        }
+        return is_callable($valeur) ? $valeur(...$arguments) : $valeur;
+    };
+    $GLOBALS['JR_IMAP_OUVRIR'] = fn(string $compte, string $identifiant, string $mot_de_passe, float $limite, int $uid, int $uidvalidity): array => $resultat('ouvrir', $compte, [$mot_de_passe, $limite, $uid, $uidvalidity]);
+    $GLOBALS['JR_IMAP_CORPS'] = fn(string $compte, string $identifiant, string $mot_de_passe, float $limite, int $uid, int $uidvalidity): array => $resultat('corps', $compte, [$mot_de_passe, $limite, $uid, $uidvalidity]);
+    $GLOBALS['JR_IMAP_PIECE'] = function (string $compte, string $identifiant, string $mot_de_passe, float $limite, int $uid, int $uidvalidity, string $partie, callable $avant, callable $ecrire) use ($resultat): void {
+        $piece = $resultat('piece', $compte, [$mot_de_passe, $limite, $uid, $uidvalidity]);
+        $avant($piece['piece']);
+        foreach ($piece['octets'] as $morceau) {
+            $ecrire($morceau);
+        }
+    };
 }

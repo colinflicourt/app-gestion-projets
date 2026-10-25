@@ -200,3 +200,87 @@ export function comptesMailDeBase() {
 }
 
 export const JETON_SIRI = 'Zm9vYmFyLWpldG9uLWRlLXRlc3QtMDEyMzQ1Njc4OWFi';
+
+// Le contenu des mails, tel que le serveur le rend (POST mails/ouvrir, GET mails/corps, GET mails/piece). Les clés
+// sont « compte/uid ». Un mail absent de cette table n'est pas dans la copie du serveur : 404 hors_copie.
+// - erreur : { statut, code } rendue par mails/ouvrir ; - corps : la page du corps, corpsImages avec images=1 ;
+// - sansCsp : la page est servie sans les en-têtes du corps (le cadre `sandbox` reste seul contre un mail piégé).
+const SVG = (couleur, texte) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="240" height="90"><rect width="240" height="90" fill="${couleur}"/><text x="14" y="52" font-size="22" fill="#fff" font-family="sans-serif">${texte}</text></svg>`)}`;
+export const IMAGE_CID = SVG('#1f6f4a', 'image insérée');
+export const IMAGE_DISTANTE = SVG('#a33b2c', 'image distante');
+
+const STYLE_HTML = 'html{color-scheme:light;background:#fff}body{margin:8px 12px;background:#fff;overflow-wrap:anywhere}img{max-width:100%;height:auto}.jr-bandeau{margin:0 0 12px;padding:8px 10px;border-radius:8px;background:#f2f2f2;color:#555;font:13px/1.4 sans-serif}';
+const STYLE_TEXTE = ':root{color-scheme:light dark}body{margin:8px 12px;font:16px/1.45 -apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;white-space:pre-wrap;overflow-wrap:anywhere}a{color:#0a60d8}@media (prefers-color-scheme:dark){body{background:#000;color:#f2f2f7}a{color:#6cb0ff}}';
+
+export const pageHtml = (corps, { bloquees = false } = {}) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${STYLE_HTML}</style></head><body${bloquees ? ' data-images-bloquees="1"' : ''}>${corps}</body></html>`;
+export const pageTexte = (corpsHtml) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${STYLE_TEXTE}</style></head><body>${corpsHtml}</body></html>`;
+
+const personne = (nom, adresse) => ({ nom, adresse });
+
+export function contenusMailDeBase() {
+  const piece = (partie, nom, type, taille, trop_lourde = false) => ({ partie, nom, type, taille, trop_lourde });
+  const ouvrir = (autres) => ({
+    objet: '', de_nom: '', de_adresse: '', a: [personne('Colin Flicourt', 'colin.flicourt@etu.utc.fr')], cc: [], date: '', pour_contact: false,
+    pieces: [], repondre_url: '', repondre_repli: null, marque_lu: true, ...autres,
+  });
+  return {
+    // HTML : image distante bloquée puis affichée, image insérée (cid) toujours là, une pièce
+    'utc/101': {
+      ouvrir: ouvrir({
+        objet: 'Inscription aux UV de A27', de_nom: 'Secrétariat GI', de_adresse: 'secretariat-gi@utc.fr', date: '2026-10-14T12:32:00Z',
+        a: [personne('Colin Flicourt', 'colin.flicourt@etu.utc.fr'), personne('', 'promo-gi@utc.fr')], cc: [personne('Prof. Durand', 'durand@utc.fr')],
+        pieces: [piece('2', 'Calendrier-inscriptions.pdf', 'application/pdf', 358400)],
+        repondre_url: 'https://webmail.utc.fr/?_task=mail&_action=compose&_to=secretariat-gi%40utc.fr&_subject=Re%3A%20Inscription%20aux%20UV%20de%20A27',
+      }),
+      corps: pageHtml(`<h2>Inscriptions aux UV de A27</h2><p>Bonjour, les inscriptions ouvrent <b>lundi à 8 h</b>. Pense à vérifier ton dossier avant cette date.</p><p><img id="cid" alt="Plan" src="${IMAGE_CID}"></p><p>Cordialement,<br>Le secrétariat GI</p>`, { bloquees: true }),
+      corpsImages: pageHtml(`<h2>Inscriptions aux UV de A27</h2><p>Bonjour, les inscriptions ouvrent <b>lundi à 8 h</b>. Pense à vérifier ton dossier avant cette date.</p><p><img id="cid" alt="Plan" src="${IMAGE_CID}"></p><p><img id="distante" alt="Bandeau" src="${IMAGE_DISTANTE}"></p><p>Cordialement,<br>Le secrétariat GI</p>`),
+      fichiers: { 2: { type: 'application/pdf', octets: '%PDF-1.4\n% calendrier de test\n' } },
+    },
+    // Texte : un lien, une adresse mail, trois pièces dont une trop lourde
+    'utc/102': {
+      ouvrir: ouvrir({
+        objet: 'TD de jeudi déplacé', de_nom: 'Prof. Durand', de_adresse: 'durand@utc.fr', date: '2026-10-13T09:10:00Z',
+        pieces: [
+          piece('2', 'Sujet-TD3.pdf', 'application/pdf', 1258291),
+          piece('3', 'donnees-mesures.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 358400),
+          piece('4', 'Archive-complete.zip', 'application/zip', 25165824, true),
+        ],
+        repondre_url: 'https://webmail.utc.fr/?_task=mail&_action=compose&_to=durand%40utc.fr&_subject=Re%3A%20TD%20de%20jeudi%20d%C3%A9plac%C3%A9',
+      }),
+      corps: pageTexte('Bonjour,\n\nLe TD de jeudi se tiendra en salle FA420. Le sujet est ici : <a href="https://exemple.fr/sujet" target="_blank" rel="noopener noreferrer">https://exemple.fr/sujet</a>\n\nQuestions : <a href="mailto:durand@utc.fr" target="_blank" rel="noopener noreferrer">durand@utc.fr</a>\n\nBonne journée,\nPr. Durand'),
+      fichiers: { 2: { type: 'application/pdf', octets: '%PDF-1.4\n% sujet de test\n' }, 3: { type: 'application/octet-stream', octets: 'PK-test' } },
+    },
+    // Disparu de la boîte
+    'utc/103': { erreur: { statut: 404, code: 'absent' } },
+    // Mail piégé, servi sans nettoyage ni en-têtes : seul le cadre `sandbox` l'arrête
+    'colin/201': {
+      ouvrir: ouvrir({
+        objet: 'Devis du site', de_nom: 'Cathy Martin', de_adresse: 'cathy@exemple-idfense.fr', date: '2026-10-14T08:05:00Z',
+        a: [personne('', 'contact@qyris.fr')], repondre_url: 'mailto:cathy%40exemple-idfense.fr?subject=Re%3A%20Devis%20du%20site',
+      }),
+      sansCsp: true,
+      corps: '<!doctype html><html><head><meta charset="utf-8"><script>parent.document.title = "PIRATE"; window.__pirate = "script";</script></head><body><p id="texte">Bonjour Colin, voici le devis signé.</p><img id="piege" src="x" onerror="parent.document.title = \'PIRATE2\'; window.__pirate = \'onerror\'"><a id="js" href="javascript:parent.document.title=\'PIRATE3\'">Voir</a></body></html>',
+    },
+    'colin/202': {
+      ouvrir: ouvrir({
+        objet: 'Question sur la formation', de_nom: 'Léa Bernard', de_adresse: 'lea@exemple.fr', date: '2026-10-12T10:00:00Z', pour_contact: true,
+        a: [personne('', 'contact@qyris.fr')], repondre_url: 'mailto:lea%40exemple.fr?subject=Re%3A%20Question%20sur%20la%20formation',
+      }),
+      corps: pageTexte('Bonjour,\n\nLa formation est-elle ouverte aux débutants ?\n\nLéa'),
+    },
+    'gmail/301': {
+      ouvrir: ouvrir({
+        objet: 'Nouvelle connexion détectée', de_nom: 'Hébergeur', de_adresse: 'support@exemple-hebergeur.fr', date: '2026-10-14T11:20:00Z',
+        a: [personne('', 'colin.flicourt@gmail.com')],
+        repondre_url: 'googlegmail://co?to=support%40exemple-hebergeur.fr&subject=Re%3A%20Nouvelle%20connexion%20d%C3%A9tect%C3%A9e',
+        repondre_repli: 'https://mail.google.com/mail/?view=cm&to=support%40exemple-hebergeur.fr&su=Re%3A%20Nouvelle%20connexion%20d%C3%A9tect%C3%A9e',
+      }),
+      corps: pageTexte('Une connexion depuis un nouvel appareil a eu lieu.\n\nCorps-confidentiel-gmail'),
+    },
+    // Sans nom, sans objet
+    'icloud/401': {
+      ouvrir: ouvrir({ objet: '', de_nom: '', de_adresse: 'maman@exemple.fr', date: '2025-12-24T10:00:00Z', a: [personne('', 'colin.flicourt@icloud.com')], repondre_url: 'mailto:maman%40exemple.fr?subject=Re%3A%20' }),
+      corps: pageTexte('On mange à 12 h 30, tu viens ?'),
+    },
+  };
+}

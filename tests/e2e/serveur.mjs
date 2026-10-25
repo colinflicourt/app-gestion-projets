@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { donneesDeBase, mailsDeBase, joursSemaine, reglagesDeBase, comptesMailDeBase, JETON_SIRI } from './fixtures.mjs';
+import { donneesDeBase, mailsDeBase, joursSemaine, reglagesDeBase, comptesMailDeBase, contenusMailDeBase, pageTexte, JETON_SIRI } from './fixtures.mjs';
 
 const SITE = fileURLToPath(new URL('../../site/', import.meta.url));
 const TYPES = {
@@ -30,7 +30,7 @@ export async function demarrer() {
       for (const cle of Object.keys(etat)) delete etat[cle];
       // horsService : le réseau manque (connexion coupée). perdre : la prochaine écriture de cette route est
       // faite, mais sa réponse se perd. pannes : route → { statut, code, message }.
-      Object.assign(etat, { donnees, appels: [], vus: new Map(), pannes: {}, horsService: false, perdre: null, testEnvoyes: 1, reglages: reglagesDeBase(), mails: mailsDeBase(), corrections: [], comptesMail: comptesMailDeBase(), essaisMail: {} });
+      Object.assign(etat, { donnees, appels: [], vus: new Map(), pannes: {}, horsService: false, perdre: null, testEnvoyes: 1, reglages: reglagesDeBase(), mails: mailsDeBase(), contenusMail: contenusMailDeBase(), corrections: [], comptesMail: comptesMailDeBase(), essaisMail: {} });
     },
     appels(route) {
       return etat.appels.filter((a) => a.route === route);
@@ -129,6 +129,9 @@ async function api(req, res, url, etat) {
       comptes: { [corps.compte]: structuredClone(etat.mails.comptes[corps.compte]) },
     });
   }
+  if (req.method === 'POST' && route === 'mails/ouvrir') return ouvrirMail(res, corps, etat);
+  if (req.method === 'GET' && route === 'mails/corps') return corpsMail(res, url, etat);
+  if (req.method === 'GET' && route === 'mails/piece') return pieceMail(res, url, etat);
   if (req.method === 'GET' && route === 'comptes-mail') return json(res, 200, { comptes: structuredClone(etat.comptesMail) });
   if (req.method === 'POST' && (route === 'comptes-mail' || route === 'comptes-mail/tester')) return comptesMail(res, route, corps, etat);
   if (req.method === 'GET' && route === 'reglages') return json(res, 200, structuredClone(etat.reglages));
@@ -140,6 +143,61 @@ async function api(req, res, url, etat) {
   if (req.method === 'POST' && route === 'notifications/test') return json(res, 200, { envoyes: etat.testEnvoyes, supprimes: 0, echecs: 0 });
   if (req.method === 'POST') return ecrire(req, res, route, corps, etat);
   return json(res, 404, { code: 'route_inconnue', message: 'Adresse inconnue.' });
+}
+
+// Ouvrir un mail : le contenu vient de etat.contenusMail[« compte/uid »]. Comme le vrai serveur, l'ouverture passe
+// le mail à lu dans la copie (liste et résumé d'Aujourd'hui) quand marque_lu est vrai.
+function ouvrirMail(res, corps, etat) {
+  if (!Number.isInteger(corps.uid) || typeof corps.compte !== 'string') return json(res, 400, { code: 'requete_invalide', message: 'Requête illisible.' });
+  const contenu = etat.contenusMail[`${corps.compte}/${corps.uid}`];
+  if (!contenu) return json(res, 404, { code: 'hors_copie', message: 'Ce mail est trop ancien pour Junior.' });
+  if (contenu.erreur) return json(res, contenu.erreur.statut, { code: contenu.erreur.code, message: 'Erreur de test.' });
+  if (contenu.ouvrir.marque_lu) {
+    for (const s of etat.mails.sections) {
+      const m = s.mails.find((x) => x.compte === corps.compte && x.uid === corps.uid);
+      if (m?.non_lu) {
+        m.non_lu = false;
+        s.non_lus -= 1;
+        etat.donnees.mails_resume.total -= 1;
+        etat.donnees.mails_resume.par_section[s.section] -= 1;
+      }
+    }
+  }
+  return json(res, 200, structuredClone(contenu.ouvrir));
+}
+
+// Les en-têtes de entetes_corps_mail() : ils remplacent ceux de l'app, au lieu de s'y ajouter
+function entetesCorps(images) {
+  const permises = images ? "'self' data: https:" : "'self' data:";
+  return {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Content-Security-Policy': `default-src 'none'; img-src ${permises}; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; sandbox allow-same-origin allow-popups allow-popups-to-escape-sandbox`,
+    'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'X-Robots-Tag': 'noindex, nofollow',
+  };
+}
+
+function corpsMail(res, url, etat) {
+  const images = url.searchParams.get('images') === '1';
+  const contenu = etat.contenusMail[`${url.searchParams.get('compte')}/${url.searchParams.get('uid')}`];
+  if (!contenu?.corps) {
+    res.writeHead(404, entetesCorps(false));
+    return res.end(pageTexte("Ce mail ne s'ouvre pas pour l'instant."));
+  }
+  res.writeHead(200, contenu.sansCsp ? { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } : entetesCorps(images));
+  res.end(images && contenu.corpsImages ? contenu.corpsImages : contenu.corps);
+}
+
+function pieceMail(res, url, etat) {
+  const contenu = etat.contenusMail[`${url.searchParams.get('compte')}/${url.searchParams.get('uid')}`];
+  const fichier = contenu?.fichiers?.[url.searchParams.get('partie')];
+  const piece = contenu?.ouvrir?.pieces?.find((p) => p.partie === url.searchParams.get('partie'));
+  const securite = { 'Content-Security-Policy': "default-src 'none'; sandbox", 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' };
+  if (!fichier || !piece) {
+    res.writeHead(404, { ...securite, 'Content-Type': 'text/plain; charset=utf-8' });
+    return res.end('Pièce introuvable.');
+  }
+  res.writeHead(200, { ...securite, 'Content-Type': fichier.type, 'Content-Disposition': `inline; filename="${piece.nom}"` });
+  res.end(fichier.octets);
 }
 
 // Essai de connexion d'une boîte : etat.essaisMail[compte] = code d'échec (refus, injoignable, delai), sinon réussi.

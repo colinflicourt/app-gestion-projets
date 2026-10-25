@@ -1,37 +1,35 @@
-# Passation · Jarvis Jr. · 2026-10-25 12:35
+# Passation · Jarvis Jr. · 2026-10-25 (fin d'après-midi)
 
 ## Objectif
-Jarvis Jr. (jr.qyris.fr), l'app perso d'organisation de Colin sur iPhone. Lot 3 (Mails) en ligne et en recette. Chantier en cours : le **lot 3.2**, lire un mail en entier depuis l'app. Sa spec est validée, il reste à écrire le plan de missions puis à l'exécuter.
+Jarvis Jr. (jr.qyris.fr), l'app perso d'organisation de Colin sur iPhone. Chantier : **lot 3.2**, lire un mail en entier depuis l'app (contenu, marqué lu à l'ouverture, pièces jointes, Répondre). Exécution du plan `plans/2026-10-25-lot3-2-contenu.md` en mode chef d'orchestre.
 
 ## Où on en est
-- **Fait et vérifié** :
-  - Les commits du 25/10 jusqu'à `b231629` sont en ligne : le `mails.js` servi est identique au fichier local, et `/api/sante` donne `version_base` 6. colin@qyris.fr est branché d'après Colin. Les 4 boîtes sont connectées.
-  - Spec du lot 3.2 écrite (`SPEC.md` § 17), relue par un sous-agent « builder » (8 points, tous intégrés), **validée par Colin le 25/10**, textes nouveaux du § 17.11 compris. Commit `210b51a`. Arbre git propre.
-- **Fait, pas encore vérifié** : la recette `RECETTE-LOT3.md` § 5 et § 6 n'est pas faite.
+- **Fait et vérifié** (branche `lot3-2-contenu`, partie de `main` `78cc357`, arbre propre) :
+  - M1 à M5 (serveur, `ac38a13` à `67465d5`), M6 écran d'un mail (`aa21717`), M7 préparation de la mise en ligne (`f7c5930`), chacune relue par Claude.
+  - M7 : `JR_VERSION = '0.3.2'` ; `site/sw.js` `VERSION` déjà juste (`jr-6c975fff1e`, test « service worker » vert) ; `outils/deploy-ovh.sh` compare `version_base` de `/api/sante` au plus grand numéro de `serveur/migrations/` (6), « En ligne. » seulement si égaux, sinon « Attention : … » et `exit 1` ; test ajouté dans `tests/unitaires/test_deploiement.php` ; `RECETTE-LOT3-2.md` écrit (CSP attendues relues contre `site/.htaccess` et `entetes_corps_mail()`, 3 phrases corrigées par Claude).
+  - Tests : **PHP 469, JS 51, écran 120**, tous verts (PHP 349 avant le lot). `bash -n` du script OK.
+- **Fait, pas encore vérifié** : le contrôle de `version_base` n'a tourné qu'en simulation (pas d'accès réseau). Vérification indépendante (M8) pas faite. Recette du lot 3 (`RECETTE-LOT3.md` § 5 et § 6) toujours pas faite.
 - **En cours chez un sous-agent** : rien.
 
-## Décisions prises (détail dans `SPEC.md` § 17.2 à 17.8, à ne pas rediscuter)
-- Toucher un mail ouvre son contenu complet. `POST /api/mails/ouvrir` le marque lu : un seul `UID STORE <uid> +FLAGS.SILENT (\Seen)` après `SELECT`, jamais `CLOSE` ni `EXPUNGE`. La liste blanche IMAP a deux usages : la lecture et l'ouverture.
-- Le corps est servi par `GET /api/mails/corps`, une page HTML dans un `<iframe sandbox>` sans `allow-scripts`. Il a trois protections : le nettoyage `DOMDocument`, sa propre CSP et le sandbox. Les images `cid:` sont mises en `data:` dans la même session IMAP. Les liens sont interceptés par l'écran.
-- Les pièces jointes passent par `GET /api/mails/piece`. Elles sont lues par morceaux de 1 Mo, 20 Mo au plus, et leur type vient d'une liste blanche (HTML et SVG partent en `octet-stream`).
-- « Répondre » ouvre `googlegmail://` pour Gmail, `mailto:` pour iCloud et QYRIS, et Roundcube en rédaction pour l'UTC, qui n'est pas dans l'app Mail de l'iPhone. Pas de SMTP.
-- Rien du contenu des mails n'est gardé, ni sur le serveur ni sur l'iPhone. Les sous-agents ne commitent pas : Claude relit et commite. C'est Colin qui lance tout envoi vers OVH.
+## Décisions prises
+- Plan § Décisions 1 à 13 et SPEC § 17 : à ne pas rediscuter. Ajouts acceptés pendant l'exécution : voir l'historique git et la passation précédente (nettoyage plus strict, codes d'erreur des flux, `Content-ID` dans `multipart/mixed` listée comme pièce).
+- Retour arrière si OVH refuse `<If>` : remettre `git show 78cc357:site/.htaccess` par `outils/ovh-sftp.sh "put … -o jr.qyris.fr/www/.htaccess"`, et ne pas relancer `deploy-ovh.sh` avant correction (le `mirror` renverrait le fichier fautif).
 
 ## Prochaine étape
-1. Écrire le plan de missions `plans/2026-10-25-lot3-2-contenu.md` avec superpowers:writing-plans, en mode chef d'orchestre (`guides/CHEF-D-ORCHESTRE.md`), sur le modèle de `plans/2026-10-23-lot3-1-mails.md`. Montrer le découpage à Colin en quelques lignes.
-2. Exécuter les missions par sous-agents. Le cœur sécurité passe en premier : usages IMAP, nettoyage HTML, en-têtes des réponses brutes et exception `.htaccess`. Puis vérification indépendante et commit.
-3. Mise en ligne par Colin, puis `curl -sI` sur une route normale et sur `/api/mails/corps` : une seule CSP chacune, la bonne.
-Effort conseillé pour la conversation suivante : **haut** (écriture IMAP et HTML de mails).
+1. Lancer **M8, vérification indépendante** (sous-agent `verificateur`, Haiku, effort moyen) d'après la fiche M8 du plan : 3 suites (avant : PHP 349, JS et écran relevés par M1 ; maintenant 469 / 51 / 120), recherches dans `serveur/` hors tests (`CLOSE`, `EXPUNGE`, `\Deleted`, `-FLAGS`, `SELECT "` et `STORE` hors liste blanche et `imap_ouvrir_mail`, `BODY[` sans `.PEEK`), aucun contenu de mail écrit dans `serveur/data/`, `stockage.js`, `sw.js`, console sans erreur sur Mails et l'écran d'un mail, captures à 390 px, `git status`, aucun tiret long.
+2. Relecture ciblée par Claude, `SPEC.md` § 17 et `README.md` à jour, fusion de `lot3-2-contenu` dans `main`.
+3. Mise en ligne par Colin (`RECETTE-LOT3-2.md` § 1), puis vérification des en-têtes par GET (§ 2) : Claude lit la sortie. Recette sur l'iPhone **à partir du 31/10**.
+Effort conseillé pour la conversation suivante : **moyen**.
 
 ## Fichiers clés
-- `SPEC.md` § 17 : la spec du lot 3.2, base unique du plan
-- `plans/2026-10-23-lot3-1-mails.md` : modèle de plan du lot 3
-- `serveur/lib/imap.php` (`imap_segments_commande`, `imap_session`), `serveur/lib/imap_decodage.php` (`imap_parties_texte`), `serveur/lib/reponse.php` (`entetes_securite`), `site/.htaccess` (l. 27 à 35), `site/js/ecrans/mails.js`
+- `plans/2026-10-25-lot3-2-contenu.md` : fiche M8, partie B
+- `RECETTE-LOT3-2.md` : mise en ligne, en-têtes, retour arrière, cases
+- `SPEC.md` § 17 (à mettre à jour après M8), `README.md`
 
 ## Pièges et points ouverts
-- **Essais sur l'iPhone impossibles du 26 au 30/10** (Colin en Espagne). Deux mécanismes restent à trancher sur l'appareil : l'ouverture d'une pièce jointe depuis l'app installée, et l'ouverture d'un lien depuis le cadre (§ 17.6 et § 17.7). Le développement peut avancer avant.
-- `.htaccess` pose la CSP de l'app avec `Header always set` sur tout, `/api` compris. Il faut une condition sur `%{THE_REQUEST}`, car l'URI est réécrite vers `api/index.php`.
-- Garde-fou : toute commande citant `.env`, `config.php`, `secrets/`, un `grep -r` ou un script de mise en ligne passe entièrement par `{ … ; } 2>&1 | ~/.claude/hooks/redact-secrets`. Écrire les scripts Python longs dans le scratchpad.
-- `site/sw.js` : `VERSION` est à recalculer après tout changement dans `site/` (`php tests/run.php "service worker"`).
-- `outils/deploy-ovh.sh` affiche « En ligne. » sans comparer `version_base` aux migrations : à corriger. `JR_VERSION` passe à 0.3.2 avec ce lot.
-- Lot 2 encore ouvert : rappel « Dans 1 h » à recréer et contrôler, brief du 25/10 (heure d'hiver) à vérifier. Adresse du webmail OVH (`LIENS.qyris`) à confirmer par Colin.
+- **Essais sur l'iPhone impossibles du 26 au 30/10** (Colin en Espagne). Pièce jointe et lien du cadre tranchent la décision 11 ; mission M9 si ça échoue.
+- `HEAD` n'est pas prévu par la condition `.htaccess` : vérifier les en-têtes avec `curl -s -D - -o /dev/null`, jamais `curl -sI`.
+- Faux serveur e2e : `tests/e2e/serveur.mjs:97` annonce `version_app '0.2.0'` et `tests/e2e/test_moi.mjs:15` l'attend. Sans conséquence, à aligner sur 0.3.2 si on y touche.
+- Filtre de `php tests/run.php <filtre>` sensible à la casse ; suite PHP complète environ 65 s. Fonction définie dans `serveur/routes/*.php` → « Cannot redeclare » : la mettre dans `serveur/lib/`.
+- Garde-fou : toute commande citant `.env`, `config.php`, `secrets/`, `deploy`, `sftp`, un `grep -r` passe entièrement par `{ … ; } 2>&1 | ~/.claude/hooks/redact-secrets`. En zsh, ne pas mettre `====` seul dans une commande (« === not found »).
+- Hors lot 3.2 : rappel « Dans 1 h » à recréer, brief du 25/10 (heure d'hiver), adresse du webmail OVH à confirmer.

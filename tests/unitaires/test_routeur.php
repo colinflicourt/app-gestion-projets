@@ -26,6 +26,9 @@ test('routeur : toute route non publique refuse sans session (401)', function ()
         [$methode, $chemin] = explode(' ', $cle, 2);
         $r = traiter(requete(['methode' => $methode, 'chemin' => $chemin, 'corps_brut' => '{}']));
         egal(401, $r['statut'], $cle);
+        if (isset($protegees[$cle]['erreur'])) {
+            continue; // corps et pièces d'un mail : erreur non JSON, vérifiée dans test_routes_mails_contenu.php
+        }
         egal('session_expiree', corps($r)['erreur']['code'], $cle);
         egal('Ta session a expiré. Reconnecte-toi.', corps($r)['erreur']['message'], $cle);
     }
@@ -111,4 +114,79 @@ test("routeur : un journal impossible à écrire n'empêche pas la réponse 500 
     }
     egal(500, $r['statut']);
     egal('erreur_serveur', corps($r)['erreur']['code']);
+});
+
+function routes_avec_erreur_dediee(): void
+{
+    $erreur = fn(int $statut, string $code): array => reponse_brute($statut, ['Content-Type' => 'text/plain; charset=utf-8'], "erreur $statut $code");
+    $lever = fn(Throwable $e) => ['publique' => false, 'erreur' => $erreur, 'action' => function (array $r, ?array $s) use ($e): array {
+        throw $e;
+    }];
+    $GLOBALS['JR_ROUTES_SUPPLEMENTAIRES'] = [
+        'GET essai-brute' => ['publique' => false, 'erreur' => $erreur, 'action' => fn(array $r, ?array $s): array => reponse_brute(200, ['Content-Type' => 'text/html; charset=utf-8'], '<p>ok</p>')],
+        'GET essai-erreur-api' => $lever(new ErreurApi('compte_invalide', 400, 'Compte inconnu.')),
+        'GET essai-erreur-absent' => $lever(new ErreurSource('absent', 'IMAP : mail absent')),
+        'GET essai-erreur-trop-lourde' => $lever(new ErreurSource('trop_lourde', 'IMAP : trop lourde')),
+        'GET essai-erreur-delai' => $lever(new ErreurSource('delai', 'IMAP : délai dépassé')),
+        'GET essai-erreur-panne' => $lever(new RuntimeException('panne simulée')),
+        'GET essai-sans-erreur' => ['publique' => false, 'action' => function (array $r, ?array $s): array {
+            throw new ErreurSource('absent', 'IMAP : mail absent');
+        }],
+    ];
+}
+
+test("routeur : une route avec 'erreur' rend sa propre réponse, session expirée (401) comprise, sans JSON", function () {
+    base_de_test();
+    routes_avec_erreur_dediee();
+    $r = traiter(requete(['chemin' => 'essai-brute']));
+    egal(401, $r['statut']);
+    egal('erreur 401 session_expiree', $r['corps']);
+    egal(['Content-Type' => 'text/plain; charset=utf-8'], $r['entetes']);
+    $cookie = session_creer('Tests');
+    $avec = fn(string $chemin): array => traiter(requete(['chemin' => $chemin, 'cookies' => [JR_COOKIE_SESSION => $cookie['valeur']]]));
+    egal('<p>ok</p>', $avec('essai-brute')['corps']);
+    $attendus = [
+        'essai-erreur-api' => [400, 'erreur 400 compte_invalide'],
+        'essai-erreur-absent' => [404, 'erreur 404 absent'],
+        'essai-erreur-trop-lourde' => [413, 'erreur 413 trop_lourde'],
+        'essai-erreur-delai' => [502, 'erreur 502 delai'],
+        'essai-erreur-panne' => [500, 'erreur 500 erreur_serveur'],
+    ];
+    foreach ($attendus as $chemin => [$statut, $corps]) {
+        $r = $avec($chemin);
+        egal($statut, $r['statut'], $chemin);
+        egal($corps, $r['corps'], $chemin);
+        egal(['Content-Type' => 'text/plain; charset=utf-8'], $r['entetes'], $chemin);
+    }
+    $journal = file_get_contents(dossier_data() . '/erreurs.log');
+    vrai(str_contains($journal, '| RuntimeException | panne simulée'), 'la panne reste au journal');
+});
+
+test("routeur : une route avec 'erreur' garde le cookie de prolongation de la session", function () {
+    base_de_test();
+    routes_avec_erreur_dediee();
+    fixer_heure('2026-10-08 10:00:00');
+    $cookie = session_creer('Tests');
+    fixer_heure('2026-10-09 11:00:00');
+    $r = traiter(requete(['chemin' => 'essai-erreur-panne', 'cookies' => [JR_COOKIE_SESSION => $cookie['valeur']]]));
+    egal(500, $r['statut']);
+    egal(JR_COOKIE_SESSION, $r['cookies'][0]['nom'] ?? null);
+    egal($cookie['valeur'], $r['cookies'][0]['valeur'] ?? null);
+});
+
+test("routeur : une route sans 'erreur' rend toujours du JSON (ErreurSource en 502), et une route inconnue aussi", function () {
+    base_de_test();
+    routes_avec_erreur_dediee();
+    $cookie = session_creer('Tests');
+    $r = traiter(requete(['chemin' => 'essai-sans-erreur', 'cookies' => [JR_COOKIE_SESSION => $cookie['valeur']]]));
+    egal(502, $r['statut']);
+    egal('absent', corps($r)['erreur']['code']);
+    egal(false, corps($r)['ok']);
+    $r = traiter(requete(['chemin' => 'essai-sans-erreur']));
+    egal(401, $r['statut']);
+    egal('session_expiree', corps($r)['erreur']['code']);
+    $r = traiter(requete(['chemin' => 'nimporte']));
+    egal(404, $r['statut']);
+    egal('route_inconnue', corps($r)['erreur']['code']);
+    vrai(isset($r['entetes']['Content-Security-Policy']), 'en-têtes de sécurité de l API');
 });

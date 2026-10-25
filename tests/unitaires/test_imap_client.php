@@ -448,3 +448,223 @@ test('IMAP : toute écriture sur la socket passe par imap_ecrire, appelée seule
         vrai(!str_contains($source, $autre), "$autre ne doit pas servir à écrire sur la socket");
     }
 });
+
+// --- Usage « ouverture » (SPEC § 17.5) ----------------------------------------------------------
+
+const OUVERTURE_ELEMENTS = 'UID FLAGS INTERNALDATE ENVELOPE BODYSTRUCTURE BODY.PEEK[HEADER.FIELDS (TO CC DELIVERED-TO X-FORWARDED-TO RECEIVED LIST-UNSUBSCRIBE LIST-ID PRECEDENCE)]';
+
+// Boîte où le mail 4812 existe (non lu par défaut) ; $regles passent avant les règles d'ouverture
+function scenario_ouverture(bool $deja_lu = false, array $regles = [], int $uidvalidity_select = 424242): array
+{
+    $fetch = fixture_imap('fetch-4812-ouverture.txt');
+    if ($deja_lu) {
+        $fetch = str_replace('FLAGS ()', 'FLAGS (\\Seen)', $fetch);
+    }
+    return scenario_imap_standard(['regles_avant' => array_merge($regles, [
+        ['motif' => '/\AUID FETCH 4812 \(/', 'reponse' => $fetch . "{ETIQUETTE} OK Fait\r\n"],
+        ['motif' => '/\AUID FETCH \d+ \(/', 'reponse' => "{ETIQUETTE} OK Fait\r\n"],
+        ['motif' => '/\ASELECT "INBOX"\z/', 'reponse' => "* 7 EXISTS\r\n* OK [UIDVALIDITY $uidvalidity_select] UIDs valides\r\n* OK [READ-WRITE] ok\r\n{ETIQUETTE} OK [READ-WRITE] SELECT fait\r\n"],
+        ['motif' => '/\AUID STORE 4812 \+FLAGS\.SILENT \(\\\\Seen\)\z/', 'reponse' => "{ETIQUETTE} OK STORE fait\r\n"],
+    ])]);
+}
+
+function ouvrir_chez(string $adresse, int $uid = 4812, int $uidvalidity = 424242, float $duree = 20.0): array
+{
+    $GLOBALS['JR_IMAP_ADRESSE'] = $adresse;
+    return imap_ouvrir_mail('colin', IMAP_ID_TEST, IMAP_MDP_TEST, microtime(true) + $duree, $uid, $uidvalidity);
+}
+
+function commande_login_test(): string
+{
+    return 'LOGIN "' . IMAP_ID_TEST . '" "' . IMAP_MDP_TEST . '"';
+}
+
+test('IMAP ouverture : un mail non lu est lu, puis marqué lu par SELECT et UID STORE, dans cet ordre exact', function () {
+    avec_faux_imap(scenario_ouverture(), function (string $adresse, callable $commandes) {
+        $mail = ouvrir_chez($adresse);
+        egal([
+            'CAPABILITY',
+            commande_login_test(),
+            'EXAMINE "INBOX"',
+            'UID FETCH 4812 (' . OUVERTURE_ELEMENTS . ')',
+            'SELECT "INBOX"',
+            'UID STORE 4812 +FLAGS.SILENT (\\Seen)',
+            'LOGOUT',
+        ], $commandes());
+        egal(true, $mail['marque_lu']);
+        egal("Invitation à la soirée du club", $mail['objet']);
+        egal('Léa Dupont', $mail['de_nom']);
+        egal('lea.dupont@club-exemple.fr', $mail['de_adresse']);
+        egal([['nom' => 'Colin', 'adresse' => 'colin.test@exemple.org'], ['nom' => 'Marc Petit', 'adresse' => 'marc.petit@exemple.net']], $mail['a']);
+        egal([['nom' => 'Compta', 'adresse' => 'compta@exemple.org']], $mail['cc']);
+        egal(['nom' => 'Bureau du club', 'adresse' => 'bureau@club-exemple.fr'], $mail['repondre_a']);
+        egal('2026-10-24T07:15:42Z', $mail['date']);
+        egal(['to', 'cc', 'received'], array_keys($mail['entetes']));
+        egal('ALTERNATIVE', $mail['structure'][2]);
+        vrai(is_array($mail['structure'][0]) && $mail['structure'][0][0] === 'TEXT', 'BODYSTRUCTURE analysée');
+        foreach ($commandes() as $commande) {
+            vrai(!preg_match('/\b(CLOSE|EXPUNGE|COPY|MOVE|APPEND|DELETE)\b|-FLAGS|\\\\Deleted|BODY\[/', $commande), 'commande interdite : ' . $commande);
+        }
+    });
+});
+
+test('IMAP ouverture : un mail déjà lu ne déclenche ni SELECT ni STORE, marque_lu est vrai', function () {
+    avec_faux_imap(scenario_ouverture(true), function (string $adresse, callable $commandes) {
+        $mail = ouvrir_chez($adresse);
+        egal(true, $mail['marque_lu']);
+        egal(['CAPABILITY', commande_login_test(), 'EXAMINE "INBOX"', 'UID FETCH 4812 (' . OUVERTURE_ELEMENTS . ')', 'LOGOUT'], $commandes());
+    });
+});
+
+test('IMAP ouverture : repondre_a est null quand le Reply-To est absent ou égal à l\'expéditeur (adresse en minuscules)', function () {
+    $fetch = fixture_imap('fetch-4812-ouverture.txt');
+    $memes = str_replace('(("Bureau du club" NIL "bureau" "Club-Exemple.fr"))', '(("Lea" NIL "LEA.DUPONT" "club-exemple.fr"))', $fetch);
+    $sans = str_replace('(("Bureau du club" NIL "bureau" "Club-Exemple.fr"))', 'NIL', $fetch);
+    foreach ([$memes, $sans] as $variante) {
+        avec_faux_imap(scenario_ouverture(false, [['motif' => '/\AUID FETCH 4812 \(/', 'reponse' => $variante . "{ETIQUETTE} OK Fait\r\n"]]), function (string $adresse) {
+            egal(null, ouvrir_chez($adresse)['repondre_a']);
+        });
+    }
+});
+
+test('IMAP ouverture : UIDVALIDITY différente à l\'EXAMINE, absent, rien d\'autre que LOGOUT après EXAMINE', function () {
+    avec_faux_imap(scenario_ouverture(), function (string $adresse, callable $commandes) {
+        egal('absent', code_de(fn() => ouvrir_chez($adresse, 4812, 111)));
+        egal(['CAPABILITY', commande_login_test(), 'EXAMINE "INBOX"', 'LOGOUT'], $commandes());
+    });
+});
+
+test('IMAP ouverture : UIDVALIDITY différente au SELECT seulement, absent et aucun STORE', function () {
+    avec_faux_imap(scenario_ouverture(false, [], 999), function (string $adresse, callable $commandes) {
+        egal('absent', code_de(fn() => ouvrir_chez($adresse)));
+        $recues = $commandes();
+        egal('SELECT "INBOX"', $recues[4]);
+        vrai(!array_filter($recues, fn(string $c): bool => str_contains($c, 'STORE')), 'aucun STORE');
+    });
+});
+
+test('IMAP ouverture : UID introuvable, absent', function () {
+    avec_faux_imap(scenario_ouverture(), function (string $adresse, callable $commandes) {
+        egal('absent', code_de(fn() => ouvrir_chez($adresse, 4813)));
+        vrai(!array_filter($commandes(), fn(string $c): bool => str_contains($c, 'STORE') || str_contains($c, 'SELECT')), 'ni SELECT ni STORE');
+    });
+});
+
+test('IMAP ouverture : STORE répondu NO, marque_lu faux, pas d\'exception, journal sans contenu du mail', function () {
+    $regle = ['motif' => '/\AUID STORE 4812 /', 'reponse' => "{ETIQUETTE} NO [CANNOT] Lecture seule pour Invitation lea.dupont\r\n"];
+    avec_faux_imap(scenario_ouverture(false, [$regle]), function (string $adresse, callable $commandes) {
+        $mail = ouvrir_chez($adresse);
+        egal(false, $mail['marque_lu']);
+        egal("Invitation à la soirée du club", $mail['objet']);
+        egal('UID STORE 4812 +FLAGS.SILENT (\\Seen)', $commandes()[5]);
+        $journal = journal_texte();
+        vrai(str_contains($journal, 'ErreurSource'), 'l\'échec doit être au journal');
+        foreach (['Invitation', 'lea.dupont', 'club-exemple', 'Compta', 'Lecture seule', IMAP_MDP_TEST] as $interdit) {
+            vrai(!str_contains($journal, $interdit), "« $interdit » ne doit pas être dans le journal : $journal");
+        }
+    });
+});
+
+test('IMAP ouverture : SELECT répondu NO ou STORE sans réponse (délai), marque_lu faux et la réponse part quand même', function () {
+    avec_faux_imap(scenario_ouverture(false, [['motif' => '/\ASELECT "INBOX"\z/', 'reponse' => "{ETIQUETTE} NO Boite occupee\r\n"]]), function (string $adresse, callable $commandes) {
+        egal(false, ouvrir_chez($adresse)['marque_lu']);
+        vrai(!array_filter($commandes(), fn(string $c): bool => str_contains($c, 'STORE')), 'aucun STORE après un SELECT refusé');
+    });
+    avec_faux_imap(scenario_ouverture(false, [['motif' => '/\AUID STORE/', 'silence' => true]]), function (string $adresse) {
+        $debut = microtime(true);
+        egal(false, ouvrir_chez($adresse, 4812, 424242, 3.0)['marque_lu']);
+        vrai(microtime(true) - $debut < 6, 'le délai doit être respecté');
+    });
+});
+
+test('IMAP ouverture : SELECT sans UIDVALIDITY, pas de STORE (impossible de vérifier), marque_lu faux', function () {
+    $regle = ['motif' => '/\ASELECT "INBOX"\z/', 'reponse' => "* 7 EXISTS\r\n{ETIQUETTE} OK [READ-WRITE] SELECT fait\r\n"];
+    avec_faux_imap(scenario_ouverture(false, [$regle]), function (string $adresse, callable $commandes) {
+        egal(false, ouvrir_chez($adresse)['marque_lu']);
+        vrai(!array_filter($commandes(), fn(string $c): bool => str_contains($c, 'STORE')), 'aucun STORE');
+    });
+});
+
+test('IMAP liste blanche « ouverture » : lecture + SELECT "INBOX" + un UID STORE +FLAGS.SILENT (\\Seen) à UID unique, rien d\'autre', function () {
+    foreach (['SELECT "INBOX"', 'UID STORE 3 +FLAGS.SILENT (\\Seen)', 'UID STORE 4812 +FLAGS.SILENT (\\Seen)', 'UID STORE 4294967295 +FLAGS.SILENT (\\Seen)',
+        'CAPABILITY', 'EXAMINE "INBOX"', 'UID SEARCH ALL', 'UID FETCH 101 (UID BODY.PEEK[1]<0.2000>)', 'LOGIN "alice" "mdp"', 'LOGOUT'] as $commande) {
+        vrai(imap_commande_autorisee($commande, 'ouverture'), 'devrait être permise en ouverture : ' . json_encode($commande));
+    }
+    foreach (['CLOSE', 'EXPUNGE', 'UID EXPUNGE 3', 'UID STORE 3 -FLAGS.SILENT (\\Seen)', 'UID STORE 3 FLAGS (\\Seen)', 'UID STORE 3 +FLAGS (\\Deleted)',
+        'UID STORE 3 +FLAGS.SILENT (\\Seen \\Deleted)', 'UID STORE 3,4 +FLAGS.SILENT (\\Seen)', 'UID STORE 3:4 +FLAGS.SILENT (\\Seen)', 'UID STORE * +FLAGS.SILENT (\\Seen)',
+        'UID STORE 03 +FLAGS.SILENT (\\Seen)', 'UID STORE 0 +FLAGS.SILENT (\\Seen)', 'UID STORE 12345678901 +FLAGS.SILENT (\\Seen)', 'UID STORE 3 +FLAGS.SILENT (\\Seen) ',
+        'UID STORE 3 +FLAGS.SILENT (\\SEEN)', "UID STORE 3 +FLAGS.SILENT (\\Seen)\r\nA2 EXPUNGE",
+        'SELECT "Archive"', 'SELECT INBOX', 'SELECT "INBOX" ', 'select "INBOX"', 'STORE 3 +FLAGS.SILENT (\\Seen)', 'UID MOVE 3 "Trash"', 'UID COPY 3 "Trash"',
+        'UID FETCH 101 (BODY[1])'] as $commande) {
+        vrai(!imap_commande_autorisee($commande, 'ouverture'), 'devrait être refusée en ouverture : ' . json_encode($commande));
+    }
+});
+
+test('IMAP liste blanche : en usage « lecture » (par défaut) SELECT et UID STORE restent refusés, un usage inconnu refuse tout', function () {
+    foreach (['SELECT "INBOX"', 'UID STORE 3 +FLAGS.SILENT (\\Seen)'] as $commande) {
+        vrai(!imap_commande_autorisee($commande), 'refusée par défaut : ' . $commande);
+        vrai(!imap_commande_autorisee($commande, 'lecture'), 'refusée en lecture : ' . $commande);
+    }
+    vrai(imap_commande_autorisee('CAPABILITY', 'lecture'), 'CAPABILITY permise en lecture');
+    egal(['lecture', 'ouverture'], JR_IMAP_USAGES);
+    foreach (['inconnu', '', 'Lecture', 'ecriture'] as $usage) {
+        foreach (['CAPABILITY', 'LOGOUT', 'EXAMINE "INBOX"', 'LOGIN "a" "b"', 'SELECT "INBOX"', 'UID STORE 3 +FLAGS.SILENT (\\Seen)'] as $commande) {
+            vrai(!imap_commande_autorisee($commande, $usage), "usage « $usage » : $commande doit être refusée");
+        }
+    }
+    leve(LogicException::class, fn() => imap_session('colin', IMAP_ID_TEST, IMAP_MDP_TEST, microtime(true) + 5, fn() => null, 'inconnu'));
+});
+
+test('IMAP ouverture : une commande hors usage lève LogicException avant écriture, SELECT et STORE aussi en usage lecture', function () {
+    [$c, $serveur] = connexion_de_paire();
+    stream_set_blocking($serveur, false);
+    foreach (['SELECT "INBOX"', 'UID STORE 3 +FLAGS.SILENT (\\Seen)'] as $commande) {
+        leve(LogicException::class, fn() => imap_envoyer($c, $commande));
+    }
+    $c->usage = 'ouverture';
+    foreach (['CLOSE', 'EXPUNGE', 'UID STORE 3 +FLAGS.SILENT (\\Seen \\Deleted)', 'UID STORE 3,4 +FLAGS.SILENT (\\Seen)'] as $commande) {
+        $e = leve(LogicException::class, fn() => imap_envoyer($c, $commande));
+        vrai(!str_contains($e->getMessage(), 'Deleted'), 'le message ne cite que le verbe : ' . $e->getMessage());
+    }
+    egal('', (string) fread($serveur, 4096), 'rien ne doit être parti vers le serveur');
+    egal(0, $c->numero);
+    egal(0, $c->stores);
+    fclose($c->prise);
+    fclose($serveur);
+});
+
+test('IMAP ouverture : un deuxième UID STORE sur la même connexion lève une exception avant d\'écrire (fichier des commandes du faux serveur)', function () {
+    avec_faux_imap(scenario_ouverture(), function (string $adresse, callable $commandes) {
+        $GLOBALS['JR_IMAP_ADRESSE'] = $adresse;
+        $e = leve(LogicException::class, fn() => imap_session('colin', IMAP_ID_TEST, IMAP_MDP_TEST, microtime(true) + 20, function (ConnexionImap $c): void {
+            egal('OK', imap_envoyer($c, 'SELECT "INBOX"')['statut']);
+            egal('OK', imap_envoyer($c, 'UID STORE 4812 +FLAGS.SILENT (\\Seen)')['statut']);
+            egal(1, $c->stores);
+            imap_envoyer($c, 'UID STORE 4812 +FLAGS.SILENT (\\Seen)');
+        }, 'ouverture'));
+        vrai(!str_contains($e->getMessage(), '4812'), 'le message ne cite que le verbe : ' . $e->getMessage());
+        $stores = array_filter($commandes(), fn(string $c): bool => str_contains($c, 'STORE'));
+        egal(1, count($stores), 'un seul STORE a pu partir');
+    });
+});
+
+test('IMAP ouverture : EXAMINE "INBOX" reste la première commande après LOGIN dans les deux usages, lecture et essai n\'envoient ni SELECT ni STORE', function () {
+    foreach (['lecture', 'ouverture'] as $usage) {
+        avec_faux_imap(scenario_imap_standard(), function (string $adresse, callable $commandes) use ($usage) {
+            $GLOBALS['JR_IMAP_ADRESSE'] = $adresse;
+            imap_session('colin', IMAP_ID_TEST, IMAP_MDP_TEST, microtime(true) + 20, fn(ConnexionImap $c): null => null, $usage);
+            egal(['CAPABILITY', commande_login_test(), 'EXAMINE "INBOX"', 'LOGOUT'], $commandes());
+        });
+    }
+    foreach ([fn(string $adresse) => lire_chez($adresse), function (string $adresse): void {
+        $GLOBALS['JR_IMAP_ADRESSE'] = $adresse;
+        imap_essayer('colin', IMAP_ID_TEST, IMAP_MDP_TEST, microtime(true) + 20);
+    }] as $appel) {
+        avec_faux_imap(scenario_imap_standard(), function (string $adresse, callable $commandes) use ($appel) {
+            $appel($adresse);
+            foreach ($commandes() as $commande) {
+                vrai(!preg_match('/\b(SELECT|STORE)\b/', $commande), 'SELECT ou STORE en lecture : ' . $commande);
+            }
+        });
+    }
+});

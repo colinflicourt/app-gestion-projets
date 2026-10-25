@@ -62,5 +62,14 @@ if ! printf '%s' "$SANTE" | grep -q '"base_ok":true'; then
     echo "Échec : /api/sante ne répond pas « base_ok »: true. Le site est peut-être cassé, préviens Claude."
     exit 1
 fi
-echo "Les migrations en retard (003 à 006 pour les lots 2 et 3) se sont appliquées à cet appel : version_base = version attendue."
-echo "En ligne."
+# version_base lue dans la réponse, comparée au plus grand numéro de migration (NNN_nom.sql)
+ATTENDU="$(ls "$PROJET/serveur/migrations/" | grep -E '^[0-9]+_.*\.sql$' | sed -E 's/_.*//' | sort -n | tail -n 1)"
+ATTENDU=$((10#$ATTENDU))
+VB="$(printf '%s' "$SANTE" | grep -o '"version_base":[0-9]*' | grep -o '[0-9]*$' | head -n 1 || true)"
+if [ -z "$VB" ]; then X="illisible"; else X=$((10#$VB)); fi
+if [ "$X" = "$ATTENDU" ]; then
+    echo "En ligne."
+else
+    echo "Attention : version_base vaut $X, attendu $ATTENDU. Ne pas considérer la mise en ligne comme finie."
+    exit 1
+fi
