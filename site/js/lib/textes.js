@@ -183,6 +183,7 @@ export const T = {
     retour: 'Retour aux boîtes',
     neRepondPas: 'Ne répond pas',
     derniers: 'Derniers mails',
+    nonLu: 'Non lu : ',
     sections: { utc: 'UTC', qyris: 'QYRIS', gmail: 'Gmail', icloud: 'iCloud' },
     nonLus: (n) => (n <= 1 ? `${n} non lu` : `${n} non lus`),
     aJour: 'Boîtes à jour.',
