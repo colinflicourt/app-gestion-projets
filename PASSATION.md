@@ -1,39 +1,41 @@
-# Passation · Jarvis Jr. · 2026-10-25 (soir)
+# Passation · Jarvis Jr. · 2026-10-25 23:00
 
 ## Objectif
-Jarvis Jr. (jr.qyris.fr), l'app perso d'organisation de Colin sur iPhone. Chantier : **lot 4 (le fun)**, en commençant par le **4.1 : moteur d'XP et son affichage**, précédé d'une **régulation de l'XP**. Mode chef d'orchestre.
+Jarvis Jr. (jr.qyris.fr), l'app perso d'organisation de Colin sur iPhone. Chantier : **lot 4.1, moteur d'XP et son affichage**. Mode chef d'orchestre.
 
 ## Où on en est
-- **Lots 3 et 3.2 finis** : version 0.3.2 en ligne (`version_base` 6), en-têtes vérifiés par GET le 25/10, recettes iPhone du lot 3 (§ 5 et § 6) et du lot 3.2 validées par Colin le 25/10 (cases cochées dans `RECETTE-LOT3.md` et `RECETTE-LOT3-2.md`).
-- **Spec du lot 4 écrite et commitée** (`SPEC.md` § 18, `99fcb34`) : découpage 4.1 à 4.4, détail du 4.1 (§ 18.3 à 18.9) **validé par Colin**, régulation de l'XP (§ 18.10) ajoutée à sa demande. Relue par un sous-agent builder (8 points tranchés, marqués « choix de Claude »).
-- Rien n'est codé pour le lot 4. Branche `main`, arbre propre. Tests actuels : PHP 469, JS 51, écran 120.
+- Plan du 4.1 écrit et validé par Colin, textes compris : `plans/2026-10-25-lot4-1-xp.md` (`8dfe21a`, mis à jour `34440dc`). Branche `lot4-1-xp`, arbre propre.
+- **Partie A finie, relue, commitée** :
+  - M1 `1707a31` : moteur pur `serveur/lib/xp.php` (rejeu, plancher, niveaux, grades, série et joker, événements avec `cle`, `date`, `emis_le`) ;
+  - M2 `b8b5f4e` : `REGULATION-XP.md`, `outils/historique-trello.py` (GET seulement), `outils/simuler-xp.php` ; données extraites dans `outils/donnees/` (hors git) ;
+  - M1b `3c31894` : barème C et plafonds par jour dans le moteur, `aujourdhui_paye` dans `xp_objet()` ;
+  - `34440dc` : barème C reporté dans `CONTENU.md` § 7, `SPEC.md` § 18.4 et § 18.10, et le plan.
+- Tests : PHP 515 (469 au départ), JS 51, écran 120. Rien n'est encore branché au serveur ni à l'iPhone.
 - En cours chez un sous-agent : rien.
 
 ## Décisions prises
-- **L'XP est le moteur** (Colin) : chaque gain visible au moment de l'action, l'XP doit refléter du vrai travail.
-- Ordre : 4.1 moteur et affichage, 4.2 boss, 4.3 badges, cartes et album, 4.4 journal et Wrapped. Chaque sous-lot : spec, plan, sous-agents, vérification, mise en ligne par Colin, recette iPhone.
-- **Carte éclair** (Colin) : carte terminée moins de 10 min après sa création = 5 XP au lieu de 30 et bonus ; création lue dans l'identifiant Trello.
-- **Régulation avant le moteur** (Colin) : analyser toutes les sources d'XP et tous les paliers, simuler l'année (`outils/simuler-xp.php`), rapport `REGULATION-XP.md` validé par Colin, qui remplace le barème de `CONTENU.md` § 7. Barème et seuils dans une seule table de constantes (PHP + miroir JS testé).
-- Le combat paie trop peu (45 min = 14 XP) : piste « 1 XP par minute », à trancher par la simulation. Durée du boss déjà réglable (25, 45, 60 min, jusqu'au prochain cours) ; durée libre à discuter dans la spec du 4.2.
-- XP jamais stockée, aucune migration au 4.1, pas de notification push avant le 4.3.
+- **Barème C validé par Colin** (25/10) : carte 30 (+20 Urgent, +10 échéance), éclair 5 (au plus 2 par jour), étape 5 (au plus 10 par jour), pas de niveau 160 (niveau 13 = 12 480), grades 1 500 / 6 000 / 22 000. Combat 1 XP/min et boss +10, journal 3 (au plus 2 par jour) : pour 4.2 et 4.4, pas dans `JR_XP_REGLES` maintenant.
+- Seuils revus après 2 à 3 semaines d'usage, **seulement à la baisse** (les monter ferait redescendre des niveaux déjà gagnés).
+- Gain plafonné (décision 12 du plan) : l'iPhone estime 0, et affiche alors « Carte terminée. » sans XP, et pas de « +5 XP » pour une étape.
+- Les 12 décisions et les contrats du plan font foi (renvoi d'écriture, `fait_le`, célébrations par `emis_le` et `cle`, magasin IndexedDB `donnees` clé `celebrations`, version 0.4.1).
 
 ## Prochaine étape
-1. Écrire le plan de missions du 4.1 avec superpowers:writing-plans (`plans/2026-10-2x-lot4-1-xp.md`), à faire valider par Colin. **M1 = régulation de l'XP** (§ 18.10), son rapport validé par Colin avant les missions du moteur.
-2. Lancer M1 (sous-agent `developpeur`, Sonnet), présenter `REGULATION-XP.md` à Colin.
-3. Puis les missions du moteur (`serveur/lib/xp.php`, API, iPhone), vérification, mise en ligne au retour de Colin.
+1. Lancer **M3** (serveur : `xp` dans `GET donnees` et les écritures, heure du geste, `GET xp/export`), sous-agent `developpeur`, Sonnet, effort haut, d'après la fiche M3 du plan. M3 se fonde sur la sortie réelle de `xp_rejouer()` (clés en plus : `aujourdhui`, `paye_aujourdhui`).
+2. Puis M4 (iPhone : `xp.js` et miroir testé, gains, tranches, Moi), M5 (célébrations), M6 (version 0.4.1, `RECETTE-LOT4-1.md`), M7 (vérification). Relecture ciblée par Claude, fusion dans `main`.
+3. Mise en ligne et recette iPhone par Colin **à partir du 31/10**.
 Effort conseillé pour la conversation suivante : **moyen**.
 
 ## Fichiers clés
-- `SPEC.md` § 18 : spec du lot 4 (4.1 détaillé, régulation § 18.10)
-- `CONTENU.md` § 3 (Moi), § 5 à § 8 bis : barème actuel, grades, textes, cartes
-- `plans/2026-10-25-lot3-2-contenu.md` : modèle de plan de missions
+- `plans/2026-10-25-lot4-1-xp.md` : décisions, interfaces, fiches M3 à M7
+- `serveur/lib/xp.php` : moteur livré (à lire par signatures seulement)
+- `SPEC.md` § 18.5 et § 18.6 : API et iPhone
 - `guides/CHEF-D-ORCHESTRE.md` (racine du workspace) : méthode
 
 ## Pièges et points ouverts
-- **Colin en Espagne du 26 au 30/10** : pas de mise en ligne ni d'essais iPhone avant son retour. Médian NF93 le 2/11 : sessions courtes.
-- Les vraies actions sont dans MySQL sur OVH, inaccessibles en local : la simulation part de l'historique Trello (`trello.py lire --fait`, lecture seule) ; une route ou un export de lecture est à prévoir pour la régulation suivante.
-- `serveur/lib/taches.php` note l'heure de réception : il faut ajouter l'heure du geste envoyée par l'iPhone (§ 18.5).
-- Faux serveur e2e : `tests/e2e/serveur.mjs:97` annonce `version_app '0.2.0'`, à aligner sur 0.3.2.
-- Vérifier les en-têtes avec `curl -s -D - -o /dev/null`, jamais `curl -sI`. Suite PHP complète environ 65 s ; fonction définie dans `serveur/routes/*.php` → « Cannot redeclare », la mettre dans `serveur/lib/`.
-- Garde-fou : commandes citant `.env`, `config.php`, `secrets/`, `deploy`, `sftp`, `grep -r` entièrement dans `{ … ; } 2>&1 | ~/.claude/hooks/redact-secrets`. En zsh, pas de `====` seul.
-- Hors lot 4 : rappel « Dans 1 h » et brief à l'heure d'hiver (lot 2) à contrôler ; adresse du webmail OVH à confirmer.
+- **Colin en Espagne du 26 au 30/10** : ni mise en ligne ni essai iPhone avant son retour. Médian NF93 le 2/11.
+- Les sous-agents ont glissé deux fois : M1b a écrit le code avant les tests, et a lancé un `git stash` aussitôt restauré. Rappeler dans chaque fiche : tests d'abord, aucune commande git qui modifie l'arbre.
+- Fonctions d'aide des tests XP préfixées `xpt_` : ne pas les redéfinir dans les tests de M3.
+- Faux serveur e2e : `tests/e2e/serveur.mjs:97` annonce `0.2.0`, à aligner en M4.
+- Pour 4.3 : seul Études atteint le niveau 13 dans l'année (les autres domaines plafonnent entre 6 et 8), à trancher avec les cartes de niveau.
+- `curl -s -D - -o /dev/null`, jamais `curl -sI`. Commandes qui citent `.env`, `config.php`, `secrets/`, `deploy`, `sftp`, Trello ou `grep -r` entièrement dans `{ … ; } 2>&1 | ~/.claude/hooks/redact-secrets`.
+- Hors lot 4 : rappel « Dans 1 h » et brief à l'heure d'hiver (lot 2) à contrôler.
