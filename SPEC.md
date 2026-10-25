@@ -824,3 +824,111 @@ Colin veut lire un mail en entier depuis l'iPhone, sans changer d'app : un mail 
 ### 17.12 Laissé au builder
 
 Forme de l'adresse de l'écran ; forme exacte de la condition `.htaccess` (§ 17.6) ; découpe des fonctions et des fichiers ; mise en page exacte (dans le style de la maquette v28) ; mesure de la hauteur du cadre ; mécanisme d'ouverture des pièces sur l'iPhone (§ 17.7, à vérifier sur l'appareil) ; mise à jour de la copie locale IndexedDB après ouverture.
+
+## 18. Lot 4 : le fun (XP, boss, récompenses, journal)
+
+> Rédigé le 2026-10-25 avec superpowers:brainstorming, à partir de `CONTENU.md` § 7 à § 10 et § 12 (barème, grades, série, badges, cartes, Wrapped, journal : déjà validés par Colin les 7 et 8/10), de `DESIGN.md` et de la conversation du 25/10. Relu par un sous-agent « builder » le même jour (8 points, tranchés et marqués « choix de Claude ») ; carte éclair tranchée par Colin. **Statut : lot 4.1 validé par Colin le 2026-10-25.** Seul le lot 4.1 est détaillé, avec la régulation de l'XP (§ 18.10) qui le précède ; 4.2 à 4.4 auront chacun leur section, écrite au moment de les commencer.
+
+### 18.1 Pourquoi (Colin, 2026-10-25)
+
+**L'XP est le moteur.** Colin aime gagner des récompenses, et gagner de l'XP comme dans un jeu vidéo le ferait travailler plus. Le boss, le journal, les badges, les cartes et le Wrapped sont d'autres façons d'en gagner, et ce sont eux qui le feront revenir dans l'app.
+
+Conséquences :
+- **chaque gain se voit au moment de l'action**, pas seulement dans Moi ;
+- l'XP doit **refléter du vrai travail** : un chiffre facile à gonfler perdrait sa valeur ;
+- on construit d'abord le moteur et son affichage, puis les sources d'XP, puis les récompenses.
+
+### 18.2 Découpage (validé par Colin le 2026-10-25)
+
+| Sous-lot | Contenu | Pourquoi dans cet ordre |
+|---|---|---|
+| **4.1** | Moteur d'XP, niveaux par domaine, grade de Junior, série et joker ; gains visibles (Terminer, cocher), passages de niveau, promotions, Moi | Le cœur. Utile tout de suite, avec les actions notées depuis le lot 1 |
+| **4.2** | Session focus contre le boss, « J'ai fini la tâche », bouton GO qui lance le boss | La plus grosse source d'XP pendant les révisions |
+| **4.3** | 12 badges, 70 cartes et album, déblocage, notifications « Nouvelle carte » et « Promotion » | La récompense de chaque niveau |
+| **4.4** | Journal du soir et humeurs, Wrapped du dimanche | Ce qui fait revenir chaque semaine |
+
+Chaque sous-lot suit le chemin des précédents : spec, plan de missions, sous-agents, vérification, mise en ligne par Colin, recette sur l'iPhone.
+
+### 18.3 Lot 4.1 : portée
+
+- **Dans le lot** : calcul de l'XP à partir du journal `actions` ; niveau par domaine ; grade ; série et joker ; XP gagnée affichée après Terminer (retirée par « Annuler ») et après une étape cochée (retirée en la décochant) ; niveau sur la poignée de chaque tranche d'Aujourd'hui ; écran Moi (grade, 4 domaines, série) ; célébration d'un passage de niveau et d'une promotion ; récapitulatif du rattrapage à la première ouverture.
+- **Hors du lot** : sessions focus et boss (4.2) ; badges, cartes, album et leurs notifications (4.3) ; journal, Wrapped (4.4) ; toute notification push (choix de Claude : en 4.1, les célébrations se font dans l'app ; la notification « Promotion » de `CONTENU.md` § 5 arrive en 4.3 avec « Nouvelle carte »).
+- **Anti-objectifs** (chacun est un défaut bloquant) :
+  - une même étape ou une même carte rapporte deux fois l'XP en étant cochée, décochée puis recochée (ou terminée, rouverte puis terminée) ;
+  - l'XP affichée sur l'iPhone diffère de celle du serveur après rafraîchissement ;
+  - l'XP est stockée quelque part au lieu d'être recalculée (§ 4.1) ;
+  - une célébration se répète à chaque ouverture, ou dix passages de niveau s'enchaînent à l'écran au rattrapage.
+
+### 18.4 Lot 4.1 : règles de calcul (`serveur/lib/xp.php`, fonctions pures)
+
+Entrée : les actions non annulées (`annulee = 0`), triées par `quand` puis `id`. Sortie : l'état de l'XP et la liste datée des événements (niveaux franchis, promotions, jokers utilisés).
+
+- **Barème** (`CONTENU.md` § 7, validé le 07/10) :
+  - `carte_terminee` : 30, +20 si `donnees.urgent`, +10 si `donnees.echeance` existe et que `quand` lui est antérieur ou égal. Une échéance posée sans heure est stockée à 18 h 00 Paris : dans ce cas, on compare au **jour** (finie le jour J avant minuit, bonus gagné) ; une échéance avec une autre heure se compare à la minute (choix de Claude) ;
+  - `etape_cochee` : 5 ;
+  - `carte_ajoutee`, `tirage_parti` : 0.
+- **Carte éclair** (décision de Colin, 2026-10-25) : une carte terminée **moins de 10 minutes après sa création** rapporte 5 XP au lieu de 30 et ses bonus, pour que l'XP reste un signal de vrai travail. L'heure de création se lit dans l'identifiant Trello de la carte (ses 8 premiers caractères hexadécimaux sont l'horodatage Unix de création), ce qui couvre aussi les cartes créées dans l'app Trello ou par Jarvis. Le message après Terminer dit alors « Carte terminée. +5 XP Études. » sans autre commentaire (choix de Claude).
+- **Une seule fois à la fois** : on rejoue les actions dans l'ordre. Une carte terminée gagne son XP ; `carte_rouverte` retire exactement ce qu'elle avait gagné ; une nouvelle fin la fait regagner (avec les bonus calculés à ce moment). Même chose pour une étape avec `etape_cochee` et `etape_decochee`. Une action « terminée » sur une carte déjà terminée ne rapporte rien, et un retrait sans gain préalable (étape cochée avant le lot 1, puis décochée) ne retire rien : plancher à 0 par carte et par étape (choix de Claude).
+- **Domaine** : la colonne `domaine` de l'action. Une carte finie dans l'app Trello ou par Jarvis compte pareil (§ 6.4).
+- **Point de départ** : toutes les actions depuis le lot 1 (décision 3 du § 2).
+- **Niveau par domaine** : niveau 1 à 0 XP, puis chaque niveau demande 100 XP de plus que le précédent (niveau n atteint à 50 × n × (n − 1) : 100, 300, 600, 1 000…). Le niveau suit l'XP nette : s'il redescend après une annulation, il remonte sans nouvelle célébration. L'événement « niveau n » n'est émis qu'au **premier** franchissement (plus haut niveau jamais atteint) ; même règle pour les grades (choix de Claude). Une récompense déjà gagnée (4.3) n'est jamais reprise.
+- **Grade** sur l'XP totale : Stagiaire (0), Assistant (1 000), Bras droit (4 000), Majordome (10 000).
+- **Série** :
+  - un jour (heure de Paris, passage à l'heure d'hiver couvert par les tests) compte s'il a au moins une `carte_terminee` ou une `etape_cochee` qui a rapporté de l'XP et n'a pas été reprise **le même jour** (une session focus en 4.2). Défaire un geste un autre jour retire l'XP mais ne retire pas le jour de la série (choix de Claude) ;
+  - la série commence au premier jour compté : les jours d'avant ne sont pas des jours manqués ;
+  - la série est le nombre de jours comptés d'affilée jusqu'à hier, plus aujourd'hui s'il compte déjà : une journée en cours sans action ne casse rien ;
+  - **joker** : un par semaine (lundi à dimanche, semaine du jour manqué), utilisé tout seul. Un jour manqué dans une semaine où le joker est libre ne casse pas la série et ne compte pas dedans. La série casse sur deux jours manqués d'affilée, ou sur un jour manqué dans une semaine dont le joker est déjà pris ;
+  - le joker n'est **dépensé** que lorsqu'un jour compté suit le jour manqué. Hier manqué et aujourd'hui encore vide : la série est « en jeu », Moi affiche « Joker en jeu : agis aujourd'hui pour garder ta série » (texte nouveau), et rien n'est encore célébré ;
+  - l'événement « joker utilisé » est daté du jour couvert et émis quand le joker est dépensé.
+- **Performance** : quelques milliers d'actions par an, calcul à chaque requête, sans cache (choix de Claude ; à revoir si `GET donnees` dépasse 50 ms de calcul).
+
+### 18.5 Lot 4.1 : API
+
+- **`GET donnees`** ajoute un objet `xp` : total, grade, grade suivant et son seuil ; pour chaque domaine : XP, niveau, XP dans le niveau, XP du niveau ; série : jours, joker libre cette semaine (oui/non), date du dernier joker ; les **événements** (type, domaine, niveau ou grade, date) : tous les passages de niveau et promotions (quelques dizaines par an), et les jokers des 30 derniers jours. Ils servent aux célébrations.
+- **Écritures existantes** (terminer une carte, cocher, décocher, déplacer hors de Fait, annuler un Terminer) : la réponse ajoute `xp_gagnee` (positive, négative ou nulle) et le domaine, plus l'objet `xp` à jour. `xp_gagnee` est calculée **sur l'action elle-même** par le rejeu (ce qu'elle a gagné ou retiré), pas en différence de totaux, pour ne pas compter une action Trello détectée au même moment (choix de Claude). Pour un renvoi (`ecritures`, même `id_client`), même réponse que la première fois.
+- **Heure d'une action faite hors ligne** : l'iPhone envoie l'heure du geste avec chaque écriture de la file ; le serveur la garde si elle est dans les 7 derniers jours et pas dans le futur (plus 2 minutes de marge), sinon il prend l'heure de réception. Une carte terminée à 23 h 50 hors ligne compte pour ce jour-là et garde son bonus d'échéance (choix de Claude).
+- **Aucune migration** : `version_base` reste 6.
+
+### 18.6 Lot 4.1 : sur l'iPhone
+
+- **Après Terminer** : « Carte terminée. +30 XP Études. » avec « Annuler » pendant 5 secondes (`CONTENU.md` § 3) ; le chiffre inclut les bonus. **Après une étape cochée** : un « +5 XP » bref près de l'étape (texte nouveau), dans la couleur du domaine. Décocher retire l'XP sans message.
+- **Hors ligne** : le gain affiché est estimé sur l'iPhone avec le barème (petite fonction pure, `site/js/lib/xp.js`, testée sur les mêmes cas que le PHP) ; les totaux restent ceux de la dernière copie et se recalent au retour du réseau (choix de Claude).
+- **Tranches d'Aujourd'hui** : la poignée du fader porte le **niveau** du domaine, et sa position la **progression dans le niveau** (`DESIGN.md`). Lecteur d'écran : « Études, niveau 3, 120 XP sur 300 ».
+- **Moi** (`CONTENU.md` § 3) : « Junior · Assistant · 1 240 / 4 000 XP » avec sa barre ; 4 barres de domaine avec leur niveau ; « Série : 5 jours d'affilée », et « Joker disponible cette semaine » ou « Joker utilisé jeudi ». Album, badges, journal et Wrapped n'apparaissent pas avant leur sous-lot.
+- **Passage de niveau** : un bandeau plein écran bref, dans la couleur du domaine, « Niveau 3 en Études », et une réplique de Junior (texte nouveau) ; un toucher le ferme. **Promotion** : plein écran, « Junior passe Assistant. Il réclame déjà une augmentation. », puis « Assistant. Je me suis acheté une cravate avec ton XP. » (`CONTENU.md` § 5 et § 6). **Joker** : « Joker utilisé. La série tient, ta discipline un peu moins. » (§ 6), en bandeau discret à la première ouverture qui suit. Animations brèves et mécaniques (style de la maquette v28, compétences game-feel et game-ui-ux), instantanées en mouvement réduit.
+- **Pas de répétition** : l'iPhone garde (IndexedDB) la date du dernier événement célébré. Un événement plus récent est célébré une fois. Plus de deux événements en attente sont regroupés en **un seul récapitulatif** (« Pendant ton absence : +640 XP. Études niveau 3, Asso niveau 2. », texte nouveau). C'est ce qui se passe à la première ouverture du lot 4.1, avec l'XP accumulée depuis le 10/10.
+- **Accessibilité** : chaque célébration est annoncée une fois (`aria-live` poli) et se ferme au clavier.
+
+### 18.7 Lot 4.1 : tests et fin
+
+- **Tests PHP** (`xp.php`) : barème et bonus (urgent, échéance tenue, échéance dépassée, sans échéance) ; cocher, décocher, recocher ; terminer, rouvrir, terminer ; terminer deux fois de suite ; action annulée ignorée ; carte éclair (9 min 59 s : 5 XP ; 10 min : 30 XP), heure lue dans l'identifiant Trello ; seuils de niveau 1 à 13 ; grades aux seuils exacts ; série avec joker, deux jours manqués, semaine sans joker libre, jour en cours vide, passage à l'heure d'hiver du 25/10 ; événements datés ; `xp_gagnee` d'une écriture égale à ce que cette action a gagné ou retiré dans le rejeu ; premier franchissement seul célébré (Terminer puis Annuler à la limite d'un seuil) ; plancher à 0 par étape ; échéance à 18 h 00 comparée au jour ; heure du geste hors ligne acceptée ou refusée selon les bornes.
+- **Tests JS** : `xp.js` sur les mêmes cas de barème ; choix entre célébration simple et récapitulatif.
+- **Playwright** (Trello simulé) : terminer une carte, voir « +30 XP », puis « Annuler » ; cocher une étape ; poignée et niveau d'une tranche ; Moi ; un passage de niveau célébré une seule fois ; le récapitulatif ; mouvement réduit ; 390 px.
+- **Le lot 4.1 est fini quand** (Colin sur l'iPhone) : la première ouverture montre le récapitulatif depuis le 10/10, une seule fois ; une carte terminée affiche son XP et la tranche bouge ; « Annuler » la retire ; Moi montre grade, niveaux et série cohérents ; une carte terminée dans l'app Trello est comptée au rafraîchissement suivant.
+
+### 18.8 Lot 4.1 : textes nouveaux (à valider par Colin)
+
+« +5 XP » · « Niveau 3 en Études » · une réplique de Junior par passage de niveau (à écrire dans le plan, 4 à 6 variantes) · « Pendant ton absence : +640 XP. Études niveau 3, Asso niveau 2. » · « Joker disponible cette semaine » · « Joker utilisé jeudi » · « Joker en jeu : agis aujourd'hui pour garder ta série » · « Études, niveau 3, 120 XP sur 300 » (lecteur d'écran).
+
+### 18.9 Lot 4.1 : laissé au builder
+
+Découpe des fonctions et des fichiers ; forme exacte de l'objet `xp` ; rendu des animations dans le style de la maquette v28 ; endroit exact du « +5 XP » près de l'étape ; durée des bandeaux.
+
+### 18.10 Régulation de l'XP (demandée par Colin le 2026-10-25)
+
+**Pourquoi** : le barème de `CONTENU.md` § 7 a été fixé le 07/10 sans données réelles. Il paie mal le temps de travail (45 min de combat = 14 XP, une carte vite finie = 30 XP), alors que le temps de combat est la mesure de l'effort la plus difficile à gonfler. Colin veut un gain d'XP **équilibré** : toutes les sources d'XP et tous les paliers de récompense analysés ensemble, avant de figer les chiffres.
+
+**Ce que fait la régulation** (une mission d'analyse, avant le développement du moteur, résultat validé par Colin) :
+- **Inventaire** de toutes les sources d'XP des sous-lots 4.1 à 4.4 (cartes et bonus, carte éclair, étapes, combat par minute et bonus du boss, « J'ai fini la tâche », forfait, ligne de journal) et de tous les paliers (niveaux 2 à 13 par domaine, grades, cartes de niveau, cartes rares, badges).
+- **Données réelles** : l'historique Trello depuis le 10/10 (cartes terminées et étapes cochées par domaine, lu en lecture seule avec `.claude/scripts/trello.py`), et l'emploi du temps A26 pour les heures de travail plausibles.
+- **Simulation** (`outils/simuler-xp.php`, réutilise les fonctions pures de `serveur/lib/xp.php`) : 3 profils de semaine (calme, normale, médians) sur l'année universitaire, pour chaque barème candidat. Sortie : date d'atteinte de chaque niveau par domaine, de chaque grade et de la 13e carte, part de chaque source dans l'XP totale, XP qu'on peut gagner en une soirée « de triche ».
+- **Critères d'équilibre** (proposés par Claude, à valider avec le rapport) :
+  - une heure de combat rapporte au moins autant qu'une carte ordinaire ;
+  - aucune source ne fait plus de la moitié de l'XP d'une semaine normale ;
+  - un passage de niveau au moins toutes les deux semaines dans le domaine le plus actif en début d'année, puis plus espacé ;
+  - la 13e carte d'Études arrive vers les finaux de juin, pas avant ; grade Majordome vers la fin de l'année, pas avant janvier ;
+  - une soirée de triche (cartes éclair, étapes cochées en série) rapporte moins qu'une heure de combat.
+- **Livrable** : `REGULATION-XP.md` (tableau du barème proposé, courbes ou tableaux par profil, ce qui change par rapport au § 7), présenté à Colin. Une fois validé, il remplace le barème de `CONTENU.md` § 7 et les seuils de niveau du § 18.4.
+- **Réglable sans réécrire** : barème, seuils de niveau et de grade dans **une seule table de constantes** côté serveur (`serveur/lib/xp.php`) et son miroir testé côté iPhone (`site/js/lib/xp.js`), un test vérifiant que les deux sont identiques. Comme l'XP est recalculée et jamais stockée, changer le barème recalcule tout l'historique ; les événements déjà célébrés ne sont pas rejoués (§ 18.6), et une récompense gagnée reste gagnée.
+- **Revue** : nouvelle régulation après deux à trois semaines d'usage réel du 4.1, sur les vraies actions (route de lecture seule ou export, à prévoir dans le plan), puis au début du 4.2 pour le combat.
+

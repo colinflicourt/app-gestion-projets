@@ -83,26 +83,26 @@ Si une ligne dit « Mot de passe refusé » : refais le mot de passe d'applicati
 
 Le bouton « Ouvrir le webmail OVH » de la section QYRIS pointe pour l'instant vers `https://www.ovhcloud.com/fr/mail/` (page de présentation, pas forcément la boîte). 
 
-- [ ] Dans l'onglet Mails, touche « Ouvrir le webmail OVH » : tu arrives sur la connexion au webmail, pas sur une page de pub. Sinon, donne à Claude l'adresse notée à la partie 1.3 : il corrige `LIENS.qyris` dans `site/js/ecrans/mails.js`, puis nouvelle mise en ligne.
-- [ ] « Ouvrir le webmail UTC » ouvre `https://webmail.utc.fr`.
-- [ ] « Ouvrir dans Gmail » ouvre l'app Gmail (ou, à défaut, la page Gmail après un court instant).
-- [ ] « Ouvrir dans iCloud Mail » ouvre iCloud Mail.
+- [x] Dans l'onglet Mails, touche « Ouvrir le webmail OVH » : tu arrives sur la connexion au webmail, pas sur une page de pub. Sinon, donne à Claude l'adresse notée à la partie 1.3 : il corrige `LIENS.qyris` dans `site/js/ecrans/mails.js`, puis nouvelle mise en ligne.
+- [x] « Ouvrir le webmail UTC » ouvre `https://webmail.utc.fr`.
+- [x] « Ouvrir dans Gmail » ouvre l'app Gmail (ou, à défaut, la page Gmail après un court instant).
+- [x] « Ouvrir dans iCloud Mail » ouvre iCloud Mail.
 
 ## 6. Recette du lot 3 (SPEC § 16.10)
 
 Le lot 3 est fini quand toutes ces cases sont cochées.
 
-- [ ] **Les 4 comptes sont connectés depuis l'iPhone.** Réglages, Comptes mail : 4 lignes « Connecté, vérifié à … ».
-- [ ] **Un mail envoyé à colin.flicourt@etu.utc.fr apparaît dans la section UTC.** Envoie-toi un mail (objet « Test UTC ») depuis un autre compte. Onglet Mails : il est dans la section UTC (en tête de la liste, mis en évidence comme non lu), et non dans la section Gmail.
-- [ ] **Une newsletter est repliée dans les pubs et ne compte pas dans les non lus.** Repère une vraie newsletter non lue dans une de tes boîtes : elle est sous « + N pubs » (repliée), et le compteur de non lus de la section ne la compte pas. Dans Aujourd'hui, le bloc Mails ne la compte pas non plus. Essaie « Ce n'est pas une pub » sur une pub : elle remonte dans la liste. Puis « C'est une pub » sur un mail ordinaire d'un expéditeur : il descend dans les pubs. (Un mail de la section UTC n'est jamais une pub.)
-- [ ] **Un mail non lu reste non lu après que Junior l'a affiché.** Vérifié à la main, un webmail à la fois, avec un mail réellement non lu dans chaque boîte :
-  - [ ] **Gmail** : repère dans Gmail un mail non lu (en gras). Ouvre l'onglet Mails de Jarvis Jr. ; le mail s'affiche. Retourne dans Gmail (page ou app) : il est toujours en gras.
-  - [ ] **iCloud** : même épreuve avec un mail non lu d'iCloud Mail (pastille bleue). Après l'affichage dans Jarvis Jr., la pastille est toujours là.
-  - [ ] **Webmail UTC** : même épreuve avec un mail non lu du webmail UTC (le mail de test convient). Après l'affichage dans Jarvis Jr., il est toujours non lu dans le webmail UTC.
-  - [ ] **Webmail OVH** : même épreuve avec un mail non lu de colin@ (envoie-t'en un depuis un autre compte). Après l'affichage dans Jarvis Jr., il est toujours non lu dans le webmail OVH.
-- [ ] **Le brief du lendemain annonce le bon nombre de mails non lus.** Le lendemain matin, la notification du brief (7 h 30 par défaut) se termine par « N mails non lus. » (ou « 1 mail non lu. »), et N correspond au total hors pubs du bloc Mails d'Aujourd'hui avant le brief. Si tout est lu : aucune phrase sur les mails.
-- [ ] **Un mot de passe faux affiche le message d'erreur de sa boîte sans gêner les autres.** Dans Réglages, change volontairement le mot de passe d'iCloud, enregistre (refusé, rien n'est gardé), puis supprime le compte iCloud et reconnecte-le avec le bon. Plus parlant : si une boîte tombe en erreur un jour, sa section affiche son message d'erreur et les autres sections s'affichent normalement.
-- [ ] **Hors ligne** : en mode avion, l'onglet Mails affiche la dernière copie avec « à jour il y a … », et Réglages dit « Il faut du réseau pour tester une boîte. » quand tu essaies de tester un compte.
-- [ ] **Les heures** s'affichent à l'heure de Paris : « 14 h 32 » pour aujourd'hui, « hier », « lun. 19/10 » pour plus vieux.
+- [x] **Les 4 comptes sont connectés depuis l'iPhone.** Réglages, Comptes mail : 4 lignes « Connecté, vérifié à … ».
+- [x] **Un mail envoyé à colin.flicourt@etu.utc.fr apparaît dans la section UTC.** Envoie-toi un mail (objet « Test UTC ») depuis un autre compte. Onglet Mails : il est dans la section UTC (en tête de la liste, mis en évidence comme non lu), et non dans la section Gmail.
+- [x] **Une newsletter est repliée dans les pubs et ne compte pas dans les non lus.** Repère une vraie newsletter non lue dans une de tes boîtes : elle est sous « + N pubs » (repliée), et le compteur de non lus de la section ne la compte pas. Dans Aujourd'hui, le bloc Mails ne la compte pas non plus. Essaie « Ce n'est pas une pub » sur une pub : elle remonte dans la liste. Puis « C'est une pub » sur un mail ordinaire d'un expéditeur : il descend dans les pubs. (Un mail de la section UTC n'est jamais une pub.)
+- [x] **Un mail non lu reste non lu après que Junior l'a affiché.** Vérifié à la main, un webmail à la fois, avec un mail réellement non lu dans chaque boîte :
+  - [x] **Gmail** : repère dans Gmail un mail non lu (en gras). Ouvre l'onglet Mails de Jarvis Jr. ; le mail s'affiche. Retourne dans Gmail (page ou app) : il est toujours en gras.
+  - [x] **iCloud** : même épreuve avec un mail non lu d'iCloud Mail (pastille bleue). Après l'affichage dans Jarvis Jr., la pastille est toujours là.
+  - [x] **Webmail UTC** : même épreuve avec un mail non lu du webmail UTC (le mail de test convient). Après l'affichage dans Jarvis Jr., il est toujours non lu dans le webmail UTC.
+  - [x] **Webmail OVH** : même épreuve avec un mail non lu de colin@ (envoie-t'en un depuis un autre compte). Après l'affichage dans Jarvis Jr., il est toujours non lu dans le webmail OVH.
+- [x] **Le brief du lendemain annonce le bon nombre de mails non lus.** Le lendemain matin, la notification du brief (7 h 30 par défaut) se termine par « N mails non lus. » (ou « 1 mail non lu. »), et N correspond au total hors pubs du bloc Mails d'Aujourd'hui avant le brief. Si tout est lu : aucune phrase sur les mails.
+- [x] **Un mot de passe faux affiche le message d'erreur de sa boîte sans gêner les autres.** Dans Réglages, change volontairement le mot de passe d'iCloud, enregistre (refusé, rien n'est gardé), puis supprime le compte iCloud et reconnecte-le avec le bon. Plus parlant : si une boîte tombe en erreur un jour, sa section affiche son message d'erreur et les autres sections s'affichent normalement.
+- [x] **Hors ligne** : en mode avion, l'onglet Mails affiche la dernière copie avec « à jour il y a … », et Réglages dit « Il faut du réseau pour tester une boîte. » quand tu essaies de tester un compte.
+- [x] **Les heures** s'affichent à l'heure de Paris : « 14 h 32 » pour aujourd'hui, « hier », « lun. 19/10 » pour plus vieux.
 
 Quand tout est coché, dis-le à Claude : il clôt le lot 3 (README, journal, Trello).
