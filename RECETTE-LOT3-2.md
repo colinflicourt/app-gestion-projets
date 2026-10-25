@@ -84,17 +84,17 @@ Conséquences à connaître :
 
 Critères du lot 3.2 (SPEC § 17.10) :
 
-- [ ] un mail non lu ouvert dans Junior apparaît lu dans Gmail, iCloud, le webmail UTC et le webmail OVH, **et les autres non lus restent non lus**
-- [ ] le PDF d'un mail de l'UTC s'ouvre, et Colin revient dans Junior
-- [ ] une newsletter est lisible, sans images distantes jusqu'au bouton
-- [ ] « Répondre » ouvre la bonne app, pré-remplie, pour chacune des 4 boîtes
+- [x] un mail non lu ouvert dans Junior apparaît lu dans Gmail, iCloud, le webmail UTC et le webmail OVH, **et les autres non lus restent non lus**
+- [x] le PDF d'un mail de l'UTC s'ouvre, et Colin revient dans Junior
+- [x] une newsletter est lisible, sans images distantes jusqu'au bouton
+- [x] « Répondre » ouvre la bonne app, pré-remplie, pour chacune des 4 boîtes
 
 Essais sur l'iPhone (app installée sur l'écran d'accueil) :
 
-- [ ] Ouvrir une pièce jointe (PDF) puis revenir dans Junior
-- [ ] Toucher un lien dans un mail, il s'ouvre dans Safari, puis revenir dans Junior
+- [x] Ouvrir une pièce jointe (PDF) puis revenir dans Junior
+- [x] Toucher un lien dans un mail, il s'ouvre dans Safari, puis revenir dans Junior
 
-Recette sur l'iPhone à partir du 31/10.
+Recette faite et validée par Colin le 2026-10-25 : tout est conforme.
 
 ## 5. Si la pièce jointe ne s'ouvre pas ou si on ne revient pas dans Junior
 
