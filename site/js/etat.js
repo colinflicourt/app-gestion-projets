@@ -1,5 +1,7 @@
 // Les écritures en attente appliquées par-dessus la dernière copie du serveur (SPEC § 8.4) : l'écran montre
 // tout de suite ce que Colin vient de faire, marqué « attente » jusqu'à la réponse. Fonctions pures.
+import { jourParis } from './lib/temps.js';
+import { payeApres } from './lib/xp.js';
 
 const ORDRE = ['qyris', 'asso', 'etudes', 'perso'];
 
@@ -71,6 +73,7 @@ export function vue(donnees, file) {
   const v = structuredClone(donnees);
   for (const e of file) appliquerEcriture(v.trello.cartes, e);
   v.rappels_du_jour = file.reduce(appliquerRappel, v.rappels_du_jour ?? []);
+  v.xp_paye = payeApres(v.xp?.aujourdhui_paye, file, jourParis(new Date()));
   trierCartes(v.trello.cartes);
   return v;
 }
@@ -96,6 +99,7 @@ export function integrer(donnees, e, reponse) {
     for (const liste of carte.checklists) for (const element of liste.elements) delete element.attente;
   }
   trierCartes(d.trello.cartes);
+  if (reponse.xp) d.xp = reponse.xp;
   return d;
 }
 

@@ -1,4 +1,5 @@
-import { test, assert, heure, connecte, ouvrir, attendre } from './cadre.mjs';
+import { test, assert, heure, connecte, ouvrir, texte, attendre } from './cadre.mjs';
+import { xpDeBase } from './fixtures.mjs';
 
 async function preparer(page, contexte, serveur) {
   await connecte(contexte, serveur);
@@ -12,7 +13,7 @@ test("Moi : agenda connecté, « Reconnecter », version de l'app, lien vers les
   await ouvrir(page, '/#/moi');
   await page.getByText('Agenda connecté', { exact: true }).waitFor();
   assert.equal(await page.getByRole('link', { name: 'Reconnecter' }).getAttribute('href'), '/api/google/connexion');
-  await page.getByText('Version 0.2.0').waitFor();
+  await page.getByText('Version 0.4.1').waitFor();
   assert.equal(await page.getByRole('link', { name: 'Confidentialité' }).getAttribute('href'), '/confidentialite.html');
 });
 
@@ -87,4 +88,53 @@ test('règles de confidentialité : page publique, lisible sans connexion, sans 
   await page.goto('/confidentialite.html');
   await page.getByRole('heading', { name: 'Règles de confidentialité' }).waitFor();
   await page.getByText('calendar.readonly', { exact: false }).first().waitFor();
+});
+
+test('Moi : grade, barre, 4 domaines avec leur niveau, série et joker, au-dessus de Google Agenda', async ({ page, contexte, serveur }) => {
+  await preparer(page, contexte, serveur);
+  await ouvrir(page, '/#/moi');
+  await page.getByText('Junior · Assistant · 2 340 / 6 000 XP').waitFor();
+  assert.equal(await page.locator('.xp-grade [role="progressbar"]').getAttribute('aria-valuenow'), '840');
+  assert.deepEqual(await page.locator('.xp-domaine .xp-nom').allTextContents(), ['QYRIS', 'Asso', 'Études', 'Perso']);
+  assert.deepEqual(await page.locator('.xp-domaine .xp-niveau').allTextContents(), ['Niveau 3', 'Niveau 2', 'Niveau 3', 'Niveau 3']);
+  assert.equal(await page.locator('.xp-domaine.d-etudes [role="progressbar"]').getAttribute('aria-valuenow'), '120');
+  assert.equal(await page.locator('.xp-domaine.d-etudes [role="progressbar"]').getAttribute('aria-valuemax'), '480');
+  assert.equal(await texte(page, '.xp-serie'), "Série : 5 jours d'affilée");
+  assert.equal(await texte(page, '.xp-joker'), 'Joker disponible cette semaine');
+  assert.equal(await page.getByText('Joker en jeu').count(), 0);
+  const ordre = await page.locator('.xp-grade, .section-titre').evaluateAll((l) => l.map((e) => e.className.includes('xp-grade') ? 'xp' : e.textContent));
+  assert.deepEqual(ordre.slice(0, 2), ['xp', 'Google Agenda']);
+  for (const absent of ['Album', 'Badges', 'Journal', 'Wrapped']) assert.equal(await page.getByText(absent).count(), 0);
+});
+
+test('Moi : séries et jokers selon la fixture (1 jour, pas de série, joker utilisé jeudi, joker en jeu)', async ({ page, contexte, serveur }) => {
+  await preparer(page, contexte, serveur);
+  const donnees = serveur.etat.donnees;
+  donnees.xp = xpDeBase(undefined, { jours: 1, joker_libre: false, dernier_joker: '2026-10-08' });
+  await ouvrir(page, '/#/moi');
+  await page.getByText("Série : 1 jour d'affilée").waitFor();
+  assert.equal(await texte(page, '.xp-joker'), 'Joker utilisé jeudi');
+  donnees.xp = xpDeBase(undefined, { jours: 0, joker_libre: true, en_jeu: true });
+  await page.reload();
+  await page.getByText('Pas encore de série').waitFor();
+  assert.equal(await texte(page, '.xp-joker'), 'Joker disponible cette semaine');
+  await page.getByText("Joker en jeu : agis aujourd'hui pour garder ta série").waitFor();
+});
+
+test("Moi : au grade Majordome, « Junior · Majordome · 25 000 XP » sans palier suivant", async ({ page, contexte, serveur }) => {
+  await preparer(page, contexte, serveur);
+  serveur.etat.donnees.xp = xpDeBase({ qyris: 10000, asso: 5000, etudes: 6000, perso: 4000 });
+  serveur.etat.donnees.xp.grade = 'majordome';
+  serveur.etat.donnees.xp.grade_suivant = null;
+  serveur.etat.donnees.xp.seuil_suivant = null;
+  await ouvrir(page, '/#/moi');
+  await page.getByText('Junior · Majordome · 25 000 XP').waitFor();
+});
+
+test("Moi : sans XP (calcul échoué côté serveur, première ouverture), l'écran tient sans erreur", async ({ page, contexte, serveur }) => {
+  await preparer(page, contexte, serveur);
+  serveur.etat.donnees.xp = null;
+  await ouvrir(page, '/#/moi');
+  await page.getByText('Agenda connecté', { exact: true }).waitFor();
+  assert.equal(await page.locator('.xp-grade').count(), 0);
 });

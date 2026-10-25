@@ -6,9 +6,13 @@ const deux = (n) => String(n).padStart(2, '0');
 // Identifiant de 24 caractères comme ceux de Trello : la sorte sur 2, le numéro sur 22
 export const id = (sorte, n) => `${sorte}${String(n).padStart(22, '0')}`;
 
+// Les 8 premiers caractères d'un identifiant Trello sont l'horodatage de création (ici le 29 août 2026) :
+// sans cela, toutes les cartes de test seraient des cartes éclair
+const idCarte = (n) => `6a92b700${String(n).padStart(16, '0')}`;
+
 export const CARTES = {
-  linkedin: id('ca', 1), formation: id('ca', 2), cabaret: id('ca', 3), median: id('ca', 4), apoint: id('ca', 5),
-  tp: id('ca', 6), profil: id('ca', 7), jarvis: id('ca', 8), sites: id('ca', 9), logo: id('ca', 10),
+  linkedin: idCarte(1), formation: idCarte(2), cabaret: idCarte(3), median: idCarte(4), apoint: idCarte(5),
+  tp: idCarte(6), profil: idCarte(7), jarvis: idCarte(8), sites: idCarte(9), logo: idCarte(10),
 };
 
 function versUtc(jour) {
@@ -79,7 +83,7 @@ const etapes = (n, noms, coches = []) => ({
 });
 
 const carte = (n, domaine, colonne, titre, autres = {}) => ({
-  id: id('ca', n), domaine, colonne, position: n * 1000, titre, description: '', url: `https://trello.com/c/test${n}`,
+  id: idCarte(n), domaine, colonne, position: n * 1000, titre, description: '', url: `https://trello.com/c/test${n}`,
   echeance: null, echeance_faite: false, urgent: false, etiquettes: [], checklists: [],
   derniere_activite: '2026-10-13T10:00:00+02:00', ...autres,
 });
@@ -157,6 +161,26 @@ export function mailsDeBase() {
 
 export const MAILS_RESUME = { total: 4, par_section: { utc: 2, qyris: 1, gmail: 1, icloud: 0 } };
 
+// Ce que rend xp_objet() : 2 340 XP, grade Assistant (prochain palier 6 000), Études niveau 3 (120 sur 480), série de 5 jours,
+// joker libre. Les niveaux sont calculés avec le barème réel (pas de 160).
+export function xpDeBase(xp = { qyris: 700, asso: 300, etudes: 600, perso: 740 }, serie = {}, paye = { etapes: 0, eclairs: 0 }) {
+  const total = Object.values(xp).reduce((a, b) => a + b, 0);
+  const seuil = (n) => (160 * n * (n - 1)) / 2;
+  const domaine = (x) => {
+    let n = 1;
+    while (seuil(n + 1) <= x) n++;
+    return { xp: x, niveau: n, dans_niveau: x - seuil(n), taille_niveau: seuil(n + 1) - seuil(n) };
+  };
+  const assistant = total >= 1500;
+  return {
+    total, grade: assistant ? 'assistant' : 'stagiaire', seuil_grade: assistant ? 1500 : 0,
+    grade_suivant: assistant ? 'bras_droit' : 'assistant', seuil_suivant: assistant ? 6000 : 1500,
+    domaines: Object.fromEntries(Object.entries(xp).map(([d, x]) => [d, domaine(x)])),
+    serie: { jours: 5, joker_libre: true, dernier_joker: null, en_jeu: false, ...serie },
+    aujourdhui_paye: paye, evenements: [],
+  };
+}
+
 export function donneesDeBase() {
   const maintenant = '2026-10-14T15:45:00+02:00';
   return {
@@ -169,6 +193,7 @@ export function donneesDeBase() {
       { id: 'rm000002', type: 'manuel', heure: '2026-10-14T17:30:00+02:00', titre: 'Envoyer le devis à Cathy', passe: false, annulable: true },
     ],
     mails_resume: structuredClone(MAILS_RESUME),
+    xp: xpDeBase(),
     notifications: { cle: 'BP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A8' },
   };
 }

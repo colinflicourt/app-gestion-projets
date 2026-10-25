@@ -81,7 +81,7 @@ function afficheurTirage(c, maintenant) {
   ];
 }
 
-function talkback(c, cartes, jours, maintenant) {
+function talkback(c, cartes, jours, maintenant, xp) {
   let paroles = tirage?.replique;
   if (!paroles) {
     const premier = c.premierCours ? enParis(new Date(c.premierCours.debut)) : null;
@@ -95,12 +95,12 @@ function talkback(c, cartes, jours, maintenant) {
     paroles = [h('strong', {}, `${salutation(maintenant)} `), phraseDuJour(faits)];
   }
   return h('div', { class: 'talkback' },
-    h('div', { class: 'talkback-qui' }, icone('micro', 14, 2), h('span', {}, A.junior)),
+    h('div', { class: 'talkback-qui' }, icone('micro', 14, 2), h('span', {}, A.junior(xp ? T.moi.grades[xp.grade] : undefined))),
     h('p', { class: 'talkback-texte', 'aria-live': 'polite' }, paroles),
     c.bandeaux.map((b) => h('p', { class: 'bandeau' }, icone(b.type === 'ferie' ? 'ferie' : 'agenda', 16), b.texte)));
 }
 
-function tranches(app, cartes, jours, maintenant) {
+function tranches(app, cartes, jours, maintenant, xp) {
   const comptes = compteurs(cartes, maintenant);
   const median = medianProche(jours, maintenant);
   return h('div', { class: 'tranches' }, DOMAINES.map((d) => {
@@ -109,12 +109,16 @@ function tranches(app, cartes, jours, maintenant) {
     let alerte = h('span', { class: 'tranche-alerte' });
     if (k.retard > 0) alerte = h('span', { class: 'tranche-alerte retard' }, h('span', { class: 'point' }), A.enRetard(k.retard));
     else if (medianIci !== null) alerte = h('span', { class: 'tranche-alerte' }, h('span', { class: 'anneau' }), A.median(medianIci));
-    return h('button', { type: 'button', class: `tranche d-${d}`, 'aria-label': A.tranche(NOMS[d], k.ouvertes, k.retard, medianIci), onclick: () => app.aller(`#/taches/${d}`) },
+    const x = xp?.domaines?.[d];
+    const niveau = x && { niveau: x.niveau, dansNiveau: x.dans_niveau, tailleNiveau: x.taille_niveau };
+    const lecture = x ? `${A.tranche(NOMS[d], k.ouvertes, k.retard, medianIci)}. ${A.trancheXp(NOMS[d], niveau.niveau, niveau.dansNiveau, niveau.tailleNiveau)}` : A.tranche(NOMS[d], k.ouvertes, k.retard, medianIci);
+    return h('button', { type: 'button', class: `tranche d-${d}`, 'aria-label': lecture, onclick: () => app.aller(`#/taches/${d}`) },
       h('span', { class: 'scotch', vars: { '--angle': ANGLES[d] } }, SCOTCH[d]),
       h('span', { class: 'tranche-compte' }, String(k.ouvertes)),
       h('span', { class: 'tranche-legende' }, A.aFaire),
       alerte,
-      h('span', { class: 'fader', 'aria-hidden': 'true' }, h('span', { class: 'fader-piste' }), h('span', { class: 'fader-graduations' }), h('span', { class: 'fader-graduations droite' }), h('span', { class: 'fader-poignee' })));
+      h('span', { class: 'fader', 'aria-hidden': 'true', vars: niveau ? { '--progres': String(niveau.dansNiveau / niveau.tailleNiveau) } : {} },
+        h('span', { class: 'fader-piste' }), h('span', { class: 'fader-graduations' }), h('span', { class: 'fader-graduations droite' }), h('span', { class: 'fader-poignee' }, niveau && String(niveau.niveau))));
   }));
 }
 
@@ -303,8 +307,8 @@ export function rendre(app) {
         h('div', { class: 'afficheur' },
           h('div', { class: 'afficheur-date' }, dateLongue(c.aujourdhui)),
           tirage?.choix ? afficheurTirage(c, maintenant) : afficheurConduite(c, agenda)),
-        talkback(c, cartes, jours, maintenant)),
-      tranches(app, cartes, jours, maintenant),
+        talkback(c, cartes, jours, maintenant, v?.xp)),
+      tranches(app, cartes, jours, maintenant, v?.xp),
       panneauGo(app, libre)),
     sousLePli(app, c, cartes, jours, v?.rappels_du_jour ?? [], v?.mails_resume ?? null, maintenant));
 }

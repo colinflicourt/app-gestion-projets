@@ -2,12 +2,19 @@
 import { h, icone, texteAvecLiens } from '../lib/dom.js';
 import { T } from '../lib/textes.js';
 import { COLONNES, NOMS, avancement, libelleEcheance, trouverCarte } from '../lib/cartes.js';
+import { estEclair, gainCarte, gainEtape } from '../lib/xp.js';
 import { tampon } from './commun.js';
 
+const DUREE_GAIN = 1600;
+
 let choixColonne = null;  // la carte dont « Déplacer vers » est ouvert
+let gainAffiche = null;   // « +5 XP » près d'une étape : { element, gain, depuis }
+let minuteurGain = null;
 
 export function quitter() {
   choixColonne = null;
+  gainAffiche = null;
+  clearTimeout(minuteurGain);
 }
 
 // L'étape proposée par le tirage est amenée au milieu de l'écran
@@ -15,20 +22,46 @@ export function apres(app, route, ecran, changement) {
   if (changement) ecran.querySelector('.etape-proposee')?.scrollIntoView({ block: 'center' });
 }
 
+// Le gain d'une étape cochée est estimé ici (décision 8) : le serveur recale les totaux à sa réponse
+function cocher(app, carte, element) {
+  const coche = !element.coche;
+  const local = {};
+  if (coche) {
+    const gain = gainEtape(app.vue().xp_paye);
+    if (gain > 0) {
+      local.xp = { genre: 'etapes', n: 1 };
+      gainAffiche = { element: element.id, gain, depuis: performance.now() };
+      clearTimeout(minuteurGain);
+      minuteurGain = setTimeout(() => {
+        gainAffiche = null;
+        app.rendre();
+      }, DUREE_GAIN);
+    }
+  } else {
+    local.xp = { genre: 'etapes', n: -1 };
+  }
+  app.ecrire('taches/cocher', { carte: carte.id, element: element.id, coche }, local);
+}
+
 function ligneEtape(app, carte, element, proposee) {
   return h('li', { class: `etape${proposee ? ' etape-proposee' : ''}${element.coche ? ' est-cochee' : ''}` },
     h('button', {
       type: 'button', class: 'etape-case', 'aria-pressed': String(element.coche),
       'aria-label': element.coche ? T.carte.decocher(element.nom) : T.carte.cocher(element.nom),
-      onclick: () => app.ecrire('taches/cocher', { carte: carte.id, element: element.id, coche: !element.coche }),
+      onclick: () => cocher(app, carte, element),
     }, element.coche ? tampon(T.carte.fait, element.id, `tampon-fait${element.attente ? ' frappe' : ''}`) : h('span', { class: 'case' })),
     h('span', { class: 'etape-nom' }, element.nom),
+    gainAffiche?.element === element.id && h('span', { class: 'etape-xp', role: 'status', vars: { '--ecoule': `-${Math.round(performance.now() - gainAffiche.depuis)}ms` } }, T.carte.gainEtape(gainAffiche.gain)),
     element.attente && h('span', { class: 'carte-attente' }, T.taches.attente));
 }
 
 async function terminer(app, carte) {
-  const e = await app.ecrire('taches/terminer', { carte: carte.id }, { colonne_avant: carte.colonne, position_avant: carte.position, echeance_faite_avant: carte.echeance_faite });
-  app.message(T.carte.terminee, { action: { libelle: T.carte.annuler, faire: () => app.annulerTerminer(e) }, delai: 5000 });
+  const quand = app.maintenant();
+  const gain = gainCarte(carte, quand, app.vue().xp_paye);
+  const local = { colonne_avant: carte.colonne, position_avant: carte.position, echeance_faite_avant: carte.echeance_faite };
+  if (gain > 0 && estEclair(carte.id, quand)) local.xp = { genre: 'eclairs', n: 1 };
+  const e = await app.ecrire('taches/terminer', { carte: carte.id }, local);
+  app.message(gain > 0 ? T.carte.termineeXp(gain, NOMS[carte.domaine]) : T.carte.terminee, { action: { libelle: T.carte.annuler, faire: () => app.annulerTerminer(e) }, delai: 5000 });
   app.retour(`#/taches/${carte.domaine}`);
 }
 

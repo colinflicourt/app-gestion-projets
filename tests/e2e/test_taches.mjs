@@ -116,3 +116,111 @@ test("carte inconnue : « Cette carte n'existe plus dans Trello. »", async ({ p
   await ouvrir(page, '/#/carte/ca9999999999999999999999');
   await page.getByText("Cette carte n'existe plus dans Trello.").waitFor();
 });
+
+// Une carte créée 5 minutes avant l'heure fixe des tests : la terminer est une carte éclair
+const MINUTES_AVANT = (min) => Math.floor((Date.parse(MERCREDI) - min * 60000) / 1000).toString(16).padStart(8, '0') + '0'.repeat(16);
+const CHIFFRE = { median: 4, tp: 6, apoint: 5 };
+function rendreEclair(serveur, cle, minutes = 5) {
+  const c = carteDuServeur(serveur, cle);
+  c.id = MINUTES_AVANT(minutes).slice(0, 23) + CHIFFRE[cle];
+  return c.id;
+}
+
+test('xp : Terminer rend « Carte terminée. +30 XP Études. », envoie l\'heure du geste, Annuler retire le gain', async ({ page, contexte, serveur }) => {
+  await preparer(page, contexte, serveur);
+  await ouvrir(page, '/#/taches/etudes');
+  await page.getByText("A'point : tester sur téléphone et clôturer").click();
+  await page.getByRole('button', { name: 'Terminer' }).click();
+  await page.getByText('Carte terminée. +30 XP Études.', { exact: true }).waitFor();
+  await attendre(() => serveur.appels('taches/terminer').length === 1, 'écriture reçue');
+  assert.equal(serveur.appels('taches/terminer')[0].corps.fait_le, '2026-10-14T13:45:00.000Z');
+  await attendre(() => serveur.etat.donnees.xp.total === 2370, "XP du serveur à 2 370");
+  await page.getByRole('button', { name: 'Annuler' }).click();
+  await attendre(() => serveur.etat.donnees.xp.total === 2340 || serveur.appels('taches/terminer').length === 0, "gain retiré ou jamais parti");
+  await fileVide(page);
+});
+
+test('xp : Terminer avec Urgent et échéance tenue : « +60 XP » (30 + 20 + 10), domaine de la carte', async ({ page, contexte, serveur }) => {
+  await preparer(page, contexte, serveur);
+  const c = carteDuServeur(serveur, 'cabaret');
+  c.echeance = '2026-10-21T19:15:00+02:00';
+  await ouvrir(page, `/#/carte/${CARTES.cabaret}`);
+  await page.getByRole('button', { name: 'Terminer' }).click();
+  await page.getByText('Carte terminée. +60 XP Asso.', { exact: true }).waitFor();
+  await fileVide(page);
+});
+
+test('xp : une carte éclair rapporte « +5 XP », la réponse du serveur met à jour les totaux', async ({ page, contexte, serveur }) => {
+  const idEclair = rendreEclair(serveur, 'median');
+  await preparer(page, contexte, serveur);
+  await ouvrir(page, `/#/carte/${idEclair}`);
+  await page.getByRole('button', { name: 'Terminer' }).click();
+  await page.getByText('Carte terminée. +5 XP Études.', { exact: true }).waitFor();
+  await fileVide(page);
+  assert.deepEqual(serveur.etat.donnees.xp.aujourdhui_paye, { etapes: 0, eclairs: 1 });
+  await ouvrir(page, '/#/moi');
+  await page.getByText('Junior · Assistant · 2 345 / 6 000 XP').waitFor();
+});
+
+test('xp : plafond du jour, la 3e carte éclair rend « Carte terminée. » sans XP', async ({ page, contexte, serveur }) => {
+  const idEclair = rendreEclair(serveur, 'median');
+  serveur.etat.donnees.xp.aujourdhui_paye = { etapes: 0, eclairs: 2 };
+  await preparer(page, contexte, serveur);
+  await ouvrir(page, `/#/carte/${idEclair}`);
+  await page.getByRole('button', { name: 'Terminer' }).click();
+  await page.getByText('Carte terminée.', { exact: true }).waitFor();
+  await fileVide(page);
+  assert.deepEqual(serveur.etat.donnees.xp.aujourdhui_paye, { etapes: 0, eclairs: 2 });
+});
+
+test('xp : hors ligne, les gestes de la file comptent dans le plafond (2e carte éclair du jour, puis la 3e sans XP)', async ({ page, contexte, serveur }) => {
+  const a = rendreEclair(serveur, 'median');
+  const b = rendreEclair(serveur, 'tp');
+  const c = rendreEclair(serveur, 'apoint');
+  serveur.etat.donnees.xp.aujourdhui_paye = { etapes: 0, eclairs: 0 };
+  await preparer(page, contexte, serveur);
+  await ouvrir(page, '/#/taches/etudes');
+  await page.getByText('MT23 : préparer le médian').waitFor();
+  serveur.etat.horsService = true;
+  for (const [titre, attendu] of [['MT23 : préparer le médian', 'Carte terminée. +5 XP Études.'], ['TN01 : rendre le TP', 'Carte terminée. +5 XP Études.'], ["A'point : tester sur téléphone et clôturer", 'Carte terminée.']]) {
+    await page.getByText(titre).click();
+    await page.getByRole('button', { name: 'Terminer' }).click();
+    await page.getByText(attendu, { exact: true }).waitFor();
+    assert.equal(await texte(page, '#messages'), `${attendu}Annuler`);
+    await page.getByRole('button', { name: 'Annuler' }).waitFor();
+  }
+  assert.ok([a, b, c].length === 3);
+});
+
+test('xp : Terminer hors ligne depuis une carte créée hors ligne (identifiant local) : « +5 XP » estimé, sans erreur', async ({ page, contexte, serveur }) => {
+  await preparer(page, contexte, serveur);
+  await ouvrir(page, '/#/taches/qyris');
+  await page.getByText('Formation 2 : relire le deck').waitFor();
+  serveur.etat.horsService = true;
+  await page.evaluate(() => document.querySelector('[aria-label="Noter quelque chose"]')?.click());
+  await page.locator('#capture-titre').fill('Appeler le syndic');
+  await page.getByRole('button', { name: 'Ajouter' }).click();
+  await page.getByText('Appeler le syndic').click();
+  await page.getByRole('button', { name: 'Terminer' }).click();
+  await page.getByText('Carte terminée. +5 XP QYRIS.', { exact: true }).waitFor();
+});
+
+test('xp : cocher une étape montre « +5 XP » un instant, décocher ne dit rien, la 11e étape du jour ne rapporte rien', async ({ page, contexte, serveur }) => {
+  await preparer(page, contexte, serveur);
+  await ouvrir(page, `/#/carte/${CARTES.linkedin}`);
+  await page.getByRole('button', { name: 'Cocher : Envoyer un mail de test' }).click();
+  await page.getByText('+5 XP', { exact: true }).waitFor();
+  assert.equal(await page.locator('.etape-xp').count(), 1);
+  await attendre(async () => (await page.locator('.etape-xp').count()) === 0, '« +5 XP » disparu', 3000);
+  await page.getByRole('button', { name: 'Décocher : Envoyer un mail de test' }).click();
+  await page.getByRole('button', { name: 'Cocher : Envoyer un mail de test' }).waitFor();
+  await fileVide(page);
+  assert.equal(await page.locator('.etape-xp').count(), 0);
+  await attendre(async () => serveur.etat.donnees.xp.total === 2340, 'décocher reçu par le serveur');
+  // Plafond : 10 étapes déjà payées aujourd'hui, plus 1 en file
+  serveur.etat.donnees.xp.aujourdhui_paye = { etapes: 10, eclairs: 0 };
+  await page.reload();
+  await page.getByRole('button', { name: 'Cocher : Compléter la page' }).click();
+  await page.getByRole('button', { name: 'Décocher : Compléter la page' }).waitFor();
+  assert.equal(await page.locator('.etape-xp').count(), 0);
+});

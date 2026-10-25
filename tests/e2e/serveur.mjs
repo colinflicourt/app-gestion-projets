@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { estEclair, gainCarte, gainEtape, progression } from '../../site/js/lib/xp.js';
 import { donneesDeBase, mailsDeBase, joursSemaine, reglagesDeBase, comptesMailDeBase, contenusMailDeBase, pageTexte, JETON_SIRI } from './fixtures.mjs';
 
 const SITE = fileURLToPath(new URL('../../site/', import.meta.url));
@@ -30,7 +31,7 @@ export async function demarrer() {
       for (const cle of Object.keys(etat)) delete etat[cle];
       // horsService : le réseau manque (connexion coupée). perdre : la prochaine écriture de cette route est
       // faite, mais sa réponse se perd. pannes : route → { statut, code, message }.
-      Object.assign(etat, { donnees, appels: [], vus: new Map(), pannes: {}, horsService: false, perdre: null, testEnvoyes: 1, reglages: reglagesDeBase(), mails: mailsDeBase(), contenusMail: contenusMailDeBase(), corrections: [], comptesMail: comptesMailDeBase(), essaisMail: {} });
+      Object.assign(etat, { donnees, appels: [], vus: new Map(), pannes: {}, horsService: false, perdre: null, etapesPayees: new Map(), testEnvoyes: 1, reglages: reglagesDeBase(), mails: mailsDeBase(), contenusMail: contenusMailDeBase(), corrections: [], comptesMail: comptesMailDeBase(), essaisMail: {} });
     },
     appels(route) {
       return etat.appels.filter((a) => a.route === route);
@@ -94,7 +95,7 @@ async function api(req, res, url, etat) {
   etat.appels.push({ route, methode: req.method, corps, parametres: Object.fromEntries(url.searchParams) });
   const panne = etat.pannes[route];
   if (panne) return json(res, panne.statut, { code: panne.code, message: panne.message });
-  if (req.method === 'GET' && route === 'sante') return json(res, 200, { version_app: '0.2.0', version_base: 2, base_ok: true });
+  if (req.method === 'GET' && route === 'sante') return json(res, 200, { version_app: '0.4.1', version_base: 6, base_ok: true });
   if (req.method === 'POST' && route === 'connexion') {
     if (corps.mot_de_passe !== MOT_DE_PASSE) {
       return json(res, 401, { code: 'mot_de_passe_incorrect', message: 'Mot de passe incorrect. Encore 9 essais avant une pause de 15 min.' });
@@ -222,10 +223,26 @@ function comptesMail(res, route, corps, etat) {
   return json(res, 200, { comptes: structuredClone(etat.comptesMail) });
 }
 
+// L'XP, comme xp_etat() : un gain (ou un retrait) change le total, le domaine, son niveau et le plafond du jour.
+// Une donnée sans xp (etat.donnees.xp absent) laisse les réponses sans XP, comme le serveur quand le calcul échoue.
+function crediter(etat, domaine, gain, genre, sens = 1) {
+  const xp = etat.donnees.xp;
+  if (!xp) return;
+  xp.total += gain;
+  const d = xp.domaines[domaine];
+  d.xp += gain;
+  const p = progression(d.xp);
+  Object.assign(d, { niveau: p.niveau, dans_niveau: p.dansNiveau, taille_niveau: p.tailleNiveau });
+  if (genre) xp.aujourdhui_paye[genre] += sens;
+}
+
 // Les écritures, comme le vrai serveur : un id_client déjà vu rend le même résultat sans rien refaire
 function ecrire(req, res, route, corps, etat) {
   const deja = etat.vus.get(corps.id_client);
-  if (deja) return json(res, 200, deja.resultat);
+  if (deja) return json(res, 200, 'xp_gagnee' in deja.resultat && etat.donnees.xp ? { ...deja.resultat, xp: structuredClone(etat.donnees.xp) } : deja.resultat);
+  const quand = new Date(corps.fait_le ?? etat.donnees.maintenant);
+  let gain = 0;
+  let genre = null;
   const cartes = etat.donnees.trello.cartes;
   const carte = cartes.find((c) => c.id === corps.carte);
   const rappels = (etat.donnees.rappels_du_jour ??= []);
@@ -265,24 +282,47 @@ function ecrire(req, res, route, corps, etat) {
     if (!origine || origine.route !== 'taches/terminer') return json(res, 404, { code: 'annulation_impossible', message: 'Rien à annuler.' });
     const annulee = cartes.find((c) => c.id === origine.resultat.carte);
     annulee.colonne = origine.resultat.colonne_avant;
-    resultat = { carte: annulee.id, colonne: annulee.colonne };
+    gain = -origine.gain;
+    genre = origine.genre;
+    crediter(etat, annulee.domaine, gain, genre, -1);
+    resultat = { carte: annulee.id, colonne: annulee.colonne, xp_gagnee: gain, domaine: annulee.domaine };
   } else if (!carte) {
     return json(res, 404, { code: 'carte_introuvable', message: "Cette carte n'existe plus dans Trello." });
   } else if (route === 'taches/cocher') {
-    for (const liste of carte.checklists) for (const e of liste.elements) if (e.id === corps.element) e.coche = corps.coche;
-    resultat = { carte: carte.id, element: corps.element, coche: corps.coche };
+    const cle = `${carte.id}|${corps.element}`;
+    for (const liste of carte.checklists) {
+      for (const e of liste.elements) {
+        if (e.id !== corps.element || e.coche === corps.coche) continue;
+        e.coche = corps.coche;
+        if (corps.coche) {
+          gain = gainEtape(etat.donnees.xp?.aujourdhui_paye);
+          genre = gain > 0 ? 'etapes' : null;
+          etat.etapesPayees.set(cle, { gain, genre });
+        } else if (etat.etapesPayees.has(cle)) {
+          ({ gain, genre } = etat.etapesPayees.get(cle));
+          gain = -gain;
+          etat.etapesPayees.delete(cle);
+        }
+      }
+    }
+    crediter(etat, carte.domaine, gain, genre, corps.coche ? 1 : -1);
+    resultat = { carte: carte.id, element: corps.element, coche: corps.coche, xp_gagnee: gain, domaine: carte.domaine };
   } else if (route === 'taches/terminer') {
-    resultat = { carte: carte.id, colonne: 'fait', colonne_avant: carte.colonne };
+    gain = gainCarte(carte, quand, etat.donnees.xp?.aujourdhui_paye);
+    genre = gain > 0 && estEclair(carte.id, quand) ? 'eclairs' : null;
+    crediter(etat, carte.domaine, gain, genre);
+    resultat = { carte: carte.id, colonne: 'fait', colonne_avant: carte.colonne, xp_gagnee: gain, domaine: carte.domaine };
     carte.colonne = 'fait';
   } else if (route === 'taches/deplacer') {
     carte.colonne = corps.colonne;
-    resultat = { carte: carte.id, colonne: corps.colonne };
+    resultat = { carte: carte.id, colonne: corps.colonne, xp_gagnee: 0, domaine: carte.domaine };
   } else if (route === 'tirage/parti') {
     resultat = { carte: carte.id, element: corps.element };
   } else {
     return json(res, 404, { code: 'route_inconnue', message: 'Adresse inconnue.' });
   }
-  etat.vus.set(corps.id_client, { route, resultat });
+  if ('xp_gagnee' in resultat && etat.donnees.xp) resultat.xp = structuredClone(etat.donnees.xp);
+  etat.vus.set(corps.id_client, { route, resultat, gain, genre });
   if (etat.perdre === route) {
     etat.perdre = null;
     req.socket.destroy();

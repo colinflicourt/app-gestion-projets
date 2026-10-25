@@ -140,3 +140,16 @@ test("file : réponse 2xx illisible, l'écriture reste, puis repart avec le mêm
   assert.deepEqual(envoyes.map((x) => x.corps.id_client), [a.id_client, a.id_client]);
   assert.deepEqual([f.file, f.succes], [[], [a.id_client]]);
 });
+
+test("file : nouvelleEcriture pose l'heure du geste (ISO UTC), et l'envoi la transmet à côté de id_client", async () => {
+  envoyes = [];
+  const avant = Date.now();
+  const e = nouvelleEcriture('taches/terminer', { carte: 'c1' }, { carte: 'c1' });
+  assert.match(e.fait_le, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+  assert.ok(Date.parse(e.fait_le) >= avant && Date.parse(e.fait_le) <= Date.now());
+  repondre = () => json({ ok: true });
+  await envoyer(fileDeTest([e]).r);
+  assert.equal(envoyes[0].corps.fait_le, e.fait_le);
+  assert.equal(envoyes[0].corps.id_client, e.id_client);
+  assert.equal(envoyes[0].corps.carte, 'c1');
+});

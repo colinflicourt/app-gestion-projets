@@ -2,6 +2,8 @@
 // Junior tutoie, phrases courtes, aucune pique sur les médians, la sécurité ou les erreurs.
 
 const pluriel = (n, un, plusieurs) => (n === 1 ? un : plusieurs);
+// Milliers séparés par une espace insécable : « 22 000 »
+export const nombre = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
 
 export const T = {
   app: 'Jarvis Jr.',
@@ -31,7 +33,7 @@ export const T = {
   aujourdhui: {
     ecranConduite: 'Écran de conduite',
     salutations: { matin: 'Bonjour Colin.', apresMidi: 'Bon après-midi.', soir: 'Bonsoir.', nuit: 'Encore debout ?' },
-    junior: 'Junior · stagiaire',
+    junior: (grade = 'Stagiaire') => `Junior · ${grade.toLowerCase()}`,
     enScene: 'EN SCÈNE',
     standby: 'STANDBY',
     proposition: 'PROPOSITION',
@@ -49,6 +51,7 @@ export const T = {
     enRetard: (n) => `${n} en retard`,
     median: (n) => (n === 0 ? "médian aujourd'hui" : `médian J-${n}`),
     tranche: (nom, n, retard, median) => `${nom} : ${n} à faire${retard > 0 ? `, ${retard} en retard` : ''}${median === null ? '' : `, médian ${median === 0 ? "aujourd'hui" : `dans ${median} jours`}`}`,
+    trancheXp: (nom, niveau, dans, taille) => `${nom}, niveau ${niveau}, ${nombre(dans)} XP sur ${nombre(taille)}`,
     go: 'GO',
     goLegende: 'Je fais quoi maintenant ?',
     goAria: 'GO, je fais quoi maintenant ?',
@@ -124,6 +127,8 @@ export const T = {
     deplacerVers: 'Déplacer vers',
     ouvrirTrello: 'Ouvrir dans Trello',
     terminee: 'Carte terminée.',
+    termineeXp: (gain, domaine) => `Carte terminée. +${gain} XP ${domaine}.`,
+    gainEtape: (gain) => `+${gain} XP`,
     annuler: 'Annuler',
     introuvable: "Cette carte n'existe plus dans Trello.",
   },
@@ -235,6 +240,13 @@ export const T = {
     version: (v) => `Version ${v}`,
     confidentialite: 'Confidentialité',
     reglages: 'Réglages',
+    grades: { stagiaire: 'Stagiaire', assistant: 'Assistant', bras_droit: 'Bras droit', majordome: 'Majordome' },
+    grade: (grade, total, suivant) => `Junior · ${grade} · ${suivant === null ? `${nombre(total)} XP` : `${nombre(total)} / ${nombre(suivant)} XP`}`,
+    niveau: (n) => `Niveau ${n}`,
+    serie: (n) => (n === 0 ? 'Pas encore de série' : `Série : ${n} ${pluriel(n, 'jour', 'jours')} d'affilée`),
+    jokerLibre: 'Joker disponible cette semaine',
+    jokerUtilise: (jour) => `Joker utilisé ${jour}`,
+    jokerEnJeu: "Joker en jeu : agis aujourd'hui pour garder ta série",
   },
   reglages: {
     titre: 'Réglages',
