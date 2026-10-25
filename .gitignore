@@ -9,3 +9,6 @@ tests/e2e/captures/
 
 # Graphify (graphe du projet, régénérable)
 graphify-out/
+
+# Historique Trello extrait pour la régulation de l'XP (données personnelles)
+outils/donnees/
