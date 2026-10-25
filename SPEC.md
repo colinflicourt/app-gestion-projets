@@ -863,16 +863,17 @@ Chaque sous-lot suit le chemin des précédents : spec, plan de missions, sous-a
 
 Entrée : les actions non annulées (`annulee = 0`), triées par `quand` puis `id`. Sortie : l'état de l'XP et la liste datée des événements (niveaux franchis, promotions, jokers utilisés).
 
-- **Barème** (`CONTENU.md` § 7, validé le 07/10) :
+- **Barème** (`CONTENU.md` § 7, recalé par la régulation et validé par Colin le 2026-10-25, barème C de `REGULATION-XP.md`) :
   - `carte_terminee` : 30, +20 si `donnees.urgent`, +10 si `donnees.echeance` existe et que `quand` lui est antérieur ou égal. Une échéance posée sans heure est stockée à 18 h 00 Paris : dans ce cas, on compare au **jour** (finie le jour J avant minuit, bonus gagné) ; une échéance avec une autre heure se compare à la minute (choix de Claude) ;
   - `etape_cochee` : 5 ;
   - `carte_ajoutee`, `tirage_parti` : 0.
+- **Plafonds par jour** (régulation du 25/10) : par jour de Paris, tous domaines confondus, au plus 10 étapes cochées et 2 cartes éclair rapportent de l'XP. Au-delà, le geste reste valide et rapporte 0 ; défaire un geste qui avait rapporté libère sa place dans le plafond du jour où il avait rapporté. Les cartes ordinaires n'ont pas de plafond.
 - **Carte éclair** (décision de Colin, 2026-10-25) : une carte terminée **moins de 10 minutes après sa création** rapporte 5 XP au lieu de 30 et ses bonus, pour que l'XP reste un signal de vrai travail. L'heure de création se lit dans l'identifiant Trello de la carte (ses 8 premiers caractères hexadécimaux sont l'horodatage Unix de création), ce qui couvre aussi les cartes créées dans l'app Trello ou par Jarvis. Le message après Terminer dit alors « Carte terminée. +5 XP Études. » sans autre commentaire (choix de Claude).
 - **Une seule fois à la fois** : on rejoue les actions dans l'ordre. Une carte terminée gagne son XP ; `carte_rouverte` retire exactement ce qu'elle avait gagné ; une nouvelle fin la fait regagner (avec les bonus calculés à ce moment). Même chose pour une étape avec `etape_cochee` et `etape_decochee`. Une action « terminée » sur une carte déjà terminée ne rapporte rien, et un retrait sans gain préalable (étape cochée avant le lot 1, puis décochée) ne retire rien : plancher à 0 par carte et par étape (choix de Claude).
 - **Domaine** : la colonne `domaine` de l'action. Une carte finie dans l'app Trello ou par Jarvis compte pareil (§ 6.4).
 - **Point de départ** : toutes les actions depuis le lot 1 (décision 3 du § 2).
-- **Niveau par domaine** : niveau 1 à 0 XP, puis chaque niveau demande 100 XP de plus que le précédent (niveau n atteint à 50 × n × (n − 1) : 100, 300, 600, 1 000…). Le niveau suit l'XP nette : s'il redescend après une annulation, il remonte sans nouvelle célébration. L'événement « niveau n » n'est émis qu'au **premier** franchissement (plus haut niveau jamais atteint) ; même règle pour les grades (choix de Claude). Une récompense déjà gagnée (4.3) n'est jamais reprise.
-- **Grade** sur l'XP totale : Stagiaire (0), Assistant (1 000), Bras droit (4 000), Majordome (10 000).
+- **Niveau par domaine** : niveau 1 à 0 XP, puis chaque niveau demande 160 XP de plus que le précédent (niveau n atteint à 80 × n × (n − 1) : 160, 480, 960, 1 600…, 12 480 au niveau 13). Le niveau suit l'XP nette : s'il redescend après une annulation, il remonte sans nouvelle célébration. L'événement « niveau n » n'est émis qu'au **premier** franchissement (plus haut niveau jamais atteint) ; même règle pour les grades (choix de Claude). Une récompense déjà gagnée (4.3) n'est jamais reprise.
+- **Grade** sur l'XP totale : Stagiaire (0), Assistant (1 500), Bras droit (6 000), Majordome (22 000).
 - **Série** :
   - un jour (heure de Paris, passage à l'heure d'hiver couvert par les tests) compte s'il a au moins une `carte_terminee` ou une `etape_cochee` qui a rapporté de l'XP et n'a pas été reprise **le même jour** (une session focus en 4.2). Défaire un geste un autre jour retire l'XP mais ne retire pas le jour de la série (choix de Claude) ;
   - la série commence au premier jour compté : les jours d'avant ne sont pas des jours manqués ;
@@ -928,7 +929,7 @@ Découpe des fonctions et des fichiers ; forme exacte de l'objet `xp` ; rendu de
   - un passage de niveau au moins toutes les deux semaines dans le domaine le plus actif en début d'année, puis plus espacé ;
   - la 13e carte d'Études arrive vers les finaux de juin, pas avant ; grade Majordome vers la fin de l'année, pas avant janvier ;
   - une soirée de triche (cartes éclair, étapes cochées en série) rapporte moins qu'une heure de combat.
-- **Livrable** : `REGULATION-XP.md` (tableau du barème proposé, courbes ou tableaux par profil, ce qui change par rapport au § 7), présenté à Colin. Une fois validé, il remplace le barème de `CONTENU.md` § 7 et les seuils de niveau du § 18.4.
+- **Fait le 2026-10-25** : barème C validé par Colin, reporté dans `CONTENU.md` § 7, au § 18.4 et dans `JR_XP_REGLES`. Seuils à revoir après deux à trois semaines d'usage, seulement à la baisse. **Livrable** : `REGULATION-XP.md` (tableau du barème proposé, courbes ou tableaux par profil, ce qui change par rapport au § 7), présenté à Colin. Une fois validé, il remplace le barème de `CONTENU.md` § 7 et les seuils de niveau du § 18.4.
 - **Réglable sans réécrire** : barème, seuils de niveau et de grade dans **une seule table de constantes** côté serveur (`serveur/lib/xp.php`) et son miroir testé côté iPhone (`site/js/lib/xp.js`), un test vérifiant que les deux sont identiques. Comme l'XP est recalculée et jamais stockée, changer le barème recalcule tout l'historique ; les événements déjà célébrés ne sont pas rejoués (§ 18.6), et une récompense gagnée reste gagnée.
 - **Revue** : nouvelle régulation après deux à trois semaines d'usage réel du 4.1, sur les vraies actions (route de lecture seule ou export, à prévoir dans le plan), puis au début du 4.2 pour le combat.
 
