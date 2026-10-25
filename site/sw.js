@@ -2,7 +2,7 @@
 // d'abord ; une nouvelle version (VERSION changée) est installée dès qu'elle est vue et sert à l'ouverture
 // suivante. L'API n'est jamais mise en cache. VERSION est l'empreinte des fichiers de FICHIERS :
 // php tests/run.php donne la bonne valeur.
-const VERSION = 'jr-cb01f48352';
+const VERSION = 'jr-ceee96112e';
 const FICHIERS = [
   '/',
   '/index.html',
@@ -27,6 +27,7 @@ const FICHIERS = [
   '/js/ecrans/agenda.js',
   '/js/ecrans/aujourdhui.js',
   '/js/ecrans/capture.js',
+  '/js/ecrans/celebration.js',
   '/js/ecrans/carte.js',
   '/js/ecrans/commun.js',
   '/js/ecrans/connexion.js',

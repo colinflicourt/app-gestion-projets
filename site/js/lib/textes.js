@@ -248,6 +248,24 @@ export const T = {
     jokerUtilise: (jour) => `Joker utilisé ${jour}`,
     jokerEnJeu: "Joker en jeu : agis aujourd'hui pour garder ta série",
   },
+  celebration: {
+    fermer: 'Fermer',
+    niveau: (n, domaine) => `Niveau ${n} en ${domaine}`,
+    repliques: [
+      "Je l'encadre au-dessus de la cafetière.",
+      "Je n'ai rien fait, mais je prends le crédit.",
+      'Les autres domaines sont jaloux. Ils te regardent.',
+      "Continue, j'ai parié sur toi. Pas gros, mais quand même.",
+      'Noté. Je le ressortirai le jour où tu diras que tu n\'avances pas.',
+    ],
+    promotions: {
+      assistant: { passe: 'Junior passe Assistant.', suite: 'Il réclame déjà une augmentation.', replique: 'Assistant. Je me suis acheté une cravate avec ton XP.' },
+      bras_droit: { passe: 'Junior passe Bras droit.', suite: 'Il exige un bureau avec fenêtre.', replique: 'Bras droit. Je signe tes mails à ta place. Je plaisante. Presque.' },
+      majordome: { passe: 'Junior passe Majordome.', suite: "Il repasse ton agenda avant de te le servir.", replique: 'Majordome. Monsieur est servi.' },
+    },
+    joker: 'Joker utilisé. La série tient, ta discipline un peu moins.',
+    recap: (gain, grade, niveaux) => ['Pendant ton absence\u00a0: +' + nombre(gain) + ' XP.', grade && T.celebration.promotions[grade].passe, niveaux.length > 0 && niveaux.map(({ domaine, niveau }) => `${domaine} niveau ${niveau}`).join(', ') + '.'].filter(Boolean).join(' '),
+  },
   reglages: {
     titre: 'Réglages',
     retour: 'Retour',

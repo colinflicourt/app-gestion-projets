@@ -109,6 +109,14 @@ export function remplacerIdLocal(file, idLocal, idReel) {
   return file.map((e) => ({ ...e, corps: remplacer(e.corps), local: remplacer(e.local) }));
 }
 
+// Ce que l'écriture « taches/annuler » garde en local. Annuler une carte éclair dont la réponse est arrivée rend
+// un éclair payé : l'estimation du plafond le retire tout de suite au lieu d'attendre la réponse de l'annulation.
+export function localAnnulation(e, repondue = true) {
+  const local = { carte: e.corps.carte, colonne_avant: e.local.colonne_avant, position_avant: e.local.position_avant, echeance_faite_avant: e.local.echeance_faite_avant };
+  if (repondue && e.local.xp?.genre === 'eclairs') local.xp = { genre: 'eclairs', n: -1 };
+  return local;
+}
+
 export const retirerEcriture = (file, id) => file.filter((e) => e.id_client !== id);
 
 // Réponse à une écriture : acceptée ou refusée pour de bon (4xx : carte supprimée, trop tard…), on la

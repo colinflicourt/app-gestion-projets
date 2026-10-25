@@ -70,3 +70,45 @@ export function progression(xp, regles = REGLES) {
   const seuil = seuilNiveau(niveau, regles);
   return { niveau, dansNiveau: xp - seuil, tailleNiveau: seuilNiveau(niveau + 1, regles) - seuil };
 }
+
+// Célébrations (SPEC § 18.6, décisions 9 et 10). vu = { emis_le_max, cles, total_vu } gardé dans IndexedDB ; un
+// événement est à célébrer s'il a été émis après emis_le_max ET si sa clé n'est pas déjà vue (un barème modifié
+// peut redater un niveau déjà célébré). vu absent : tout l'historique est en attente.
+const RANG = { grade: 0, niveau: 1, joker: 2 };
+const instant = (iso) => Date.parse(iso);
+
+export function aCelebrer(evenements, vu) {
+  const max = vu?.emis_le_max ? instant(vu.emis_le_max) : -Infinity;
+  const vues = new Set(vu?.cles ?? []);
+  const attente = (evenements ?? [])
+    .filter((e) => instant(e.emis_le) > max && !vues.has(e.cle))
+    .sort((a, b) => RANG[a.type] - RANG[b.type] || instant(a.emis_le) - instant(b.emis_le));
+  const mode = attente.length === 0 ? 'aucune' : attente.length <= 2 ? 'simple' : 'recap';
+  return { mode, evenements: attente };
+}
+
+const JOURS_JOKER = 60;
+
+// Le nouvel état « vu » : à écrire AVANT d'afficher la célébration. Garde les niveaux et grades, et les jokers des
+// 60 derniers jours.
+export function marquerVus(vu, evenements, total, maintenant = new Date()) {
+  const limite = jourParis(new Date(maintenant.getTime() - JOURS_JOKER * 86400000));
+  const cles = new Set([...(vu?.cles ?? []), ...evenements.map((e) => e.cle)]);
+  for (const cle of cles) if (cle.startsWith('joker:') && cle.slice(6) < limite) cles.delete(cle);
+  let max = vu?.emis_le_max ?? null;
+  for (const e of evenements) if (max === null || instant(e.emis_le) > instant(max)) max = e.emis_le;
+  return { emis_le_max: max, cles: [...cles], total_vu: total };
+}
+
+// Ce que dit le récapitulatif : XP gagnée depuis la dernière fois, grade le plus haut gagné, niveau le plus haut par domaine
+// (le plus avancé en premier)
+export function resumeRecap(evenements, total, vu) {
+  const hauts = new Map();
+  let grade = null;
+  for (const e of evenements) {
+    if (e.type === 'niveau') hauts.set(e.domaine, Math.max(hauts.get(e.domaine) ?? 0, e.niveau));
+    else if (e.type === 'grade') grade = e.grade;
+  }
+  const niveaux = [...hauts].map(([domaine, niveau]) => ({ domaine, niveau })).sort((a, b) => b.niveau - a.niveau);
+  return { gain: Math.max(0, total - (vu?.total_vu ?? 0)), grade, niveaux };
+}
