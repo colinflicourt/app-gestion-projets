@@ -1,37 +1,36 @@
-# Passation · Jarvis Jr. · 2026-10-25 21:55
+# Passation · Jarvis Jr. · 2026-10-29
 
 ## Objectif
-Jarvis Jr. (jr.qyris.fr), l'app perso d'organisation de Colin sur iPhone. Chantier : **lot 4.1, moteur d'XP et son affichage**. Code fini, reste la mise en ligne et la recette.
+Jarvis Jr. (jr.qyris.fr), l'app perso d'organisation de Colin sur iPhone. Lot 4 (fun) : le 4.1 (XP) est fini. Chantier suivant : **lot 4.2, session focus contre un boss**.
 
 ## Où on en est
-- Fait et vérifié : M1 à M7 du plan `plans/2026-10-25-lot4-1-xp.md`. M5 célébrations (`05acb43`) : niveau en plein écran couleur du domaine (fermeture seule à 4,5 s), promotion et récapitulatif plein écran jusqu'au toucher, joker en bandeau (5 s), mémo `celebrations` dans IndexedDB écrit avant l'affichage ; Annuler d'une carte éclair répondue rend l'éclair payé. M6 (`7bdc73e`) : `JR_VERSION` 0.4.1, `RECETTE-LOT4-1.md`. M7 : 6 critères sur 6 conformes (aucune XP stockée, console propre, pas de secret ni de tiret long).
-- Fusion `lot4-1-xp` dans `main` (`eb03b67`), poussée sur GitHub. Tests PHP 534, JS 74 (relancés sur `main`), écran 145 (sur la branche, identique).
-- **Rien n'est en ligne** : la version en ligne est 0.3.2.
+- Fait et vérifié : lot 4.1 mis en ligne par Colin le 29/10 et recetté sur l'iPhone (cases 2 à 6 conformes ; case 1 : le récapitulatif s'est affiché une seule fois, mais il s'est fermé aussitôt sur un toucher involontaire). L'élément Trello est coché.
+- Ajouté le 29/10 à la demande de Colin, en ligne en **0.4.2** et vérifié (`/api/sante`) : « Revoir le récapitulatif » dans Moi. Le dernier récapitulatif est gardé dans le mémo IndexedDB `celebrations.dernier_recap` ; à défaut, le bouton affiche le bilan de tout l'historique (`recapARevoir`, `site/js/lib/xp.js`). Tests PHP 534, JS 75, écran 147. Commit `7e922f4` sur `main`, poussé.
 - En cours chez un sous-agent : rien.
 
 ## Décisions prises
-- Barème C et les 13 décisions du plan font foi. Textes des célébrations conformes mot pour mot au § Textes du plan (seul écart : espace insécable avant « : » du récapitulatif, et bouton « Fermer » en aria-label).
-- Décision 9 appliquée telle quelle : célébré si `emis_le > emis_le_max` et `cle` non vue.
+- Lot 4.1 considéré comme fini par Colin (29/10).
+- La protection contre les touchers involontaires sur les célébrations se fera **avec le lot 4.2**, pas avant (décision de Colin).
+- Le découpage du lot 4 (SPEC.md § 18.2) et le barème C (REGULATION-XP.md) font foi.
 
 ## Prochaine étape
-**Mise à jour du 29/10 :** lot 4.1 en ligne et recetté par Colin sur l'iPhone (cases 2 à 6 conformes ; case 1 : récapitulatif affiché une fois mais fermé aussitôt par un toucher involontaire). Ajouté et en ligne en 0.4.2 : « Revoir le récapitulatif » dans Moi (dernier récapitulatif gardé dans le mémo `celebrations.dernier_recap`, sinon bilan de tout l'historique). Élément Trello coché.
-1. Spec du lot 4.2 (boss), à valider par Colin, en y incluant la protection d'1 s contre les touchers (voir Pièges).
-2. Revue de régulation après 2 à 3 semaines d'usage (`GET xp/export`), vers mi-novembre.
-Effort conseillé pour la conversation suivante : **moyen**.
+1. Écrire la spec du lot 4.2 (boss) dans SPEC.md (nouvelle section après § 18.10), d'après PLAN.md (l. 65 à 70 : un boss par domaine, Le Bug, Le 99+, Le Poly, La Flemme, 25/45/60 min, fuite si on quitte l'app), CONTENU.md, VISUELS.md et REGULATION-XP.md (1 XP par minute + 10 si le boss est battu). Y inclure la protection : ignorer les touchers pendant environ 1 s après l'apparition d'une célébration plein écran (`site/js/ecrans/celebration.js`, le bouton Fermer couvre tout l'écran).
+2. La faire valider par Colin, puis écrire le plan de missions et lancer en mode chef d'orchestre.
+3. Revue de régulation de l'XP vers la mi-novembre (`GET xp/export`, SPEC.md § 18.10).
+Effort conseillé pour la conversation suivante : **haut** (spec d'un lot).
 
 ## Fichiers clés
-- `RECETTE-LOT4-1.md` : commandes et cases de la recette
-- `plans/2026-10-25-lot4-1-xp.md` : Partie C (mise en ligne et recette)
-- `outils/deploy-ovh.sh` : script de mise en ligne (lancé par Colin seulement)
+- `SPEC.md` § 18 : lot 4, découpage et règles du 4.1
+- `PLAN.md` (l. 60 à 100), `CONTENU.md`, `VISUELS.md` : boss, textes, visuels
+- `REGULATION-XP.md` : barème des boss
+- `site/js/ecrans/celebration.js` : célébrations (protection d'1 s)
 
 ## Pièges et points ouverts
-- **Colin en Espagne du 26 au 30/10**, médian NF93 le lun 2/11 à 7h45 : créneau court pour la mise en ligne.
-- Les envois SFTP vers OVH par Claude sont refusés : Colin lance, Claude lit la sortie. `curl -s -D - -o /dev/null`, jamais `curl -sI`. Toute commande qui cite `.env`, `config.php`, `secrets/`, `deploy`, `sftp`, Trello ou `grep -r` entièrement dans `{ … ; } 2>&1 | ~/.claude/hooks/redact-secrets`.
-- Tests des célébrations : le sous-agent ne les a pas vus échouer avant d'écrire le code (sauf le test d'Annuler éclair). Ils passent, preuve de rouge manquante.
-- Si les seuils de niveau sont un jour baissés, un niveau atteint pour la première fois par la baisse peut avoir un `emis_le` antérieur à `emis_le_max` et ne pas être célébré. À regarder à la revue de régulation.
-- Cadre noir du focus sur les captures plein écran (focus programmatique du bouton Fermer) : à vérifier sur l'iPhone, normalement invisible au toucher.
-- Les célébrations ne partent qu'après une lecture de données ou une réponse d'écriture, pas sur la copie locale du démarrage.
+- Médians : NF93 lun 2/11 7h45, TN01 ven 6/11, MT23 sam 7/11. Ne pas pousser le lot 4.2 avant si Colin révise.
+- Mise en ligne : `outils/deploy-ovh.sh` lancé par Colin seulement (SFTP refusé à Claude). Le script lance d'abord les tests, il faut donc que MySQL local tourne (`brew services run mysql@8.4`) : le 29/10, le premier essai s'est arrêté sur 231 échecs pour cette seule raison.
+- Garde-fou : toute commande qui cite `.env`, `config.php`, `secrets/`, `deploy`, `sftp`, `mysql`, Trello ou `grep -r` doit être entièrement dans `{ … ; } 2>&1 | ~/.claude/hooks/redact-secrets`, `cd` compris. `curl -s -D - -o /dev/null`, jamais `curl -sI`.
+- Version : changer un fichier en cache oblige à recalculer `VERSION` dans `site/sw.js` (`php tests/run.php "service worker"` donne la valeur), et à monter `JR_VERSION` dans `serveur/lib/amorce.php` ainsi que la version du faux serveur e2e (`tests/e2e/serveur.mjs`, `test_moi.mjs`).
+- Si les seuils de niveau sont baissés, un niveau atteint par la baisse peut ne pas être célébré (`emis_le` antérieur à `emis_le_max`). À regarder à la revue de régulation.
 - Coût : chaque écriture rejoue 2 fois toutes les actions. À réduire si ça rame.
 - Pour 4.3 : seul Études atteint le niveau 13 dans l'année, à trancher avec les cartes de niveau.
-- **À faire avec le lot 4.2** (demande de Colin, 29/10) : ignorer les touchers pendant environ 1 s après l'apparition d'une célébration plein écran. À la recette, le récapitulatif s'est fermé aussitôt, probablement sur un toucher involontaire (Colin pense avoir touché). Le bouton Fermer couvre tout l'écran.
 - Hors lot 4 : rappel « Dans 1 h » et brief à l'heure d'hiver (lot 2) à contrôler.
