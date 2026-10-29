@@ -444,6 +444,7 @@ ul { padding: 0; list-style: none; }
 .xp-serie { margin-top: 16px; font-size: calc(15 * var(--px)); font-weight: 600; }
 .xp-joker { margin-top: 4px; font-size: calc(14 * var(--px)); color: var(--texte-2); }
 .xp-jeu { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: var(--ambre-trait); color: var(--ambre); font-size: calc(14 * var(--px)); font-weight: 600; }
+.xp-revoir { margin-top: 4px; margin-left: -8px; }
 
 /* Célébrations : passage de niveau et promotion en plein écran, joker en bandeau (animations mécaniques, nulles en mouvement réduit) */
 #celebration { position: relative; z-index: 40; }

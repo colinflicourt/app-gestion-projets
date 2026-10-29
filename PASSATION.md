@@ -14,9 +14,9 @@ Jarvis Jr. (jr.qyris.fr), l'app perso d'organisation de Colin sur iPhone. Chanti
 - Décision 9 appliquée telle quelle : célébré si `emis_le > emis_le_max` et `cle` non vue.
 
 ## Prochaine étape
-1. **À partir du 31/10** : Colin lance la mise en ligne dans le terminal de VS Code (`RECETTE-LOT4-1.md` § 1 : `outils/deploy-ovh.sh` depuis `projects/jarvis-jr`) et colle la sortie, puis les deux `curl` du § 2 (attendu `version_app` 0.4.1, `version_base` 6, `base_ok` true). Claude lit, ne lance rien vers OVH.
-2. Recette sur l'iPhone : cases des § 4 et 5 de `RECETTE-LOT4-1.md` (récapitulatif depuis le 10/10 une seule fois, Terminer puis Annuler, étape cochée puis décochée, carte terminée dans Trello comptée, aucune célébration au 2e lancement).
-3. Lot 4.1 fini quand tout est coché ; cocher l'élément Trello « Lot 4.1 : mise en ligne et recette » de la carte Jarvis Jr. Puis spec du lot 4.2 (boss). Revue de régulation après 2 à 3 semaines d'usage (`GET xp/export`).
+**Mise à jour du 29/10 :** lot 4.1 en ligne et recetté par Colin sur l'iPhone (cases 2 à 6 conformes ; case 1 : récapitulatif affiché une fois mais fermé aussitôt par un toucher involontaire). Ajouté et en ligne en 0.4.2 : « Revoir le récapitulatif » dans Moi (dernier récapitulatif gardé dans le mémo `celebrations.dernier_recap`, sinon bilan de tout l'historique). Élément Trello coché.
+1. Spec du lot 4.2 (boss), à valider par Colin, en y incluant la protection d'1 s contre les touchers (voir Pièges).
+2. Revue de régulation après 2 à 3 semaines d'usage (`GET xp/export`), vers mi-novembre.
 Effort conseillé pour la conversation suivante : **moyen**.
 
 ## Fichiers clés
@@ -33,4 +33,5 @@ Effort conseillé pour la conversation suivante : **moyen**.
 - Les célébrations ne partent qu'après une lecture de données ou une réponse d'écriture, pas sur la copie locale du démarrage.
 - Coût : chaque écriture rejoue 2 fois toutes les actions. À réduire si ça rame.
 - Pour 4.3 : seul Études atteint le niveau 13 dans l'année, à trancher avec les cartes de niveau.
+- **À faire avec le lot 4.2** (demande de Colin, 29/10) : ignorer les touchers pendant environ 1 s après l'apparition d'une célébration plein écran. À la recette, le récapitulatif s'est fermé aussitôt, probablement sur un toucher involontaire (Colin pense avoir touché). Le bouton Fermer couvre tout l'écran.
 - Hors lot 4 : rappel « Dans 1 h » et brief à l'heure d'hiver (lot 2) à contrôler.

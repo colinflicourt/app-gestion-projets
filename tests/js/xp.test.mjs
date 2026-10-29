@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { REGLES, aCelebrer, marquerVus, resumeRecap, creationCarte, estEclair, gainCarte, gainEtape, payeApres, progression, seuilNiveau } from '../../site/js/lib/xp.js';
+import { REGLES, aCelebrer, marquerVus, recapARevoir, resumeRecap, creationCarte, estEclair, gainCarte, gainEtape, payeApres, progression, seuilNiveau } from '../../site/js/lib/xp.js';
 
 // Même table de test que tests/unitaires/test_xp.php
 const TABLE = {
@@ -192,4 +192,15 @@ test('récapitulatif : XP depuis total_vu, niveaux les plus hauts par domaine, p
   assert.deepEqual(r, { gain: 640, grade: 'assistant', niveaux: [{ domaine: 'etudes', niveau: 3 }, { domaine: 'asso', niveau: 2 }] });
   assert.equal(resumeRecap(evenements, 640, { total_vu: 100 }).gain, 540);
   assert.equal(resumeRecap(evenements, 50, { total_vu: 100 }).gain, 0);
+});
+
+test('revoir le récapitulatif : le dernier affiché, sinon le bilan de tout l\'historique', () => {
+  const evenements = [niv('etudes', 2, T1), niv('asso', 2, T2), gra('assistant', T2)];
+  const xp = { evenements, total: 390 };
+  const dernier = { gain: 120, grade: null, niveaux: [{ domaine: 'perso', niveau: 4 }] };
+  assert.deepEqual(recapARevoir({ dernier_recap: dernier }, xp), dernier);
+  const bilan = { gain: 390, grade: 'assistant', niveaux: [{ domaine: 'etudes', niveau: 2 }, { domaine: 'asso', niveau: 2 }] };
+  assert.deepEqual(recapARevoir({ emis_le_max: T2, cles: [], total_vu: 390 }, xp), bilan);
+  assert.deepEqual(recapARevoir(null, xp), bilan);
+  assert.deepEqual(recapARevoir(null, { total: 0 }), { gain: 0, grade: null, niveaux: [] });
 });

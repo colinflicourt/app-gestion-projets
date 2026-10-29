@@ -13,7 +13,7 @@ test("Moi : agenda connecté, « Reconnecter », version de l'app, lien vers les
   await ouvrir(page, '/#/moi');
   await page.getByText('Agenda connecté', { exact: true }).waitFor();
   assert.equal(await page.getByRole('link', { name: 'Reconnecter' }).getAttribute('href'), '/api/google/connexion');
-  await page.getByText('Version 0.4.1').waitFor();
+  await page.getByText('Version 0.4.2').waitFor();
   assert.equal(await page.getByRole('link', { name: 'Confidentialité' }).getAttribute('href'), '/confidentialite.html');
 });
 

@@ -247,6 +247,7 @@ export const T = {
     jokerLibre: 'Joker disponible cette semaine',
     jokerUtilise: (jour) => `Joker utilisé ${jour}`,
     jokerEnJeu: "Joker en jeu : agis aujourd'hui pour garder ta série",
+    revoirRecap: 'Revoir le récapitulatif',
   },
   celebration: {
     fermer: 'Fermer',

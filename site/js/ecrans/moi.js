@@ -5,6 +5,7 @@ import { DOMAINES, NOMS } from '../lib/cartes.js';
 import { T } from '../lib/textes.js';
 import { appeler } from '../api.js';
 import { regle } from './commun.js';
+import { revoirRecap } from './celebration.js';
 
 const M = T.moi;
 let version = null;
@@ -59,7 +60,8 @@ function blocXp(xp) {
     })),
     h('p', { class: 'xp-serie' }, M.serie(serie.jours)),
     h('p', { class: 'xp-joker' }, serie.joker_libre || !serie.dernier_joker ? M.jokerLibre : M.jokerUtilise(nomDuJour(serie.dernier_joker))),
-    serie.en_jeu && h('p', { class: 'xp-jeu' }, M.jokerEnJeu));
+    serie.en_jeu && h('p', { class: 'xp-jeu' }, M.jokerEnJeu),
+    h('button', { type: 'button', class: 'lien-discret xp-revoir', onclick: () => revoirRecap(xp) }, M.revoirRecap));
 }
 
 export function rendre(app) {

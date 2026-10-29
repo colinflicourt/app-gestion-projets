@@ -112,3 +112,8 @@ export function resumeRecap(evenements, total, vu) {
   const niveaux = [...hauts].map(([domaine, niveau]) => ({ domaine, niveau })).sort((a, b) => b.niveau - a.niveau);
   return { gain: Math.max(0, total - (vu?.total_vu ?? 0)), grade, niveaux };
 }
+
+// Revoir depuis Moi : le dernier récapitulatif affiché (gardé dans le mémo), sinon le bilan de tout l'historique
+export function recapARevoir(vu, xp) {
+  return vu?.dernier_recap ?? resumeRecap(xp?.evenements ?? [], xp?.total ?? 0, null);
+}

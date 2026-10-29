@@ -95,7 +95,7 @@ async function api(req, res, url, etat) {
   etat.appels.push({ route, methode: req.method, corps, parametres: Object.fromEntries(url.searchParams) });
   const panne = etat.pannes[route];
   if (panne) return json(res, panne.statut, { code: panne.code, message: panne.message });
-  if (req.method === 'GET' && route === 'sante') return json(res, 200, { version_app: '0.4.1', version_base: 6, base_ok: true });
+  if (req.method === 'GET' && route === 'sante') return json(res, 200, { version_app: '0.4.2', version_base: 6, base_ok: true });
   if (req.method === 'POST' && route === 'connexion') {
     if (corps.mot_de_passe !== MOT_DE_PASSE) {
       return json(res, 401, { code: 'mot_de_passe_incorrect', message: 'Mot de passe incorrect. Encore 9 essais avant une pause de 15 min.' });

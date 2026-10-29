@@ -4,7 +4,7 @@
 import { h } from '../lib/dom.js';
 import { NOMS } from '../lib/cartes.js';
 import { T } from '../lib/textes.js';
-import { aCelebrer, marquerVus, resumeRecap } from '../lib/xp.js';
+import { aCelebrer, marquerVus, recapARevoir, resumeRecap } from '../lib/xp.js';
 import * as stockage from '../stockage.js';
 
 const C = T.celebration;
@@ -79,10 +79,20 @@ async function travailler(app, xp) {
   const { mode, evenements } = aCelebrer(xp.evenements, memo);
   if (mode === 'aucune' && memo?.total_vu === xp.total) return;
   const recap = mode === 'recap' ? resumeRecap(evenements, xp.total, memo) : null;
-  await stockage.ecrire('donnees', 'celebrations', marquerVus(memo, evenements, xp.total, app.maintenant()));
+  const dernier = recap ?? memo?.dernier_recap;
+  await stockage.ecrire('donnees', 'celebrations', { ...marquerVus(memo, evenements, xp.total, app.maintenant()), ...(dernier && { dernier_recap: dernier }) });
   if (mode === 'simple') enAttente.push(...evenements);
   else if (recap) enAttente.push({ type: 'recap', ...recap });
   afficher();
+}
+
+// Moi, « Revoir le récapitulatif » : le rejoue sans rien marquer comme vu
+export function revoirRecap(xp) {
+  chaine = chaine.then(async () => {
+    const memo = (await stockage.lire('donnees', 'celebrations')) ?? null;
+    enAttente.push({ type: 'recap', ...recapARevoir(memo, xp) });
+    afficher();
+  }).catch(() => {});
 }
 
 // À appeler après chaque mise à jour de l'objet xp (lecture des données, réponse d'une écriture). Les appels

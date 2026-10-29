@@ -102,6 +102,31 @@ test("célébration : une promotion s'ajoute en tête du récapitulatif, et seul
   assert.equal(await titre(page), 'Pendant ton absence : +540 XP. Junior passe Assistant. Études niveau 3.');
 });
 
+test('Moi : « Revoir le récapitulatif » rejoue le dernier récapitulatif, sans rien marquer comme vu', async ({ page, contexte, serveur }) => {
+  await preparer(page, contexte, serveur, [niveau('etudes', 2), niveau('etudes', 3), niveau('asso', 2)], xpDeBase({ qyris: 0, asso: 160, etudes: 480, perso: 0 }));
+  await ouvrir(page, '/#/moi');
+  await celebration(page).waitFor();
+  await fermer(page);
+  await celebration(page).waitFor({ state: 'detached' });
+  const avant = await vu(page);
+  assert.deepEqual(avant.dernier_recap, { gain: 640, grade: null, niveaux: [{ domaine: 'etudes', niveau: 3 }, { domaine: 'asso', niveau: 2 }] });
+  await page.getByRole('button', { name: 'Revoir le récapitulatif' }).click();
+  await celebration(page).waitFor();
+  assert.equal(await titre(page), 'Pendant ton absence : +640 XP. Études niveau 3, Asso niveau 2.');
+  await fermer(page);
+  await celebration(page).waitFor({ state: 'detached' });
+  assert.deepEqual(await vu(page), avant);
+});
+
+test("Moi : « Revoir le récapitulatif » sans récapitulatif gardé (mémo d'avant la 0.4.2) : le bilan de tout l'historique", async ({ page, contexte, serveur }) => {
+  await preparer(page, contexte, serveur, [niveau('etudes', 2), niveau('etudes', 3), niveau('asso', 2)], xpDeBase({ qyris: 0, asso: 160, etudes: 480, perso: 0 }));
+  await semer(page, { emis_le_max: HIER, cles: ['niveau:etudes:2', 'niveau:etudes:3', 'niveau:asso:2'], total_vu: 640 });
+  await ouvrir(page, '/#/moi');
+  await page.getByRole('button', { name: 'Revoir le récapitulatif' }).click();
+  await celebration(page).waitFor();
+  assert.equal(await titre(page), 'Pendant ton absence : +640 XP. Études niveau 3, Asso niveau 2.');
+});
+
 test("célébration : un joker en bandeau discret qui ne bloque pas l'app, émis après son jour", async ({ page, contexte, serveur }) => {
   await preparer(page, contexte, serveur, [joker('2026-10-12', '2026-10-14T08:00:00+02:00')]);
   await ouvrir(page, '/#/aujourdhui');
